@@ -1,0 +1,18 @@
+name: statistics
+description: Statistics Dart package for easy and efficient data manipulation with many built-in functions and units.
+version: 1.0.0
+homepage: https://github.com/gmpassos/statistics
+
+environment:
+  sdk: '>=2.12.0 <3.0.0'
+
+dependencies:
+  decimal: ^1.2.0
+  intl: ^0.17.0
+  #swiss_knife: ^3.0.8
+
+dev_dependencies:
+  pedantic: ^1.11.0
+  test: ^1.17.9
+  dependency_validator: ^3.1.0
+  test_cov: ^1.0.1
