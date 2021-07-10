@@ -449,6 +449,7 @@ extension IterableNumExtension<N extends num> on Iterable<N> {
     while (itr.moveNext()) {
       var n = itr.current;
       if (n < prev) return false;
+      prev = n;
     }
 
     return true;
@@ -683,6 +684,7 @@ extension IterableDoubleExtension on Iterable<double> {
     while (itr.moveNext()) {
       var n = itr.current;
       if (n < prev) return false;
+      prev = n;
     }
 
     return true;
@@ -941,6 +943,7 @@ extension IterableIntExtension on Iterable<int> {
     while (itr.moveNext()) {
       var n = itr.current;
       if (n < prev) return false;
+      prev = n;
     }
 
     return true;

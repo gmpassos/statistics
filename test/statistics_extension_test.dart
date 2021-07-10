@@ -111,6 +111,18 @@ void main() {
       expect(<int>[100, 200, 300] ~/ <int>[10, 20, 30], equals([10, 10, 10]));
       expect(<int>[100, 200, 300] ~/ <int>[40, 50, 30], equals([2, 4, 10]));
     });
+
+    test('isSorted', () {
+      expect(<int>[].isSorted, isFalse);
+
+      expect(<int>[0].isSorted, isTrue);
+      expect(<int>[10].isSorted, isTrue);
+      expect(<int>[-10, 20].isSorted, isTrue);
+      expect(<int>[10, 20, 30].isSorted, isTrue);
+
+      expect(<int>[10, 5].isSorted, isFalse);
+      expect(<int>[10, 200, 30].isSorted, isFalse);
+    });
   });
 
   group('double', () {
@@ -224,6 +236,18 @@ void main() {
           <double>[100, 200, 300] ~/ <int>[10, 20, 30], equals([10, 10, 10]));
       expect(<double>[100, 200, 300] ~/ <int>[40, 50, 30], equals([2, 4, 10]));
     });
+
+    test('isSorted', () {
+      expect(<double>[].isSorted, isFalse);
+
+      expect(<double>[0.0].isSorted, isTrue);
+      expect(<double>[10.0].isSorted, isTrue);
+      expect(<double>[-10.0, 20.0].isSorted, isTrue);
+      expect(<double>[10.0, 20.0, 30.0].isSorted, isTrue);
+
+      expect(<double>[10.0, 5.0].isSorted, isFalse);
+      expect(<double>[10.0, 200.0, 30.0].isSorted, isFalse);
+    });
   });
 
   group('num', () {
@@ -334,6 +358,18 @@ void main() {
       expect(<num>[100, 200, 300] ~/ <int>[10, 20], equals([10, 10]));
       expect(<num>[100, 200, 300] ~/ <int>[10, 20, 30], equals([10, 10, 10]));
       expect(<num>[100, 200, 300] ~/ <int>[40, 50, 30], equals([2, 4, 10]));
+    });
+
+    test('isSorted', () {
+      expect(<num>[].isSorted, isFalse);
+
+      expect(<num>[0.0].isSorted, isTrue);
+      expect(<num>[10.0].isSorted, isTrue);
+      expect(<num>[-10.0, 20.0].isSorted, isTrue);
+      expect(<num>[10.0, 20.0, 30.0].isSorted, isTrue);
+
+      expect(<num>[10.0, 5.0].isSorted, isFalse);
+      expect(<num>[10.0, 200.0, 30.0].isSorted, isFalse);
     });
   });
 }
