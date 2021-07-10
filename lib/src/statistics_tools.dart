@@ -321,6 +321,7 @@ abstract class DataEntry {
 }
 
 extension DataEntryExtension<E extends DataEntry> on List<E> {
+  /// Generates a `CSV` document.
   String generateCSV({String separator = ',', List<String>? fieldsNames}) {
     if (isEmpty) return '';
 
@@ -343,6 +344,9 @@ extension DataEntryExtension<E extends DataEntry> on List<E> {
 
     return csv.toString();
   }
+
+  /// Creates a `CSV` file name.
+  String csvFileName(String prefix, String name) => _csvFileName(prefix, name);
 }
 
 final _REGEXP_NEW_LINE = RegExp(r'[\r\n]');
@@ -352,12 +356,7 @@ String _normalizeLine(String e) => e.replaceAll(_REGEXP_NEW_LINE, ' ');
 extension SeriesMapExtension<N extends num> on Map<String, List<N>?> {
   N _toN(num n) => (N == int ? n.toInt() : n.toDouble()) as N;
 
-  String csvFileName(String prefix, String name) {
-    var now = DateTime.now().millisecondsSinceEpoch;
-    var csvFileName = '$prefix--$name--$now.csv';
-    return csvFileName;
-  }
-
+  /// Generates a `CSV` document.
   String generateCSV(
       {String separator = ',', N? nullValue, int firstEntryIndex = 1}) {
     if (isEmpty) return '';
@@ -393,4 +392,13 @@ extension SeriesMapExtension<N extends num> on Map<String, List<N>?> {
 
     return csv.toString();
   }
+
+  /// Creates a `CSV` file name.
+  String csvFileName(String prefix, String name) => _csvFileName(prefix, name);
+}
+
+String _csvFileName(String prefix, String name) {
+  var now = DateTime.now().millisecondsSinceEpoch;
+  var csvFileName = '$prefix--$name--$now.csv';
+  return csvFileName;
 }

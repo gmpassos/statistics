@@ -6,6 +6,7 @@ import 'package:collection/collection.dart';
 import 'statistics_base.dart';
 import 'statistics_tools.dart';
 
+/// extension for [Int32x4].
 extension Int32x4Extension on Int32x4 {
   /// Converts to a [Float32x4].
   Float32x4 toFloat32x4() =>
@@ -117,6 +118,7 @@ extension Int32x4Extension on Int32x4 {
   }
 }
 
+/// extension for [Float32x4].
 extension Float32x4Extension on Float32x4 {
   /// Converts to a [Int32x4].
   Int32x4 toInt32x4() => Int32x4(x.toInt(), y.toInt(), z.toInt(), w.toInt());
@@ -217,6 +219,7 @@ extension Float32x4Extension on Float32x4 {
   }
 }
 
+/// extension for `List<T>`.
 extension ListExtension<T> on List<T> {
   int get lastIndex => length - 1;
 
@@ -309,6 +312,7 @@ extension ListExtension<T> on List<T> {
       this is List<int> ? this as List<int> : map((v) => parseInt(v)!).toList();
 }
 
+/// extension for `Set<T>`.
 extension SetExtension<T> on Set<T> {
   bool allEquals(T element) {
     if (length == 0) return false;
@@ -327,6 +331,7 @@ extension SetExtension<T> on Set<T> {
   }
 }
 
+/// extension for `Iterable<T>`.
 extension IterableExtension<T> on Iterable<T> {
   Map<G, List<T>> groupBy<G>(G Function(T e) grouper) {
     var groups = <G, List<T>>{};
@@ -341,7 +346,9 @@ extension IterableExtension<T> on Iterable<T> {
   }
 }
 
+/// extension for `Iterable<N>` (`N` extends `num`).
 extension IterableNumExtension<N extends num> on Iterable<N> {
+  /// Casts [n] to [N].
   N castElement(num n) {
     if (N == int) {
       return n.toInt() as N;
@@ -350,18 +357,24 @@ extension IterableNumExtension<N extends num> on Iterable<N> {
     }
   }
 
+  /// Maps this numeric collection to a `List<T>` using [f] to map each element.
   List<T> mapToList<T>(T Function(N n) f) => map(f).toList();
 
+  /// Maps this numeric collection to a `Set<T>` using [f] to map each element.
   Set<T> mapToSet<T>(T Function(N n) f) => map(f).toSet();
 
+  /// Maps this numeric collection to a `List<int>`.
   List<int> toInts() => mapToList((e) => e.toInt());
 
+  /// Maps this numeric collection to a `List<double>`.
   List<double> toDoubles() => mapToList((e) => e.toDouble());
 
+  /// Maps this numeric collection to a `List<String>`.
   List<String> toStrings() => mapToList((e) => e.toString());
 
   DataStatistics<num> get statistics => DataStatistics.compute(this);
 
+  /// Returns the sum of this numeric collection.
   N get sum {
     var itr = iterator;
 
@@ -378,6 +391,7 @@ extension IterableNumExtension<N extends num> on Iterable<N> {
     return castElement(total);
   }
 
+  /// Returns the sum of squares of this numeric collection.
   N get sumSquares {
     var itr = iterator;
 
@@ -396,8 +410,10 @@ extension IterableNumExtension<N extends num> on Iterable<N> {
     return castElement(total);
   }
 
+  /// Returns the mean/average of this numeric collection.
   double get mean => sum / length;
 
+  /// Returns the standard deviation of this numeric collection.
   double get standardDeviation {
     var itr = iterator;
 
@@ -420,12 +436,99 @@ extension IterableNumExtension<N extends num> on Iterable<N> {
     return deviation;
   }
 
+  /// Returns `true` if this numeric collection is sorted.
+  bool get isSorted {
+    var itr = iterator;
+
+    if (!itr.moveNext()) {
+      return false;
+    }
+
+    num prev = itr.current;
+
+    while (itr.moveNext()) {
+      var n = itr.current;
+      if (n < prev) return false;
+    }
+
+    return true;
+  }
+
+  /// Returns a sorted `List<double>` of this numeric collection.
+  /// If this instance is already sorted and already a `List<int>`,
+  /// returns `this` instance.
+  List<N> asSortedList() {
+    List<N> list;
+    if (this is List<N> && isSorted) {
+      list = this as List<N>;
+    } else {
+      list = toList();
+      list.sort();
+    }
+    return list;
+  }
+
+  /// Return the median (middle value) of this numeric collection.
+  /// If [data] is empty, returns `null`.
+  num? get median {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+
+    if (n % 2 == 1) {
+      return data[halfN];
+    } else {
+      return (data[halfN - 1] + data[halfN]) / 2;
+    }
+  }
+
+  /// Return the low median (middle value) this collection.
+  /// If [data] is empty, returns `null`.
+  num? get medianLow {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+
+    if (n % 2 == 1) {
+      return data[halfN];
+    } else {
+      return data[halfN - 1];
+    }
+  }
+
+  /// Return the low median (middle value) this collection.
+  /// If [data] is empty, returns `null`.
+  num? get medianHigh {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+    return data[halfN];
+  }
+
+  /// Returns the mean/average of squares of this numeric collection.
   double get squaresMean => sumSquares / length;
 
+  /// Returns the squares of this numeric collection.
   List<N> get square => map((n) => castElement(n * n)).toList();
 
   List<N> get abs => map((n) => castElement(n.abs())).toList();
 
+  /// Returns the moving average of [samplesSize] of this numeric collection.
   List<double> movingAverage(int samplesSize) {
     var length = this.length;
     if (length == 0) return <double>[];
@@ -452,9 +555,11 @@ extension IterableNumExtension<N extends num> on Iterable<N> {
     return movingAverage;
   }
 
+  /// Merges this numeric collection with [other] using the [merge] function.
   List<num> merge(Iterable<num> other, num Function(N a, num b) merger) =>
       mergeTo<num>(other, merger, <num>[]);
 
+  /// Merges this numeric collection with [other] using the [merge] function to [destiny].
   List<R> mergeTo<R>(
       Iterable<num> other, R Function(N a, num b) merger, List<R> destiny) {
     var itr1 = iterator;
@@ -488,15 +593,21 @@ extension IterableNumExtension<N extends num> on Iterable<N> {
       mergeTo(other, (a, b) => a ~/ b, <int>[]);
 }
 
+/// extension for `Iterable<double>`.
 extension IterableDoubleExtension on Iterable<double> {
+  /// Maps this numeric collection to a `List<T>` using [f] to map each element.
   List<T> mapToList<T>(T Function(double n) f) => map(f).toList();
 
+  /// Maps this numeric collection to a `Set<T>` using [f] to map each element.
   Set<T> mapToSet<T>(T Function(double n) f) => map(f).toSet();
 
+  /// Maps this numeric collection to a `List<int>`.
   List<int> toInts() => mapToList((e) => e.toInt());
 
+  /// Maps this numeric collection to a `List<double>`.
   List<double> toDoubles() => mapToList((e) => e.toDouble());
 
+  /// Maps this numeric collection to a `List<String>`.
   List<String> toStrings() => mapToList((e) => e.toString());
 
   DataStatistics<num> get statistics => DataStatistics.compute(this);
@@ -557,6 +668,90 @@ extension IterableDoubleExtension on Iterable<double> {
     var deviation = sqrt(total / length);
 
     return deviation;
+  }
+
+  /// Returns `true` if this numeric collection is sorted.
+  bool get isSorted {
+    var itr = iterator;
+
+    if (!itr.moveNext()) {
+      return false;
+    }
+
+    num prev = itr.current;
+
+    while (itr.moveNext()) {
+      var n = itr.current;
+      if (n < prev) return false;
+    }
+
+    return true;
+  }
+
+  /// Returns a sorted `List<double>` of this numeric collection.
+  /// If this instance is already sorted and already a `List<int>`,
+  /// returns `this` instance.
+  List<double> asSortedList() {
+    List<double> list;
+    if (this is List<double> && isSorted) {
+      list = this as List<double>;
+    } else {
+      list = toList();
+      list.sort();
+    }
+    return list;
+  }
+
+  /// Return the median (middle value) of this numeric collection.
+  /// If [data] is empty, returns `null`.
+  num? get median {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+
+    if (n % 2 == 1) {
+      return data[halfN];
+    } else {
+      return (data[halfN - 1] + data[halfN]) / 2;
+    }
+  }
+
+  /// Return the low median (middle value) this collection.
+  /// If [data] is empty, returns `null`.
+  num? get medianLow {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+
+    if (n % 2 == 1) {
+      return data[halfN];
+    } else {
+      return data[halfN - 1];
+    }
+  }
+
+  /// Return the low median (middle value) this collection.
+  /// If [data] is empty, returns `null`.
+  num? get medianHigh {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+    return data[halfN];
   }
 
   double get squaresMean => sumSquares / length;
@@ -656,15 +851,21 @@ extension IterableDoubleExtension on Iterable<double> {
   }
 }
 
+/// extension for `Iterable<int>`.
 extension IterableIntExtension on Iterable<int> {
+  /// Maps this numeric collection to a `List<T>` using [f] to map each element.
   List<T> mapToList<T>(T Function(int n) f) => map(f).toList();
 
+  /// Maps this numeric collection to a `Set<T>` using [f] to map each element.
   Set<T> mapToSet<T>(T Function(int n) f) => map(f).toSet();
 
+  /// Maps this numeric collection to a `List<int>`.
   List<int> toInts() => mapToList((e) => e.toInt());
 
+  /// Maps this numeric collection to a `List<double>`.
   List<double> toDoubles() => mapToList((e) => e.toDouble());
 
+  /// Maps this numeric collection to a `List<String>`.
   List<String> toStrings() => mapToList((e) => e.toString());
 
   DataStatistics<num> get statistics => DataStatistics.compute(this);
@@ -725,6 +926,90 @@ extension IterableIntExtension on Iterable<int> {
     var deviation = sqrt(total / length);
 
     return deviation;
+  }
+
+  /// Returns `true` if this numeric collection is sorted.
+  bool get isSorted {
+    var itr = iterator;
+
+    if (!itr.moveNext()) {
+      return false;
+    }
+
+    num prev = itr.current;
+
+    while (itr.moveNext()) {
+      var n = itr.current;
+      if (n < prev) return false;
+    }
+
+    return true;
+  }
+
+  /// Returns a sorted `List<int>` of this numeric collection.
+  /// If this instance is already sorted and already a `List<int>`,
+  /// returns `this` instance.
+  List<int> asSortedList() {
+    List<int> list;
+    if (this is List<int> && isSorted) {
+      list = this as List<int>;
+    } else {
+      list = toList();
+      list.sort();
+    }
+    return list;
+  }
+
+  /// Return the median (middle value) of this numeric collection.
+  /// If [data] is empty, returns `null`.
+  num? get median {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+
+    if (n % 2 == 1) {
+      return data[halfN];
+    } else {
+      return (data[halfN - 1] + data[halfN]) / 2;
+    }
+  }
+
+  /// Return the low median (middle value) this collection.
+  /// If [data] is empty, returns `null`.
+  num? get medianLow {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+
+    if (n % 2 == 1) {
+      return data[halfN];
+    } else {
+      return data[halfN - 1];
+    }
+  }
+
+  /// Return the low median (middle value) this collection.
+  /// If [data] is empty, returns `null`.
+  num? get medianHigh {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+    return data[halfN];
   }
 
   double get squaresMean => sumSquares / length;
@@ -795,6 +1080,7 @@ extension IterableIntExtension on Iterable<int> {
       mergeTo(other, (a, b) => a ~/ b, <int>[]);
 }
 
+/// extension for `num`.
 extension NumExtension on num {
   num get square => this * this;
 
@@ -821,6 +1107,7 @@ extension NumExtension on num {
   }
 }
 
+/// extension for `double`.
 extension DoubleExtension on double {
   double get square => this * this;
 
@@ -843,6 +1130,7 @@ extension DoubleExtension on double {
   }
 }
 
+/// extension for `int`.
 extension IntExtension on int {
   int get square => this * this;
 
@@ -857,6 +1145,7 @@ extension IntExtension on int {
   }
 }
 
+/// [Equality] for [Int32x4].
 class Int32x4Equality implements Equality<Int32x4> {
   @override
   bool equals(Int32x4 e1, Int32x4 e2) => e1.equalsValues(e2);
@@ -871,6 +1160,7 @@ class Int32x4Equality implements Equality<Int32x4> {
   }
 }
 
+/// [Equality] for [Float32x4].
 class Float32x4Equality implements Equality<Float32x4> {
   @override
   bool equals(Float32x4 e1, Float32x4 e2) => e1.equalsValues(e2);
@@ -885,6 +1175,7 @@ class Float32x4Equality implements Equality<Float32x4> {
   }
 }
 
+/// extension for [Duration].
 extension DurationExtension on Duration {
   String toStringUnit({
     bool days = true,

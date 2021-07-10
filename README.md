@@ -11,7 +11,7 @@
 [![Code size](https://img.shields.io/github/languages/code-size/gmpassos/statistics?logo=github&logoColor=white)](https://github.com/gmpassos/statistics)
 [![License](https://img.shields.io/github/license/gmpassos/statistics?logo=open-source-initiative&logoColor=green)](https://github.com/gmpassos/statistics/blob/master/LICENSE)
 
-Statistics package for easy and efficient data manipulation with many built-in functions and units.
+Statistics package for easy and efficient data manipulation with many built-in mathematical functions and units.
 
 ## Usage
 

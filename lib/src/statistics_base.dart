@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+/// Parses [o] as `double`. If can't parse returns [def].
 double? parseDouble(dynamic o, [double? def]) {
   if (o == null) return def;
   if (o is double) return o;
@@ -11,6 +12,7 @@ double? parseDouble(dynamic o, [double? def]) {
   return d ?? def;
 }
 
+/// Parses [o] as `int`. If can't parse returns [def].
 int? parseInt(dynamic o, [int? def]) {
   if (o == null) return def;
   if (o is int) return o;
@@ -22,6 +24,7 @@ int? parseInt(dynamic o, [int? def]) {
   return d ?? def;
 }
 
+/// Parses [o] as `num`. If can't parse returns [def].
 num? parseNum(dynamic o, [num? def]) {
   if (o == null) return def;
   if (o is num) return o;
