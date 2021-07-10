@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import 'statistics_base.dart';
 import 'statistics_extension.dart';
+import 'statistics_num_extension.dart';
 
 /// A Chronometer useful for benchmarks.
 class Chronometer implements Comparable<Chronometer> {

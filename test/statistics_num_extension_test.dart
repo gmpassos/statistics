@@ -5,6 +5,27 @@ void main() {
   group('int', () {
     setUp(() {});
 
+    test('toIntsList', () {
+      expect(<int>[].toIntsList(), isEmpty);
+      expect(<int>[].toIntsList(), isEmpty);
+      expect(<int>[10].toIntsList(), equals([10]));
+      expect(<int>[10, 20].toIntsList(), equals([10, 20]));
+    });
+
+    test('toDoublesList', () {
+      expect(<int>[].toDoublesList(), isEmpty);
+      expect(<int>[].toDoublesList(), isEmpty);
+      expect(<int>[10].toDoublesList(), equals([10.0]));
+      expect(<int>[10, 20].toDoublesList(), equals([10.0, 20.0]));
+    });
+
+    test('toStringsList', () {
+      expect(<int>[].toStringsList(), isEmpty);
+      expect(<int>[].toStringsList(), isEmpty);
+      expect(<int>[10].toStringsList(), equals(['10']));
+      expect(<int>[10, 20].toStringsList(), equals(['10', '20']));
+    });
+
     test('mean', () {
       expect(<int>[].mean, isNaN);
       expect([0].mean, equals(0));
@@ -35,6 +56,18 @@ void main() {
       expect([10].square, equals([100]));
       expect([10, 20].square, equals([100, 400]));
       expect([10, 20, 30].square, equals([100, 400, 900]));
+
+      expect(11.square, equals(121));
+    });
+
+    test('squareRoot', () {
+      expect(<int>[].squareRoot, isEmpty);
+      expect([0].squareRoot, equals([0]));
+      expect([9].squareRoot, equals([3]));
+      expect([100, 121].squareRoot, equals([10, 11]));
+      expect([10000, 400, 900].squareRoot, equals([100, 20, 30]));
+
+      expect(100.squareRoot, equals(10));
     });
 
     test('squaresMean', () {
@@ -51,6 +84,39 @@ void main() {
       expect([10].standardDeviation, equals(10));
       expect([10, 20].standardDeviation, equals(7.905694150420948));
       expect([10, 20, 30].standardDeviation, equals(8.16496580927726));
+    });
+
+    test('median', () {
+      expect(<int>[].median, isNull);
+      expect([0].median, equals(0));
+      expect([10].median, equals(10));
+      expect([10, 20].median, equals(15));
+      expect([10, 20, 30].median, equals(20));
+      expect([30, 20, 10].median, equals(20));
+      expect([5, 10, 20, 30].median, equals(15));
+      expect([30, 20, 10, 5].median, equals(15));
+    });
+
+    test('medianLow', () {
+      expect(<int>[].medianLow, isNull);
+      expect([0].medianLow, equals(0));
+      expect([10].medianLow, equals(10));
+      expect([10, 20].medianLow, equals(10));
+      expect([10, 20, 30].medianLow, equals(20));
+      expect([30, 20, 10].medianLow, equals(20));
+      expect([5, 10, 20, 30].medianLow, equals(10));
+      expect([30, 20, 10, 5].medianLow, equals(10));
+    });
+
+    test('medianHigh', () {
+      expect(<int>[].medianHigh, isNull);
+      expect([0].medianHigh, equals(0));
+      expect([10].medianHigh, equals(10));
+      expect([10, 20].medianHigh, equals(20));
+      expect([10, 20, 30].medianHigh, equals(20));
+      expect([30, 20, 10].medianHigh, equals(20));
+      expect([5, 10, 20, 30].medianHigh, equals(20));
+      expect([30, 20, 10, 5].medianHigh, equals(20));
     });
 
     test('abs', () {
@@ -123,10 +189,48 @@ void main() {
       expect(<int>[10, 5].isSorted, isFalse);
       expect(<int>[10, 200, 30].isSorted, isFalse);
     });
+
+    test('equalsValues', () {
+      expect(<int>[].equalsValues([]), isTrue);
+      expect(<int>[].equalsValues([10]), isFalse);
+
+      expect(<int>[10].equalsValues([10]), isTrue);
+      expect(<int>[10].equalsValues([10.0], tolerance: 0.000001), isTrue);
+      expect(<int>[10].equalsValues([10.0001]), isFalse);
+      expect(<int>[10].equalsValues([10.0], tolerance: 0.01), isTrue);
+      expect(<int>[10].equalsValues([10.0001], tolerance: 0.01), isTrue);
+      expect(<int>[10].equalsValues([10.0001], tolerance: 0.000001), isFalse);
+
+      expect(<int>[10, 20].equalsValues([10.0001, 20.001], tolerance: 0.01),
+          isTrue);
+      expect(<int>[10, 20].equalsValues([10.0001, 20.1], tolerance: 0.01),
+          isFalse);
+    });
   });
 
   group('double', () {
     setUp(() {});
+
+    test('toIntsList', () {
+      expect(<double>[].toIntsList(), isEmpty);
+      expect(<double>[].toIntsList(), isEmpty);
+      expect(<double>[10.10].toIntsList(), equals([10]));
+      expect(<double>[10, 20.20].toIntsList(), equals([10, 20]));
+    });
+
+    test('toDoublesList', () {
+      expect(<double>[].toDoublesList(), isEmpty);
+      expect(<double>[].toDoublesList(), isEmpty);
+      expect(<double>[10.10].toDoublesList(), equals([10.10]));
+      expect(<double>[10.0, 20.20].toDoublesList(), equals([10.0, 20.20]));
+    });
+
+    test('toStringsList', () {
+      expect(<double>[].toStringsList(), isEmpty);
+      expect(<double>[].toStringsList(), isEmpty);
+      expect(<double>[10.0].toStringsList(), equals(['10.0']));
+      expect(<double>[10.0, 20.0].toStringsList(), equals(['10.0', '20.0']));
+    });
 
     test('mean', () {
       expect(<double>[].mean, isNaN);
@@ -158,6 +262,18 @@ void main() {
       expect([10.0].square, equals([100]));
       expect([10.0, 20.0].square, equals([100, 400]));
       expect([10.0, 20.0, 30.0].square, equals([100, 400, 900]));
+
+      expect(10.0.square, equals(100));
+    });
+
+    test('squareRoot', () {
+      expect(<double>[].squareRoot, isEmpty);
+      expect([0.0].squareRoot, equals([0]));
+      expect([9.0].squareRoot, equals([3]));
+      expect([100.0, 121.0].squareRoot, equals([10, 11]));
+      expect([10000.0, 400.0, 900.0].squareRoot, equals([100, 20, 30]));
+
+      expect(100.0.squareRoot, equals(10));
     });
 
     test('squaresMean', () {
@@ -174,6 +290,39 @@ void main() {
       expect([10.0].standardDeviation, equals(10));
       expect([10.0, 20.0].standardDeviation, equals(7.905694150420948));
       expect([10.0, 20.0, 30.0].standardDeviation, equals(8.16496580927726));
+    });
+
+    test('median', () {
+      expect(<double>[].median, isNull);
+      expect([0.0].median, equals(0));
+      expect([10.0].median, equals(10));
+      expect([10.0, 20.0].median, equals(15));
+      expect([10.0, 20.0, 30.0].median, equals(20));
+      expect([30.0, 20.0, 10.0].median, equals(20));
+      expect([5.0, 10.0, 20.0, 30.0].median, equals(15));
+      expect([30.0, 20.0, 10.0, 5.0].median, equals(15));
+    });
+
+    test('medianLow', () {
+      expect(<double>[].medianLow, isNull);
+      expect([0.0].medianLow, equals(0));
+      expect([10.0].medianLow, equals(10));
+      expect([10.0, 20.0].medianLow, equals(10));
+      expect([10.0, 20.0, 30.0].medianLow, equals(20));
+      expect([30.0, 20.0, 10.0].medianLow, equals(20));
+      expect([5.0, 10.0, 20.0, 30.0].medianLow, equals(10));
+      expect([30.0, 20.0, 10.0, 5.0].medianLow, equals(10));
+    });
+
+    test('medianHigh', () {
+      expect(<double>[].medianHigh, isNull);
+      expect([0.0].medianHigh, equals(0));
+      expect([10.0].medianHigh, equals(10));
+      expect([10.0, 20.0].medianHigh, equals(20));
+      expect([10.0, 20.0, 30.0].medianHigh, equals(20));
+      expect([30.0, 20.0, 10.0].medianHigh, equals(20));
+      expect([5.0, 10.0, 20.0, 30].medianHigh, equals(20));
+      expect([30.0, 20.0, 10.0, 5].medianHigh, equals(20));
     });
 
     test('abs', () {
@@ -248,10 +397,61 @@ void main() {
       expect(<double>[10.0, 5.0].isSorted, isFalse);
       expect(<double>[10.0, 200.0, 30.0].isSorted, isFalse);
     });
+
+    test('equalsValues', () {
+      expect(<double>[].equalsValues([]), isTrue);
+      expect(<double>[].equalsValues([10]), isFalse);
+
+      expect(<double>[10.0].equalsValues([10]), isTrue);
+      expect(<double>[10.0].equalsValues([10.0], tolerance: 0.000001), isTrue);
+      expect(<double>[10.0].equalsValues([10.0001]), isFalse);
+      expect(<double>[10.0].equalsValues([10.0], tolerance: 0.01), isTrue);
+      expect(<double>[10.0].equalsValues([10.0001], tolerance: 0.01), isTrue);
+      expect(
+          <double>[10.0].equalsValues([10.0001], tolerance: 0.000001), isFalse);
+
+      expect(
+          <double>[10.0, 20].equalsValues([10.0001, 20.001], tolerance: 0.01),
+          isTrue);
+      expect(<double>[10.0, 20].equalsValues([10.0001, 20.1], tolerance: 0.01),
+          isFalse);
+    });
+
+    test('equalsValues', () {
+      expect(10.0.signWithZeroTolerance(), equals(1));
+      expect(-10.0.signWithZeroTolerance(), equals(-1));
+      expect(0.0.signWithZeroTolerance(), equals(0));
+
+      expect(0.01.signWithZeroTolerance(0.001), equals(1));
+      expect(-0.01.signWithZeroTolerance(0.001), equals(-1));
+      expect(0.01.signWithZeroTolerance(0.1), equals(0));
+      expect(-0.01.signWithZeroTolerance(0.1), equals(0));
+    });
   });
 
   group('num', () {
     setUp(() {});
+
+    test('toIntsList', () {
+      expect(<num>[].toIntsList(), isEmpty);
+      expect(<num>[].toIntsList(), isEmpty);
+      expect(<num>[10].toIntsList(), equals([10]));
+      expect(<num>[10, 20.20].toIntsList(), equals([10, 20]));
+    });
+
+    test('toDoublesList', () {
+      expect(<num>[].toDoublesList(), isEmpty);
+      expect(<num>[].toDoublesList(), isEmpty);
+      expect(<num>[10].toDoublesList(), equals([10.0]));
+      expect(<num>[10, 20.20].toDoublesList(), equals([10.0, 20.20]));
+    });
+
+    test('toStringsList', () {
+      expect(<num>[].toStringsList(), isEmpty);
+      expect(<num>[].toStringsList(), isEmpty);
+      expect(<num>[10].toStringsList(), equals(['10']));
+      expect(<num>[10, 20.20].toStringsList(), equals(['10', '20.2']));
+    });
 
     test('mean', () {
       expect(<num>[].mean, isNaN);
@@ -283,6 +483,18 @@ void main() {
       expect(<num>[10.0].square, equals([100]));
       expect([10, 20.0].square, equals([100, 400]));
       expect([10.0, 20, 30.0].square, equals([100, 400, 900]));
+
+      expect(_asNum(10).square, equals(100));
+    });
+
+    test('squareRoot', () {
+      expect(<num>[].squareRoot, isEmpty);
+      expect(<num>[0.0].squareRoot, equals([0]));
+      expect(<num>[9.0].squareRoot, equals([3]));
+      expect([100, 121.0].squareRoot, equals([10, 11]));
+      expect([10000, 400.0, 900.0].squareRoot, equals([100, 20, 30]));
+
+      expect(_asNum(100).squareRoot, equals(10));
     });
 
     test('squaresMean', () {
@@ -299,6 +511,39 @@ void main() {
       expect(<num>[10].standardDeviation, equals(10));
       expect([10, 20.0].standardDeviation, equals(7.905694150420948));
       expect([10.0, 20, 30.0].standardDeviation, equals(8.16496580927726));
+    });
+
+    test('median', () {
+      expect(<num>[].median, isNull);
+      expect(<num>[0.0].median, equals(0));
+      expect(<num>[10.0].median, equals(10));
+      expect([10.0, 20].median, equals(15));
+      expect([10.0, 20, 30.0].median, equals(20));
+      expect([30.0, 20.0, 10].median, equals(20));
+      expect([5.0, 10, 20, 30].median, equals(15));
+      expect([30.0, 20, 10.0, 5].median, equals(15));
+    });
+
+    test('medianLow', () {
+      expect(<num>[].medianLow, isNull);
+      expect(<num>[0.0].medianLow, equals(0));
+      expect(<num>[10.0].medianLow, equals(10));
+      expect([10.0, 20].medianLow, equals(10));
+      expect([10.0, 20, 30].medianLow, equals(20));
+      expect([30.0, 20, 10].medianLow, equals(20));
+      expect([5.0, 10, 20, 30].medianLow, equals(10));
+      expect([30.0, 20, 10, 5].medianLow, equals(10));
+    });
+
+    test('medianHigh', () {
+      expect(<double>[].medianHigh, isNull);
+      expect(<num>[0.0].medianHigh, equals(0));
+      expect(<num>[10.0].medianHigh, equals(10));
+      expect([10, 20.0].medianHigh, equals(20));
+      expect([10, 20.0, 30].medianHigh, equals(20));
+      expect([30, 20.0, 10].medianHigh, equals(20));
+      expect([5, 10.0, 20, 30].medianHigh, equals(20));
+      expect([30, 20.0, 10, 5].medianHigh, equals(20));
     });
 
     test('abs', () {
@@ -371,5 +616,55 @@ void main() {
       expect(<num>[10.0, 5.0].isSorted, isFalse);
       expect(<num>[10.0, 200.0, 30.0].isSorted, isFalse);
     });
+
+    test('equalsValues', () {
+      expect(<num>[].equalsValues([]), isTrue);
+      expect(<num>[].equalsValues([10]), isFalse);
+
+      expect(<num>[10.0].equalsValues([10]), isTrue);
+      expect(<num>[10.0].equalsValues([10.0], tolerance: 0.000001), isTrue);
+      expect(<num>[10.0].equalsValues([10.0001]), isFalse);
+      expect(<num>[10.0].equalsValues([10.0], tolerance: 0.01), isTrue);
+      expect(<num>[10.0].equalsValues([10.0001], tolerance: 0.01), isTrue);
+      expect(<num>[10.0].equalsValues([10.0001], tolerance: 0.000001), isFalse);
+
+      expect(<num>[10.0, 20].equalsValues([10.0001, 20.001], tolerance: 0.01),
+          isTrue);
+      expect(<num>[10.0, 20].equalsValues([10.0001, 20.1], tolerance: 0.01),
+          isFalse);
+    });
+
+    test('equalsValues', () {
+      expect(_asNum(10.0).signWithZeroTolerance(), equals(1));
+      expect(_asNum(-10.0).signWithZeroTolerance(), equals(-1));
+      expect(_asNum(0.0).signWithZeroTolerance(), equals(0));
+
+      expect(_asNum(0.01).signWithZeroTolerance(0.001), equals(1));
+      expect(_asNum(-0.01).signWithZeroTolerance(0.001), equals(-1));
+      expect(_asNum(0.01).signWithZeroTolerance(0.1), equals(0));
+      expect(_asNum(-0.01).signWithZeroTolerance(0.1), equals(0));
+    });
+  });
+
+  group('N', () {
+    setUp(() {});
+
+    test('toIntsList', () {
+      var f = <N extends num>(List<N> l) {
+        expect(l, isNotEmpty);
+        expect(l.toIntsList(), isNotEmpty);
+        expect(l.toDoublesList(), isNotEmpty);
+        expect(l.toStringsList(), isNotEmpty);
+
+        expect(l.asInts(), equals(l.toIntsList()));
+        expect(l.asDoubles(), equals(l.toDoublesList()));
+      };
+
+      f(<int>[10, 20]);
+      f(<double>[10.0, 20.20]);
+      f(<num>[10, 20.20]);
+    });
   });
 }
+
+num _asNum(num n) => n;
