@@ -94,13 +94,8 @@ extension ListExtension<T> on List<T> {
 /// extension for `Set<T>`.
 extension SetExtension<T> on Set<T> {
   bool allEquals(T element) {
-    if (length == 0) return false;
-
-    for (var e in this) {
-      if (e != element) return false;
-    }
-
-    return true;
+    if (length != 1) return false;
+    return first == element;
   }
 
   List<String> toStringElements() => map((e) => '$e').toList();
