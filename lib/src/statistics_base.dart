@@ -163,17 +163,30 @@ class Statistics<N extends num> extends DataEntry {
         sum: n, squaresSum: n * n, mean: n.toDouble(), standardDeviation: 0);
   }
 
-  /// Computes a [Statistics] summary from [collection].
+  /// Computes a [Statistics] summary from [data].
   ///
   /// - [computeLowerAndUpper] if `true` will compute [lowerStatistics] and [upperStatistics].
-  /// - [keepSeries] if `true` will keep a copy of [collection] at [series].
-  factory Statistics.compute(Iterable<N> collection,
-      {bool computeLowerAndUpper = true, bool keepSeries = false}) {
-    var length = collection.length;
-    if (length == 0) return Statistics._empty(collection);
-    if (length == 1) return Statistics._single(collection.first);
+  /// - [keepData] if `true` will keep a copy of [data] at [data].
+  factory Statistics.compute(Iterable<N> data,
+      {bool computeLowerAndUpper = true, bool keepData = false}) {
+    var length = data.length;
+    if (length == 0) {
+      var statistics = Statistics._empty(data);
+      if (keepData) {
+        statistics.data = data.toList();
+      }
+      return statistics;
+    }
 
-    var listSorted = List<N>.from(collection);
+    if (length == 1) {
+      var statistics = Statistics._single(data.first);
+      if (keepData) {
+        statistics.data = data.toList();
+      }
+      return statistics;
+    }
+
+    var listSorted = List<N>.from(data);
     listSorted.sort();
 
     var first = listSorted.first;
@@ -203,9 +216,9 @@ class Statistics<N extends num> extends DataEntry {
       var upper = listSorted.sublist(centerIndex);
 
       lowerStatistics = Statistics.compute(lower,
-          computeLowerAndUpper: false, keepSeries: false);
+          computeLowerAndUpper: false, keepData: false);
       upperStatistics = Statistics.compute(upper,
-          computeLowerAndUpper: false, keepSeries: false);
+          computeLowerAndUpper: false, keepData: false);
     }
 
     var statistics = Statistics(
@@ -221,14 +234,14 @@ class Statistics<N extends num> extends DataEntry {
       upperStatistics: upperStatistics,
     );
 
-    if (keepSeries) {
-      statistics.series = collection.toList();
+    if (keepData) {
+      statistics.data = data.toList();
     }
 
     return statistics;
   }
 
-  List<N>? series;
+  List<N>? data;
 
   /// Returns `true` if [mean] is in range of [minMean] and [maxMean].
   /// Also checks if [standardDeviation] is in range of [minDeviation] and [maxDeviation] (if passed).

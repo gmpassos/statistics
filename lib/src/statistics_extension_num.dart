@@ -10,10 +10,19 @@ extension IterableNExtension<N extends num> on Iterable<N> {
   N castElement(num n) {
     if (N == int) {
       return n.toInt() as N;
-    } else {
+    } else if (N == double) {
       return n.toDouble() as N;
+    } else {
+      return n as N;
     }
   }
+
+  /// Returns a [Statistics] of this numeric collection.
+  Statistics<N> get statistics => Statistics.compute(this);
+
+  /// Returns a [Statistics] of this numeric collection (with populated field [Statistics.data]).
+  Statistics<N> get statisticsWithData =>
+      Statistics.compute(this, keepData: true);
 }
 
 /// extension for `Iterable<N>` (`N` extends `num`).
@@ -32,9 +41,6 @@ extension IterableNumExtension on Iterable<num> {
 
   /// Maps this numeric collection to a `List<String>`.
   List<String> toStringsList() => mapToList((e) => e.toString());
-
-  /// Returns a [Statistics] of this numeric collection.
-  Statistics<num> get statistics => Statistics.compute(this);
 
   /// Returns the sum of this numeric collection.
   num get sum {
@@ -311,7 +317,11 @@ extension IterableDoubleExtension on Iterable<double> {
   List<String> toStringsList() => mapToList((e) => e.toString());
 
   /// Returns a [Statistics] of this numeric collection.
-  Statistics<num> get statistics => Statistics.compute(this);
+  Statistics<double> get statistics => Statistics.compute(this);
+
+  /// Returns a [Statistics] of this numeric collection (with populated field [Statistics.data]).
+  Statistics<double> get statisticsWithData =>
+      Statistics.compute(this, keepData: true);
 
   /// Returns the sum of this numeric collection.
   double get sum {
@@ -589,7 +599,11 @@ extension IterableIntExtension on Iterable<int> {
   List<String> toStringsList() => mapToList((e) => e.toString());
 
   /// Returns a [Statistics] of this numeric collection.
-  Statistics<num> get statistics => Statistics.compute(this);
+  Statistics<int> get statistics => Statistics.compute(this);
+
+  /// Returns a [Statistics] of this numeric collection (with populated field [Statistics.data]).
+  Statistics<int> get statisticsWithData =>
+      Statistics.compute(this, keepData: true);
 
   /// Returns the sum of this numeric collection.
   int get sum {

@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 
 import 'statistics_base.dart';
+import 'statistics_extension_num.dart';
 
 /// extension for `List<T>`.
 extension ListExtension<T> on List<T> {
@@ -118,6 +119,12 @@ extension IterableExtension<T> on Iterable<T> {
 
     return groups;
   }
+}
+
+/// extension for `Map<K, Iterable<num>>`.
+extension MapOfNumExtension<K, N extends num> on Map<K, Iterable<N>> {
+  Map<K, Statistics<N>> get statistics =>
+      map((key, n) => MapEntry(key, n.statistics));
 }
 
 /// extension for [Duration].

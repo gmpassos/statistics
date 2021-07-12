@@ -2,7 +2,7 @@
 
 - Added:
   - `DoubleEquality`, `IntEquality` and `NumEquality`.
-- Improve unit tests and coverage.
+- Improve unit tests and coverage up to 98%.
 
 ## 1.0.0
 

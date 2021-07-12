@@ -128,6 +128,18 @@ void main() {
       expect(groups['even'], equals([12, 14]));
     });
 
+    test('MapOfNumExtension<String,int>', () {
+      var map = <String, List<int>>{
+        'a': [10, 20, 30],
+        'b': [40, 50, 60]
+      };
+
+      var statistics = map.statistics;
+
+      expect(statistics['a']!.mean, equals(20));
+      expect(statistics['b']!.mean, equals(50));
+    });
+
     test('Duration.toStringUnit', () {
       expect(
           Duration(minutes: 10, seconds: 5).toStringUnit(), equals('10 min'));

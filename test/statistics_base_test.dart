@@ -24,6 +24,7 @@ void main() {
       expect(parseDouble('10.0'), equals(10));
       expect(parseDouble('10.20'), equals(10.2));
     });
+
     test('parseNum', () {
       expect(parseNum(10), equals(10));
       expect(parseNum(10.2), equals(10.20));
@@ -33,13 +34,28 @@ void main() {
       expect(parseNum('10.0'), equals(10));
       expect(parseNum('10.20'), equals(10.2));
     });
+
+    test('formatDecimal', () {
+      expect(formatDecimal(10.0), equals('10'));
+      expect(formatDecimal(10.10), equals('10.1'));
+      expect(formatDecimal(100.101), equals('100.10'));
+      expect(formatDecimal(100.101, precision: 4), equals('100.101'));
+      expect(formatDecimal(1000.10), equals('1000.1'));
+      expect(formatDecimal(10000), equals('10000'));
+      expect(formatDecimal(10000.10), equals('10000.1'));
+      expect(formatDecimal(100000.10), equals('100000.1'));
+
+      expect(formatDecimal(0.000000012345), equals('1.2e-8'));
+      expect(formatDecimal(0.00000001), equals('1e-8'));
+    });
   });
 
   group('Statistics', () {
     setUp(() {});
 
     test('int(3)', () {
-      var statistics = [10, 20, 30].statistics;
+      var data = [10, 20, 30];
+      var statistics = data.statistics;
 
       expect(statistics.length, equals(3));
       expect(statistics.isEmpty, isFalse);
@@ -59,10 +75,18 @@ void main() {
 
       expect(statistics.isMeanInRange(10, 19), isFalse);
       expect(statistics.isMeanInRange(10, 30, 20, 21), isFalse);
+
+      expect(
+          statistics.toString(), equals('{~20 +-21.6024 [10..(20)..30] #3.0}'));
+      expect(statistics.toString(precision: 0),
+          equals('{~20.0 +-21.602468994692867 [10..(20)..30] #3.0}'));
+
+      expect(data.statisticsWithData.data, equals(data));
     });
 
     test('int(2)', () {
-      var statistics = [10, 20].statistics;
+      var data = [10, 20];
+      var statistics = data.statistics;
 
       expect(statistics.length, equals(2));
       expect(statistics.isEmpty, isFalse);
@@ -76,10 +100,13 @@ void main() {
 
       expect(statistics.centerIndex, equals(1));
       expect(statistics.center, equals(20));
+
+      expect(data.statisticsWithData.data, equals(data));
     });
 
     test('int(1)', () {
-      var statistics = [10].statistics;
+      var data = [10];
+      var statistics = data.statistics;
 
       expect(statistics.length, equals(1));
       expect(statistics.isEmpty, isFalse);
@@ -96,10 +123,13 @@ void main() {
 
       expect(statistics.centerIndex, equals(0));
       expect(statistics.center, equals(10));
+
+      expect(data.statisticsWithData.data, equals(data));
     });
 
     test('int(0)', () {
-      var statistics = <int>[].statistics;
+      var data = <int>[];
+      var statistics = data.statistics;
 
       expect(statistics.length, equals(0));
       expect(statistics.isEmpty, isTrue);
@@ -113,6 +143,8 @@ void main() {
 
       expect(statistics.centerIndex, equals(0));
       expect(statistics.center, equals(0));
+
+      expect(data.statisticsWithData.data, equals(data));
     });
 
     test('operator +', () {

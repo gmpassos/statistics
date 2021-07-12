@@ -1,10 +1,13 @@
+import 'statistics_base.dart';
 import 'statistics_extension.dart';
 import 'statistics_extension_num.dart';
-import 'statistics_base.dart';
 
-extension DataEntryExtension<E extends DataEntry> on List<E> {
+extension DataEntryExtension<E extends DataEntry> on Iterable<E> {
   /// Generates a `CSV` document.
-  String generateCSV({String separator = ',', List<String>? fieldsNames}) {
+  String generateCSV(
+      {String separator = ',',
+      List<String>? fieldsNames,
+      Object Function(Object? e)? valueNormalizer}) {
     if (isEmpty) return '';
 
     var csv = StringBuffer();
@@ -17,11 +20,22 @@ extension DataEntryExtension<E extends DataEntry> on List<E> {
       csv.write('\n');
     }
 
-    for (var e in this) {
-      var values = e.getDataValues();
-      var line = values.map((e) => _normalizeLine('$e')).join(separator);
-      csv.write(line);
-      csv.write('\n');
+    if (valueNormalizer != null) {
+      for (var e in this) {
+        var values = e.getDataValues();
+        var line = values
+            .map((e) => _normalizeLine(valueNormalizer(e).toString()))
+            .join(separator);
+        csv.write(line);
+        csv.write('\n');
+      }
+    } else {
+      for (var e in this) {
+        var values = e.getDataValues();
+        var line = values.map((e) => _normalizeLine('$e')).join(separator);
+        csv.write(line);
+        csv.write('\n');
+      }
     }
 
     return csv.toString();
@@ -35,12 +49,34 @@ final _REGEXP_NEW_LINE = RegExp(r'[\r\n]');
 
 String _normalizeLine(String e) => e.replaceAll(_REGEXP_NEW_LINE, ' ');
 
-extension SeriesMapExtension<N extends num> on Map<String, List<N>?> {
-  N _toN(num n) => (N == int ? n.toInt() : n.toDouble()) as N;
+extension SeriesMapExtension<E> on Map<String, List<E>?> {
+  static Type _toType<T>() => T;
+
+  static final Type _intNullable = _toType<int?>();
+  static final Type _doubleNullable = _toType<double?>();
+  static final Type _numNullable = _toType<num?>();
+  static final Type _stringNullable = _toType<String?>();
+
+  E _toDefault() {
+    if (E == int || E == _intNullable) {
+      return 0 as E;
+    } else if (E == double || E == _doubleNullable) {
+      return 0.0 as E;
+    } else if (E == num || E == _numNullable) {
+      return 0 as E;
+    } else if (E == String || E == _stringNullable) {
+      return '' as E;
+    } else {
+      throw StateError('No default value for type: $E');
+    }
+  }
 
   /// Generates a `CSV` document.
   String generateCSV(
-      {String separator = ',', N? nullValue, int firstEntryIndex = 1}) {
+      {String separator = ',',
+      E? nullValue,
+      int firstEntryIndex = 1,
+      Object Function(E e)? valueNormalizer}) {
     if (isEmpty) return '';
 
     var csv = StringBuffer();
@@ -54,22 +90,44 @@ extension SeriesMapExtension<N extends num> on Map<String, List<N>?> {
       csv.write('\n');
     }
 
-    nullValue ??= _toN(0);
-
     var totalLines = values.map((e) => e?.length ?? 0).toList().statistics.max;
 
-    for (var i = 0; i < totalLines; ++i) {
-      var line = StringBuffer();
-      line.write('${i + firstEntryIndex}');
+    if (valueNormalizer != null) {
+      for (var i = 0; i < totalLines; ++i) {
+        var line = StringBuffer();
+        line.write('${i + firstEntryIndex}');
 
-      for (var k in keys) {
-        var e = this[k]?.getValueIfExists(i) ?? nullValue;
-        line.write(separator);
-        line.write(e);
+        for (var k in keys) {
+          var e = this[k]?.getValueIfExists(i);
+          e ??= nullValue;
+          e ??= (nullValue = _toDefault())!;
+
+          var v = valueNormalizer(e);
+
+          line.write(separator);
+          line.write(v);
+        }
+
+        csv.write(line);
+        csv.write('\n');
       }
+    } else {
+      for (var i = 0; i < totalLines; ++i) {
+        var line = StringBuffer();
+        line.write('${i + firstEntryIndex}');
 
-      csv.write(line);
-      csv.write('\n');
+        for (var k in keys) {
+          var e = this[k]?.getValueIfExists(i);
+          e ??= nullValue;
+          e ??= (nullValue = _toDefault())!;
+
+          line.write(separator);
+          line.write(e);
+        }
+
+        csv.write(line);
+        csv.write('\n');
+      }
     }
 
     return csv.toString();

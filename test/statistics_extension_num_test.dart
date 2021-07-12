@@ -26,6 +26,11 @@ void main() {
       expect(<int>[10, 20].toStringsList(), equals(['10', '20']));
     });
 
+    test('mapToSet', () {
+      expect(<int>[].mapToSet((n) => n), equals(<num>{}));
+      expect(<int>[10, 20].mapToSet((n) => n), equals({10, 20}));
+    });
+
     test('mean', () {
       expect(<int>[].mean, isNaN);
       expect([0].mean, equals(0));
@@ -137,6 +142,11 @@ void main() {
           equals([6.666666666666667, 16.666666666666668, 40.0, 50.0]));
     });
 
+    test('statistics', () {
+      expect(<int>[10, 20, 30].statistics.mean, equals(20));
+      expect(<int>[10, 20, 30].statisticsWithData.data, equals([10, 20, 30]));
+    });
+
     test('operator +', () {
       expect(<int>[] + <int>[], isEmpty);
       expect(<int>[10] + <int>[20], equals([10, 20]));
@@ -211,6 +221,30 @@ void main() {
   group('double', () {
     setUp(() {});
 
+    test('ifNaN', () {
+      expect(10.0.ifNaN(11), equals(10));
+      expect(double.nan.ifNaN(11), equals(11));
+    });
+
+    test('ifInfinite', () {
+      expect(10.0.ifInfinite(11), equals(10));
+      expect(double.infinity.ifInfinite(11), equals(11));
+      expect(double.negativeInfinity.ifInfinite(11), equals(11));
+    });
+
+    test('ifNotFinite', () {
+      expect(10.0.ifNotFinite(11), equals(10));
+      expect(double.nan.ifNotFinite(11), equals(11));
+      expect(double.infinity.ifNotFinite(11), equals(11));
+      expect(double.negativeInfinity.ifNotFinite(11), equals(11));
+    });
+
+    test('naturalExponent', () {
+      expect(10.0.naturalExponent, equals(22026.465794806718));
+      expect(10.naturalExponent, equals(22026.465794806718));
+      expect(_asNum(10).naturalExponent, equals(22026.465794806718));
+    });
+
     test('toIntsList', () {
       expect(<double>[].toIntsList(), isEmpty);
       expect(<double>[].toIntsList(), isEmpty);
@@ -230,6 +264,11 @@ void main() {
       expect(<double>[].toStringsList(), isEmpty);
       expect(<double>[10.0].toStringsList(), equals(['10.0']));
       expect(<double>[10.0, 20.0].toStringsList(), equals(['10.0', '20.0']));
+    });
+
+    test('mapToSet', () {
+      expect(<double>[].mapToSet((n) => n), equals(<num>{}));
+      expect(<double>[10, 20].mapToSet((n) => n), equals({10, 20}));
     });
 
     test('mean', () {
@@ -343,6 +382,12 @@ void main() {
           equals([6.666666666666667, 16.666666666666668, 40.0, 50.0]));
     });
 
+    test('statistics', () {
+      expect(<double>[10, 20, 30].statistics.mean, equals(20));
+      expect(
+          <double>[10, 20, 30].statisticsWithData.data, equals([10, 20, 30]));
+    });
+
     test('operator +', () {
       expect(<double>[] + <double>[], isEmpty);
       expect([10.0] + <double>[20], equals([10, 20]));
@@ -451,6 +496,11 @@ void main() {
       expect(<num>[].toStringsList(), isEmpty);
       expect(<num>[10].toStringsList(), equals(['10']));
       expect(<num>[10, 20.20].toStringsList(), equals(['10', '20.2']));
+    });
+
+    test('mapToSet', () {
+      expect(<num>[].mapToSet((n) => n), equals(<num>{}));
+      expect(<num>[10, 20].mapToSet((n) => n), equals({10, 20}));
     });
 
     test('mean', () {
@@ -564,6 +614,11 @@ void main() {
           equals([6.666666666666667, 16.666666666666668, 40.0, 50.0]));
     });
 
+    test('statistics', () {
+      expect(<num>[10, 20, 30].statistics.mean, equals(20));
+      expect(<num>[10, 20, 30].statisticsWithData.data, equals([10, 20, 30]));
+    });
+
     test('operator +', () {
       expect(<num>[] + <double>[], isEmpty);
       expect(<num>[10.0] + <double>[20], equals([10, 20]));
@@ -658,6 +713,20 @@ void main() {
 
         expect(l.asInts(), equals(l.toIntsList()));
         expect(l.asDoubles(), equals(l.toDoublesList()));
+      };
+
+      f(<int>[10, 20]);
+      f(<double>[10.0, 20.20]);
+      f(<num>[10, 20.20]);
+    });
+
+    test('castElement', () {
+      var f = <N extends num>(List<N> l) {
+        expect(l.castElement(0) is N, isTrue);
+
+        if (N != num) {
+          expect(l.castElement(0).runtimeType, equals(N));
+        }
       };
 
       f(<int>[10, 20]);
