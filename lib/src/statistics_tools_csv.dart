@@ -1,6 +1,6 @@
 import 'statistics_extension.dart';
 import 'statistics_extension_num.dart';
-import 'statistics_tools.dart';
+import 'statistics_base.dart';
 
 extension DataEntryExtension<E extends DataEntry> on List<E> {
   /// Generates a `CSV` document.

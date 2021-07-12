@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 
-import 'statistics_tools.dart';
+import 'statistics_base.dart';
 
 /// extension for `Iterable<N>` (`N` extends `num`).
 extension IterableNExtension<N extends num> on Iterable<N> {
@@ -33,7 +33,8 @@ extension IterableNumExtension on Iterable<num> {
   /// Maps this numeric collection to a `List<String>`.
   List<String> toStringsList() => mapToList((e) => e.toString());
 
-  DataStatistics<num> get statistics => DataStatistics.compute(this);
+  /// Returns a [Statistics] of this numeric collection.
+  Statistics<num> get statistics => Statistics.compute(this);
 
   /// Returns the sum of this numeric collection.
   num get sum {
@@ -309,7 +310,8 @@ extension IterableDoubleExtension on Iterable<double> {
   /// Maps this numeric collection to a `List<String>`.
   List<String> toStringsList() => mapToList((e) => e.toString());
 
-  DataStatistics<num> get statistics => DataStatistics.compute(this);
+  /// Returns a [Statistics] of this numeric collection.
+  Statistics<num> get statistics => Statistics.compute(this);
 
   /// Returns the sum of this numeric collection.
   double get sum {
@@ -586,7 +588,8 @@ extension IterableIntExtension on Iterable<int> {
   /// Maps this numeric collection to a `List<String>`.
   List<String> toStringsList() => mapToList((e) => e.toString());
 
-  DataStatistics<num> get statistics => DataStatistics.compute(this);
+  /// Returns a [Statistics] of this numeric collection.
+  Statistics<num> get statistics => Statistics.compute(this);
 
   /// Returns the sum of this numeric collection.
   int get sum {
@@ -881,6 +884,17 @@ extension DoubleExtension on double {
 
   /// Returns the natural exponent, [e], to the power of `this` number.
   double get naturalExponent => exp(this);
+
+  /// If `this` number [isNaN] returns [n]. If NOT, returns `this`.
+  double ifNaN(double n) => isNaN ? n : this;
+
+  /// If `this` number [isInfinite] returns [n]. If NOT, returns `this`.
+  double ifInfinite(double n) => isInfinite ? n : this;
+
+  /// If `this` number is NOT finite (![isFinite]) returns [n]. If NOT, returns `this`.
+  ///
+  /// - NOTE: A number is NOT finite if [isNaN] or [isInfinite].
+  double ifNotFinite(double n) => !isFinite ? n : this;
 
   /// Returns the sign of `this` number, regarding the [zeroTolerance].
   ///
