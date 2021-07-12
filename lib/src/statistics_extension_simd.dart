@@ -106,9 +106,18 @@ extension Int32x4Extension on Int32x4 {
   }
 
   /// Returns true if equals to [other] values.
-  bool equalsValues(Int32x4 other) {
+  bool equalsValues(Int32x4 other, {num tolerance = 0.0}) {
     var diff = this - other;
-    return diff.x == 0 && diff.y == 0 && diff.z == 0 && diff.w == 0;
+
+    if (tolerance == 0) {
+      return diff.x == 0 && diff.y == 0 && diff.z == 0 && diff.w == 0;
+    } else {
+      tolerance = tolerance.abs();
+      return diff.x.abs() <= tolerance &&
+          diff.y.abs() <= tolerance &&
+          diff.z.abs() <= tolerance &&
+          diff.w.abs() <= tolerance;
+    }
   }
 }
 
@@ -149,6 +158,13 @@ extension Float32x4Extension on Float32x4 {
 
   /// Returns values as `List<double>`.
   List<double> toDoubles() => <double>[x, y, z, w];
+
+  Int32x4 operator ~/(Float32x4 other) => Int32x4(
+        x ~/ other.x,
+        y ~/ other.y,
+        z ~/ other.z,
+        w ~/ other.w,
+      );
 
   /// Returns the minimum lane value.
   double get minInLane {
@@ -207,8 +223,17 @@ extension Float32x4Extension on Float32x4 {
   }
 
   /// Returns true if equals to [other] values.
-  bool equalsValues(Float32x4 other) {
+  bool equalsValues(Float32x4 other, {num tolerance = 0.0}) {
     var diff = this - other;
-    return diff.x == 0.0 && diff.y == 0.0 && diff.z == 0.0 && diff.w == 0.0;
+
+    if (tolerance == 0) {
+      return diff.x == 0.0 && diff.y == 0.0 && diff.z == 0.0 && diff.w == 0.0;
+    } else {
+      tolerance = tolerance.abs();
+      return diff.x.abs() <= tolerance &&
+          diff.y.abs() <= tolerance &&
+          diff.z.abs() <= tolerance &&
+          diff.w.abs() <= tolerance;
+    }
   }
 }
