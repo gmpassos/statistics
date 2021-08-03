@@ -52,7 +52,7 @@ String? formatDecimal(Object? value,
 
   if (p.isInfinite) return p.isNegative ? '-∞' : '∞';
 
-  if (precision <= 0) return p.toInt().toString();
+  if (precision == 0) return p.toInt().toString();
 
   var pStr = p.toString();
 
@@ -75,7 +75,7 @@ String? formatDecimal(Object? value,
     return integer.toString();
   }
 
-  if (decimal.length > precision) {
+  if (precision > 0 && decimal.length > precision) {
     var eIdx = decimal.indexOf('e');
     var eStr = eIdx >= 0 ? decimal.substring(eIdx) : '';
     if (eStr.length > 1) {

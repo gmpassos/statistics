@@ -1,3 +1,9 @@
+## 1.0.2
+
+- Improve extensions.
+- generateCSV:
+  - Added `commaAsDecimalSeparator` and `decimalPrecision`.
+
 ## 1.0.1
 
 - Added:
