@@ -76,6 +76,188 @@ void main() {
       expect(l.computeHashcode() > 0, isTrue);
       expect(l.computeHashcode(), equals([100].computeHashcode()));
       expect(l.computeHashcode() == [101].computeHashcode(), isFalse);
+
+      var l2 = [10, 11, 12, 20, 21, 22, 30, 31, 32];
+
+      expect(l2.sublistReversed(3), equals([10, 11, 12, 20, 21, 22]));
+      expect(l2.sublistReversed(3, 5), equals([21, 22]));
+
+      expect(l2.head(3), equals([10, 11, 12]));
+      expect(l2.tail(3), equals([30, 31, 32]));
+
+      {
+        var resample1 = l2.resampleByIndex<double>((l, previous, cursor) {
+          return RangeSelectionByIndex(cursor, cursor + 3);
+        }, (sel) => [sel.mean], skipResampledIndexes: true);
+
+        expect(resample1, equals([11.0, 21.0, 31.0]));
+
+        var resample2 = l2.resampleByIndex<double>((l, previous, cursor) {
+          if (previous.isInRange(cursor)) {
+            return RangeSelectionByIndex.empty();
+          } else {
+            return RangeSelectionByIndex(cursor, cursor + 3);
+          }
+        }, (sel) => [sel.mean], skipResampledIndexes: false);
+
+        expect(resample2, equals([11.0, 21.0, 31.0]));
+
+        var resample3 = l2.resampleByIndex<double>((l, previous, cursor) {
+          return RangeSelectionByIndex(cursor, cursor + 3);
+        }, (sel) => [sel.mean], skipResampledIndexes: false);
+
+        expect(
+            resample3,
+            equals([
+              11.0,
+              14.333333333333334,
+              17.666666666666668,
+              21.0,
+              24.333333333333332,
+              27.666666666666668,
+              31.0,
+              31.5,
+              32.0,
+            ]));
+      }
+
+      {
+        var resample1 = l2.resampleByValue<double>((list, previous, cursor) {
+          var val = list[cursor];
+          var start = (val ~/ 10) * 10;
+          var end = start + 9;
+          return RangeSelectionByValue(start, false, end, false);
+        }, (sel) => [sel.mean], skipResampledIndexes: true);
+
+        expect(resample1, equals([11.0, 21.0, 31.0]));
+
+        var resample2 = l2.resampleByValue<double>((list, previous, cursor) {
+          if (previous.isInRangeOfLastSelection(cursor)) {
+            return RangeSelectionByValue.empty();
+          } else {
+            var val = list[cursor];
+            var start = (val ~/ 10) * 10;
+            var end = start + 9;
+            return RangeSelectionByValue(start, false, end, false);
+          }
+        }, (sel) => [sel.mean], skipResampledIndexes: false);
+
+        expect(resample2, equals([11.0, 21.0, 31.0]));
+
+        var resample3 = l2.resampleByValue<double>((list, previous, cursor) {
+          var val = list[cursor];
+          var start = (val ~/ 10) * 10;
+          var end = start + 9;
+          return RangeSelectionByValue(start, false, end, false);
+        }, (sel) => [sel.mean], skipResampledIndexes: false);
+
+        expect(resample3,
+            equals([11.0, 11.0, 11.0, 21.0, 21.0, 21.0, 31.0, 31.0, 31.0]));
+
+        var resample4 = l2.resampleByValue<double>((list, previous, cursor) {
+          if (previous.isInRangeOfLastSelection(cursor)) {
+            return RangeSelectionByValue.empty();
+          } else {
+            var val = list[cursor];
+            var start = (val ~/ 10) * 10;
+            var end = start + 10;
+            return RangeSelectionByValue(start, false, end, true);
+          }
+        }, (sel) => [sel.mean]);
+
+        expect(resample4, equals([11.0, 21.0, 31.0]));
+
+        var resample5 = l2.resampleByValue<double>((list, previous, cursor) {
+          if (previous.isInRangeOfLastSelection(cursor)) {
+            return RangeSelectionByValue.empty();
+          } else {
+            var val = list[cursor];
+            var start = (val ~/ 2) * 2;
+            var end = start + 1;
+            return RangeSelectionByValue(start, false, end, false);
+          }
+        }, (sel) => [sel.mean]);
+
+        expect(resample5, equals([10.5, 12.0, 20.5, 22.0, 30.5, 32.0]));
+      }
+    });
+
+    test('RangeSelectionByIndex', () {
+      var l = [10, 11, 12, 20, 21, 22, 30, 31, 32];
+      var selector = RangeSelectionByIndex(1, 3);
+      expect(selector.select(l), equals([11, 12]));
+
+      expect(selector.isInRange(0), isFalse);
+      expect(selector.isInRange(1), isTrue);
+      expect(selector.isInRange(2), isTrue);
+      expect(selector.isInRange(0), isFalse);
+    });
+
+    test('RangeSelectionByValue<int>', () {
+      var l = [0, 2, 3, 10, 10, 12, 13, 20, 22, 23, 30, 30, 32, 34];
+
+      var selector = RangeSelectionByValue<int>(10, false, 1000, false);
+      expect(selector.select(l).head(3), equals([10, 10, 12]));
+
+      expect(selector.isInRangeOfLastSelection(2), isFalse);
+      expect(selector.isInRangeOfLastSelection(3), isTrue);
+      expect(selector.isInRangeOfLastSelection(4), isTrue);
+      expect(selector.isInRangeOfLastSelection(5), isTrue);
+      expect(selector.isInRangeOfLastSelection(13), isTrue);
+      expect(selector.isInRangeOfLastSelection(14), isFalse);
+
+      expect(
+          RangeSelectionByValue<int>(9, false, 1000, false).select(l).head(3),
+          equals([10, 10, 12]));
+
+      expect(
+          RangeSelectionByValue<int>(11, false, 1000, false).select(l).head(3),
+          equals([12, 13, 20]));
+
+      expect(
+          RangeSelectionByValue<int>(10, true, 1000, false).select(l).head(3),
+          equals([12, 13, 20]));
+
+      expect(RangeSelectionByValue<int>(9, true, 1000, false).select(l).head(3),
+          equals([10, 10, 12]));
+
+      expect(
+          RangeSelectionByValue<int>(11, true, 1000, false).select(l).head(3),
+          equals([12, 13, 20]));
+
+      //
+
+      var selector2 = RangeSelectionByValue<int>(0, false, 30, false);
+      expect(selector2.select(l).tail(3), equals([23, 30, 30]));
+
+      expect(selector2.isValueInRange(-1), isFalse);
+      expect(selector2.isValueInRange(0), isTrue);
+      expect(selector2.isValueInRange(9), isTrue);
+      expect(selector2.isValueInRange(29), isTrue);
+      expect(selector2.isValueInRange(30), isTrue);
+      expect(selector2.isValueInRange(31), isFalse);
+
+      expect(selector2.isInRangeOfLastSelection(-1), isFalse);
+      expect(selector2.isInRangeOfLastSelection(0), isTrue);
+      expect(selector2.isInRangeOfLastSelection(9), isTrue);
+      expect(selector2.isInRangeOfLastSelection(10), isTrue);
+      expect(selector2.isInRangeOfLastSelection(11), isTrue);
+      expect(selector2.isInRangeOfLastSelection(12), isFalse);
+
+      expect(RangeSelectionByValue<int>(0, false, 31, false).select(l).tail(3),
+          equals([23, 30, 30]));
+
+      expect(RangeSelectionByValue<int>(0, false, 29, false).select(l).tail(3),
+          equals([20, 22, 23]));
+
+      expect(RangeSelectionByValue<int>(0, false, 30, true).select(l).tail(3),
+          equals([20, 22, 23]));
+
+      expect(RangeSelectionByValue<int>(0, false, 29, true).select(l).tail(3),
+          equals([20, 22, 23]));
+
+      expect(RangeSelectionByValue<int>(0, false, 31, true).select(l).tail(3),
+          equals([23, 30, 30]));
     });
 
     test('ListExtension<int>.ensureMaximumSize', () {
@@ -113,6 +295,18 @@ void main() {
             'odd': [1, 3],
             'even': [2]
           }));
+
+      var comparator = itr.comparator();
+      expect(comparator(10, 20), equals(-1));
+      expect(comparator(20, 10), equals(1));
+      expect(comparator(100, 100), equals(0));
+
+      var itr2 = {'a': 1, 'b': 2, 'c': 3}.entries;
+
+      var comparator2 =
+          itr2.comparator(compare: (a, b) => a.value.compareTo(b.value));
+      expect(comparator2(itr2.elementAt(0), itr2.elementAt(1)), equals(-1));
+      expect(comparator2(itr2.elementAt(1), itr2.elementAt(0)), equals(1));
     });
 
     test('MapExtension<String,int>', () {

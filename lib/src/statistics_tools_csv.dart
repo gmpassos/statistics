@@ -146,9 +146,9 @@ String normalizeCSVValue<V>(V value,
   return s;
 }
 
-final _REGEXP_NEW_LINE = RegExp(r'[\r\n]');
+final _regexpNewLine = RegExp(r'[\r\n]');
 
-String _normalizeLine(String e) => e.replaceAll(_REGEXP_NEW_LINE, ' ');
+String _normalizeLine(String e) => e.replaceAll(_regexpNewLine, ' ');
 
 extension SeriesMapExtension<E> on Map<String, List<E>?> {
   static Type _toType<T>() => T;

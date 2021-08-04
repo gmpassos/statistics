@@ -110,6 +110,286 @@ extension ListExtension<T> on List<T> {
   /// If needed creates a new instance, calling [parseInt] for each element.
   List<int> asInts() =>
       this is List<int> ? this as List<int> : map((v) => parseInt(v)!).toList();
+
+  /// Head of this [List] with [size].
+  List<T> head(int size) => sublist(0, size);
+
+  /// Tail of this [List] with [size].
+  List<T> tail(int size) => sublist(length - size);
+
+  /// Sames as [sublist], but with reversed parameters indexes [endReversed] and [startReversed].
+  List<T> sublistReversed(int endReversed, [int? startReversed]) {
+    var length = this.length;
+
+    var start = startReversed == null ? 0 : length - startReversed;
+    var end = length - endReversed;
+
+    return sublist(start, end);
+  }
+
+  /// Returns the index to insert [key] and keep the [List] sorted.
+  int searchInsertSortedIndex<E, K>(final T key,
+      {int start = 0, int? end, Comparator<T>? compare}) {
+    var idx = binarySearchPoint(key, start: start, end: end, compare: compare);
+    return idx >= 0 ? idx : (-idx) - 1;
+  }
+
+  /// A binary search that returns:
+  /// - Found [key]: returns the value index.
+  /// - Not found [key]: returns `-n-1` if it was not found,
+  ///   where `n` is the index of the first value higher than [key].
+  int binarySearchPoint(T key,
+      {int start = 0, int? end, Comparator<T>? compare}) {
+    var low = start;
+    var high = (end ?? length) - 1;
+
+    compare = comparator(compare: compare, sample: key);
+
+    while (low <= high) {
+      var mid = (low + high) >> 1;
+      var midVal = this[mid];
+
+      var cmp = compare(midVal, key);
+
+      if (cmp < 0) {
+        low = mid + 1;
+      } else if (cmp > 0) {
+        high = mid - 1;
+      } else {
+        return mid; // key found
+      }
+    }
+
+    return -(low + 1); // key not found.
+  }
+
+  /// Resample elements by index range ([RangeSelectionByIndex]).
+  /// - [selector]: the index range selector of each element resample.
+  /// - [merger]: the values merger.
+  /// - [skipResampledIndexes]: if `true` skips indexes already selected by [selector].
+  List<R> resampleByIndex<R>(
+      RangeSelectorFunction<T, RangeSelectionByIndex<T>> selector,
+      List<R> Function(List<T> sel) merger,
+      {bool skipResampledIndexes = true}) {
+    var length = this.length;
+
+    var list = <R>[];
+
+    var previous = RangeSelectionByIndex<T>.empty();
+
+    for (var i = 0; i < length; ++i) {
+      if (skipResampledIndexes && previous.isInRange(i)) {
+        continue;
+      }
+
+      var selection = selector(this, previous, i);
+
+      if (selection.isValid) {
+        var sel = selection.select(this);
+        var l = merger(sel);
+        list.addAll(l);
+
+        previous = selection;
+      }
+    }
+
+    return list;
+  }
+
+  /// Resample elements by value range ([RangeSelectionByValue]).
+  /// - [selector]: the value range selector of each element resample.
+  /// - [merger]: the values merger.
+  /// - [skipResampledIndexes]: if `true` skips indexes already selected by [selector].
+  /// - [compare]: the comparator for [T].
+  List<R> resampleByValue<R>(
+      RangeSelectorFunction<T, RangeSelectionByValue<T>> selector,
+      List<R> Function(List<T> sel) merger,
+      {bool skipResampledIndexes = true,
+      Comparator<T>? compare}) {
+    var length = this.length;
+
+    var list = <R>[];
+
+    compare ??= comparator(compare: compare);
+
+    var previous = RangeSelectionByValue<T>.empty();
+
+    for (var i = 0; i < length; ++i) {
+      if (skipResampledIndexes && previous.isInRangeOfLastSelection(i)) {
+        continue;
+      }
+
+      var selection = selector(this, previous, i);
+
+      if (selection.isValid) {
+        var sel = selection.select(this, compare: compare);
+        var l = merger(sel);
+        list.addAll(l);
+
+        previous = selection;
+      }
+    }
+
+    return list;
+  }
+}
+
+typedef RangeSelectorFunction<T, S extends RangeSelection<T>> = S Function(
+    List<T> list, S previous, int cursor);
+
+abstract class RangeSelection<T> {
+  bool get isValid;
+
+  List<T> select(List<T> l);
+}
+
+class RangeSelectionByIndex<T> implements RangeSelection<T> {
+  final int start;
+
+  final int end;
+
+  RangeSelectionByIndex(this.start, this.end);
+
+  RangeSelectionByIndex.empty() : this(-1, -1);
+
+  @override
+  bool get isValid => start >= 0 && start < end;
+
+  bool isInRange(int index) {
+    return isValid && index >= start && index < end;
+  }
+
+  @override
+  List<T> select(List<T> l) {
+    var start = this.start;
+    var end = this.end;
+
+    if (start < 0) start = 0;
+    if (end > l.length) end = l.length;
+
+    return l.sublist(start, end);
+  }
+}
+
+class RangeSelectionByValue<T> implements RangeSelection<T> {
+  final T? start;
+  final bool startExclusive;
+
+  final T? end;
+  final bool endExclusive;
+
+  RangeSelectionByValue(
+      this.start, this.startExclusive, this.end, this.endExclusive);
+
+  RangeSelectionByValue.empty() : this(null, false, null, false);
+
+  @override
+  bool get isValid => start != null && end != null;
+
+  bool isGreaterThanStart(T value, {Comparator<T>? compare}) {
+    compare ??= (dynamic a, T b) => a!.compareTo(b!) as int;
+
+    var cmp = compare(start!, value);
+    return startExclusive ? cmp < 0 : cmp <= 0;
+  }
+
+  bool isLesserThanEnd(T value, {Comparator<T>? compare}) {
+    compare ??= (dynamic a, T b) => a!.compareTo(b!) as int;
+
+    var cmp = compare(end!, value);
+    return endExclusive ? cmp > 0 : cmp >= 0;
+  }
+
+  bool isValueInRange(T value, {Comparator<T>? compare}) =>
+      isValid &&
+      isGreaterThanStart(value, compare: compare) &&
+      isLesserThanEnd(value, compare: compare);
+
+  @override
+  List<T> select(List<T> l, {Comparator<T>? compare}) {
+    var start = this.start!;
+    var end = this.end!;
+
+    compare ??= l.comparator(compare: compare, sample: start);
+
+    var startIdx = l.searchInsertSortedIndex(start, compare: compare);
+    var endIdx = l.searchInsertSortedIndex(end, compare: compare);
+
+    var length = l.length;
+
+    while (startIdx > 0) {
+      var val = l[startIdx];
+      var prev = l[startIdx - 1];
+      if (compare(val, prev) == 0) {
+        startIdx--;
+      } else {
+        break;
+      }
+    }
+
+    if (endIdx > 0 && endIdx < length) {
+      var val = l[endIdx];
+      if (compare(val, end) > 0) {
+        endIdx--;
+      }
+    }
+
+    while (endIdx < length - 1) {
+      var val = l[endIdx];
+      var next = l[endIdx + 1];
+      if (compare(val, next) == 0) {
+        endIdx++;
+      } else {
+        break;
+      }
+    }
+
+    if (startExclusive) {
+      while (startIdx < length) {
+        var val = l[startIdx];
+        if (compare(val, start) == 0) {
+          startIdx++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (startIdx >= length) return <T>[];
+
+    if (endIdx < startIdx) {
+      endIdx = startIdx;
+    }
+
+    if (endExclusive) {
+      while (endIdx > 0 && endIdx < length) {
+        var val = l[endIdx];
+        if (compare(val, end) == 0) {
+          endIdx--;
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (endIdx < length) {
+      endIdx++;
+    }
+
+    lastSelectStart = startIdx;
+    lastSelectEnd = endIdx;
+
+    return l.sublist(startIdx, endIdx);
+  }
+
+  int? lastSelectStart;
+
+  int? lastSelectEnd;
+
+  bool get hasLastSelection => lastSelectStart != null && lastSelectEnd != null;
+
+  bool isInRangeOfLastSelection(int index) =>
+      hasLastSelection && index >= lastSelectStart! && index < lastSelectEnd!;
 }
 
 /// extension for `Set<T>`.
@@ -131,6 +411,16 @@ extension SetExtension<T> on Set<T> {
 extension IterableExtension<T> on Iterable<T> {
   /// The last index of this [List].
   int get lastIndex => length - 1;
+
+  /// Tries to returns a [Comparator<T>] for this instance.
+  /// Validates [compare] if provided.
+  Comparator<T> comparator({Comparator<T>? compare, T? sample}) {
+    if (compare == null) {
+      return (dynamic a, T b) => a.compareTo(b) as int;
+    } else {
+      return compare;
+    }
+  }
 
   /// Groups elements by [grouper].
   Map<G, List<T>> groupBy<G>(G Function(T e) grouper) {
@@ -539,7 +829,7 @@ extension IterableIterableExtension<T> on Iterable<Iterable<T>> {
 
 typedef _StringFilter = String Function(String line);
 
-RegExp _REGEXP_LINE_BREAK = RegExp(r'[\r\n]');
+RegExp _regexpLineBreak = RegExp(r'[\r\n]');
 
 /// Extension for [String].
 extension StringExtension on String {
@@ -548,7 +838,7 @@ extension StringExtension on String {
       bool trimLines = true,
       bool removeEmptyLines = true,
       _StringFilter? filter}) {
-    var lines = split(lineDelimiter ?? _REGEXP_LINE_BREAK);
+    var lines = split(lineDelimiter ?? _regexpLineBreak);
 
     return lines.filterLines(
         trimLines: trimLines,
@@ -608,7 +898,7 @@ extension IterableStringExtension on Iterable<String> {
       bool trimLines = true,
       bool removeEmptyLines = true,
       _StringFilter? filter}) {
-    var resolvedLineDelimiter = lineDelimiter ?? _REGEXP_LINE_BREAK;
+    var resolvedLineDelimiter = lineDelimiter ?? _regexpLineBreak;
     var lines = expand((e) => e.split(resolvedLineDelimiter));
 
     return lines.filterLines(

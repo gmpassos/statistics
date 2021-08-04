@@ -705,7 +705,7 @@ void main() {
     setUp(() {});
 
     test('toIntsList', () {
-      var f = <N extends num>(List<N> l) {
+      f<N extends num>(List<N> l) {
         expect(l, isNotEmpty);
         expect(l.toIntsList(), isNotEmpty);
         expect(l.toDoublesList(), isNotEmpty);
@@ -713,7 +713,7 @@ void main() {
 
         expect(l.asInts(), equals(l.toIntsList()));
         expect(l.asDoubles(), equals(l.toDoublesList()));
-      };
+      }
 
       f(<int>[10, 20]);
       f(<double>[10.0, 20.20]);
@@ -721,13 +721,13 @@ void main() {
     });
 
     test('castElement', () {
-      var f = <N extends num>(List<N> l) {
+      f<N extends num>(List<N> l) {
         expect(l.castElement(0) is N, isTrue);
 
         if (N != num) {
           expect(l.castElement(0).runtimeType, equals(N));
         }
-      };
+      }
 
       f(<int>[10, 20]);
       f(<double>[10.0, 20.20]);

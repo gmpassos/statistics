@@ -1,3 +1,12 @@
+## 1.0.3
+
+- New extension methods:
+  - `head`, `tail` and `sublistReversed`.
+  - `searchInsertSortedIndex` and `binarySearchPoint`.
+  - `resampleByIndex` and `resampleByValue`.
+- Changed from package `pedantic` (deprecated) to `lints`.
+- lints: ^1.0.1
+
 ## 1.0.2
 
 - Improve extensions.
