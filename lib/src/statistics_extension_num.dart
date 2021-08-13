@@ -923,6 +923,36 @@ extension DoubleExtension on double {
       return this > -zeroTolerance ? 0 : -1;
     }
   }
+
+  /// Truncate the decimal part of this double number. This function is very useful
+  /// for compere two double numbers.
+  /// - [fractionDigits] : number of decimal digits
+  ///
+  /// Example:
+  /// ```dart
+  ///   var d = 1.4747474747474747 ;
+  ///   print( d.truncate(3) );
+  /// ```
+  ///
+  /// Output:
+  /// ```text
+  /// 1.475;
+  /// ```
+  ///
+  /// Reference:
+  /// - SciDart: https://pub.dev/packages/scidart
+  /// - https://pub.dev/documentation/scidart/latest/numdart/truncate.html (Apache-2.0 License)
+  ///
+  /// ```
+  double truncateDecimals(int fractionDigits) {
+    if (isNaN || isInfinite) return this;
+    if (fractionDigits <= 0) {
+      return truncateToDouble();
+    }
+
+    var mod = pow(10.0, fractionDigits).toDouble();
+    return ((this * mod).round().toDouble() / mod);
+  }
 }
 
 /// extension for `int`.

@@ -35,6 +35,59 @@ void main() {
       expect(parseNum('10.20'), equals(10.2));
     });
 
+    test('parseDateTime', () {
+      expect(parseDateTime(null), isNull);
+      expect(parseDateTime(DateTime(2021, 8, 2)), equals(DateTime(2021, 8, 2)));
+      expect(parseDateTime(DateTime(2021, 8, 2).formatToYMD()),
+          equals(DateTime(2021, 8, 2)));
+
+      expect(parseDateTime(DateTime(2021, 8, 2).formatTo('yyyy/MM/dd')),
+          equals(DateTime(2021, 8, 2)));
+
+      expect(
+          parseDateTime(
+              DateTime(2021, 8, 2, 10, 11, 12).formatTo('yyyy/MM/dd')),
+          equals(DateTime(2021, 8, 2)));
+
+      expect(
+          parseDateTime(
+              DateTime(2021, 8, 2, 10, 11, 12).formatTo('yyyy/MM/dd HH.mm.ss')),
+          equals(DateTime(2021, 8, 2, 10, 11, 12)));
+
+      expect(parseDateTime('2021/08/30'), equals(DateTime(2021, 8, 30)));
+
+      expect(parseDateTime('2021/8/30'), equals(DateTime(2021, 8, 30)));
+
+      expect(parseDateTime('2021/8/3'), equals(DateTime(2021, 8, 3)));
+
+      expect(parseDateTime('30/8/2021'), equals(DateTime(2021, 8, 30)));
+
+      expect(parseDateTime('8/30/2021'), equals(DateTime(2021, 8, 30)));
+
+      expect(parseDateTime('2021/08/30 12:11:10'),
+          equals(DateTime(2021, 8, 30, 12, 11, 10)));
+
+      expect(parseDateTime('2021/08/30 12.11.10'),
+          equals(DateTime(2021, 8, 30, 12, 11, 10)));
+
+      expect(parseDateTime('30/08/2021 12.11.10'),
+          equals(DateTime(2021, 8, 30, 12, 11, 10)));
+
+      expect(parseDateTime('30/08/2021 12.11'),
+          equals(DateTime(2021, 8, 30, 12, 11)));
+
+      expect(parseDateTime('2021/8/30 12.11.10 -0300'),
+          equals(DateTime.utc(2021, 8, 30, 15, 11, 10)));
+
+      expect(parseDateTime('90/8/30 12.11.10 -0300'),
+          equals(DateTime.utc(1990, 8, 30, 15, 11, 10)));
+
+      expect(parseDateTime('50/8/30 12.11.10 -0300'),
+          equals(DateTime.utc(2050, 8, 30, 15, 11, 10)));
+
+      expect(parseDateTime('50/8/30 12.11.10 -0300X'), isNull);
+    });
+
     test('formatDecimal', () {
       expect(formatDecimal(10.0), equals('10'));
       expect(formatDecimal(10.10), equals('10.1'));

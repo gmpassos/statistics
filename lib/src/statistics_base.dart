@@ -39,6 +39,86 @@ num? parseNum(dynamic o, [num? def]) {
   return d ?? def;
 }
 
+final RegExp _regexpDateTimeFormat = RegExp(
+    r'(\d{1,4})[/.-](\d\d?)[/.-](\d{1,4})(?:\s+(\d\d?)[:.](\d\d?)(?:[:.](\d\d?))?(?:\s+(\S+))?)?');
+
+/// Parses [o] as [DateTime], trying many formats. If can't parse returns [def].
+DateTime? parseDateTime(dynamic o, [DateTime? def, String? locale]) {
+  if (o == null) return def;
+  if (o is DateTime) return o;
+
+  var s = o.toString().trim();
+  if (s.isEmpty) return def;
+
+  var d = DateTime.tryParse(s);
+  if (d != null) return d;
+
+  var m = _regexpDateTimeFormat.firstMatch(s);
+
+  if (m == null) {
+    return def;
+  }
+
+  var yd1 = int.parse(m.group(1)!);
+  var md = int.parse(m.group(2)!);
+  var yd2 = int.parse(m.group(3)!);
+  var hourStr = m.group(4);
+  var minStr = m.group(5);
+  var secStr = m.group(6);
+  var zoneStr = m.group(7);
+
+  int year;
+  int day;
+  int month;
+  if (yd1 > 31 && yd2 <= 31) {
+    year = yd1;
+    day = yd2;
+  } else if (yd2 > 31 && yd1 <= 31) {
+    year = yd2;
+    day = yd1;
+  } else {
+    return null;
+  }
+
+  if (year < 100) {
+    if (year >= 70) {
+      year = 1900 + year;
+    } else {
+      year = 2000 + year;
+    }
+  }
+
+  if (md > 12) {
+    month = day;
+    day = md;
+  } else {
+    month = md;
+  }
+
+  if (hourStr != null) {
+    var hour = int.parse(hourStr);
+    var min = int.parse(minStr!);
+    var sec = secStr != null ? int.parse(secStr) : 0;
+
+    if (zoneStr == null) {
+      return DateTime(year, month, day, hour, min, sec);
+    }
+
+    try {
+      var dateStr = '$year-'
+          '${month.toString().padLeft(2, '0')}-'
+          '${day.toString().padLeft(2, '0')} '
+          '$hour:$min:$sec $zoneStr';
+
+      return DateTime.parse(dateStr);
+    } on FormatException {
+      return null;
+    }
+  } else {
+    return DateTime(year, month, day);
+  }
+}
+
 /// Formats [value] to a decimal value.
 ///
 /// [precision] amount of decimal places.

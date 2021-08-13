@@ -11,7 +11,13 @@
 [![Code size](https://img.shields.io/github/languages/code-size/gmpassos/statistics?logo=github&logoColor=white)](https://github.com/gmpassos/statistics)
 [![License](https://img.shields.io/github/license/gmpassos/statistics?logo=open-source-initiative&logoColor=green)](https://github.com/gmpassos/statistics/blob/master/LICENSE)
 
-Statistics package for easy and efficient data manipulation with many built-in mathematical functions and units.
+Statistics package for easy and efficient data manipulation with many built-in mathematical functions and tools.
+
+## API Documentation
+
+See the [API Documentation][api_doc] for a full list of functions, classes and extension.
+
+[api_doc]: https://pub.dev/documentation/statistics/latest/
 
 ## Usage
 
@@ -45,6 +51,10 @@ squares: [100.0, 400.0, 900.0]
 ```
 
 ### Statistics
+
+The class [Statistics][statistics_class], that have many pre-computed statistics, can be generated from a numeric collection:
+
+[statistics_class]: https://pub.dev/documentation/statistics/latest/statistics/Statistics-class.html
 
 ```dart
 import 'package:statistics/statistics.dart';
@@ -80,6 +90,12 @@ Statistics: {~20 +-21.6024 [10..(20)..30] #3.0}
 
 ### CSV
 
+To generate a [CSV][csv_wikipedia] document, just use the extension [generateCSV][generate_csv] in your data collection.
+You can pass the parameter `separator` to change the value separator (default: `,`).
+
+[generate_csv]:https://pub.dev/documentation/statistics/latest/statistics/IterableMapExtensionCSV/generateCSV.html
+[csv_wikipedia]: https://en.wikipedia.org/wiki/Comma-separated_values
+
 ```dart
 import 'package:statistics/statistics.dart';
 
@@ -102,6 +118,45 @@ OUTPUT:
 2,20.0,200.0
 3,0.0,300.0
 ```
+
+## Tools
+
+
+
+Parsers:
+- [parseDouble](https://pub.dev/documentation/statistics/latest/statistics/parseDouble.html)
+- [parseInt](https://pub.dev/documentation/statistics/latest/statistics/parseInt.html)
+- [parseNum](https://pub.dev/documentation/statistics/latest/statistics/parseNum.html)
+- [parseDateTime](https://pub.dev/documentation/statistics/latest/statistics/parseDateTime.html)
+- *All parses accepts a `dynamic` value as input and have a default value parameter `def`.*
+
+Formatters:
+- [formatDecimal](https://pub.dev/documentation/statistics/latest/statistics/formatDecimal.html)
+- [DateTimeExtension.formatToYMD](https://pub.dev/documentation/statistics/latest/statistics/DateTimeExtension/formatToYMD.html)
+- [DateTimeExtension.formatToYMDHm](https://pub.dev/documentation/statistics/latest/statistics/DateTimeExtension/formatToYMDHm.html)
+- [DateTimeExtension.formatToYMDHms](https://pub.dev/documentation/statistics/latest/statistics/DateTimeExtension/formatToYMDHms.html)
+- [DateTimeExtension.formatToYMDHmZ](https://pub.dev/documentation/statistics/latest/statistics/DateTimeExtension/formatToYMDHmZ.html)
+- [DateTimeExtension.formatToYMDHmsZ](https://pub.dev/documentation/statistics/latest/statistics/DateTimeExtension/formatToYMDHmsZ.html)
+
+Extension:
+- [StringExtension.splitLines](https://pub.dev/documentation/statistics/latest/statistics/StringExtension/splitLines.html)
+- [StringExtension.splitColumns](https://pub.dev/documentation/statistics/latest/statistics/StringExtension/splitColumns.html)
+- [StringExtension.containsAny](https://pub.dev/documentation/statistics/latest/statistics/StringExtension/containsAny.html)
+- [IterableIterableExtension.toKeysMap](https://pub.dev/documentation/statistics/latest/statistics/IterableIterableExtension/toKeysMap.html)
+- [IterableStringExtension.filterLines](https://pub.dev/documentation/statistics/latest/statistics/IterableStringExtension/filterLines.html)
+- [IterableStringExtension.toIntsList](https://pub.dev/documentation/statistics/latest/statistics/IterableStringExtension/toIntsList.html)
+- [IterableStringExtension.toDoublesList](https://pub.dev/documentation/statistics/latest/statistics/IterableStringExtension/toDoublesList.html)
+- [IterableStringExtension.toNumsList](https://pub.dev/documentation/statistics/latest/statistics/IterableStringExtension/toNumsList.html)
+
+
+See the [API Documentation][api_doc] for a full list of functions, extension and classes.
+
+## Test Coverage
+
+[![Codecov](https://img.shields.io/codecov/c/github/gmpassos/statistics)](https://app.codecov.io/gh/gmpassos/statistics)
+
+This package aims to always have a high test coverage percentage, over 95%.
+With that the package can be a reliable tool to support your important projects. 
 
 ## Source
 
@@ -148,3 +203,9 @@ Graciliano M. Passos: [gmpassos@GitHub][github].
 [Apache License - Version 2.0][apache_license]
 
 [apache_license]: https://www.apache.org/licenses/LICENSE-2.0.txt
+
+## See Also
+
+Take a look at [SciDart][scidart], an experimental cross-platform scientific library for Dart by [Angelo Polotto](https://github.com/polotto).
+
+[scidart]: https://pub.dev/packages/scidart

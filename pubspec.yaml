@@ -1,6 +1,6 @@
 name: statistics
-description: Statistics package for easy and efficient data manipulation with many built-in mathematical functions and units.
-version: 1.0.3
+description: Statistics package for easy and efficient data manipulation with many built-in mathematical functions and tools.
+version: 1.0.4
 homepage: https://github.com/gmpassos/statistics
 
 environment:

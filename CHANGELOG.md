@@ -1,3 +1,23 @@
+## 1.0.4
+
+- New metric tools:
+  - `UnitLength` and `UnitLengthExtension`.
+- Added:
+  - `parseDateTime`.
+  - `DateTimeExtension`:
+    - `formatToYMD`, `formatToYMDHm`, `formatToYMDHms`, `formatToYMDHmZ` and `formatToYMDHmsZ`.
+  - `MapExtension`:
+    - `equalsKeysValues`.
+  - `ListMapExtension`:
+    - `sortByKey`.
+  - `IterableMapExtension`:
+    - `sortedByKey`.
+  - `DoubleExtension`:
+    - `truncateDecimals`.
+- Optimize:
+  - Optimize `splitColumns` with `acceptsQuotedValues`.
+- Improved API Documentation.
+
 ## 1.0.3
 
 - New extension methods:

@@ -320,6 +320,42 @@ void main() {
         'g': 7
       };
 
+      expect(
+          m.equalsKeysValues([
+            'a',
+            'b'
+          ], {
+            'a': 1,
+            'b': 2,
+            'c': 3,
+            'd': 4,
+          }),
+          isTrue);
+
+      expect(
+          m.equalsKeysValues([
+            'a',
+            'b'
+          ], {
+            'a': 1,
+            'b': 2,
+            'c': 3,
+            'd': 5,
+          }),
+          isTrue);
+
+      expect(
+          m.equalsKeysValues([
+            'a',
+            'd'
+          ], {
+            'a': 1,
+            'b': 2,
+            'c': 3,
+            'd': 5,
+          }),
+          isFalse);
+
       expect(m.removeKeysAndReturnValues(['b', 'c']), equals({'b': 2, 'c': 3}));
       expect(m, equals({'a': 1, 'd': 4, 'e': 5, 'f': 6, 'g': 7}));
 
@@ -566,6 +602,13 @@ void main() {
             {'A': 3, 'B': 30}
           ]));
 
+      expect(
+          l.toKeysMap(keys: ['A', 'B'], filter: (v) => v['A'] as int <= 2),
+          equals([
+            {'A': 1, 'B': 10},
+            {'A': 2, 'B': 20},
+          ]));
+
       l.insert(0, [1000, 2000]);
 
       expect(
@@ -589,10 +632,53 @@ void main() {
             {'x': 2, 'y': 20},
             {'x': 3, 'y': 30}
           ]));
+
+      expect(
+          l2.toKeysMap(useHeaderLine: true, keepKeys: {'x'}),
+          equals([
+            {'x': 1000},
+            {'x': 1},
+            {'x': 2},
+            {'x': 3}
+          ]));
+
+      var l3 = [
+        List.generate(20, (i) => i),
+        List.generate(20, (i) => i * 10),
+        List.generate(20, (i) => i * 20)
+      ];
+
+      var lm3 = l3.toKeysMap(
+          useHeaderLine: true, keepKeys: List.generate(15, (i) => i));
+
+      expect(
+          lm3[0],
+          equals({
+            0: 0,
+            1: 10,
+            2: 20,
+            3: 30,
+            4: 40,
+            5: 50,
+            6: 60,
+            7: 70,
+            8: 80,
+            9: 90,
+            10: 100,
+            11: 110,
+            12: 120,
+            13: 130,
+            14: 140
+          }));
     });
 
     test('StringExtension', () {
       var s = 'a,b\n1,2\n10,20\n100,"20 0",300\n';
+
+      expect(s.containsAny(['a', 'b']), isTrue);
+      expect(s.containsAny(['x', 'b']), isTrue);
+      expect(s.containsAny(['x', 'y']), isFalse);
+      expect(s.containsAny([]), isFalse);
 
       var lines = s.splitLines();
       expect(lines, equals(['a,b', '1,2', '10,20', '100,"20 0",300']));
@@ -602,6 +688,63 @@ void main() {
       expect(lines[3].splitColumns(), equals(['100', '20 0', '300']));
       expect(lines[3].splitColumns(acceptsQuotedValues: false),
           equals(['100', '"20 0"', '300']));
+    });
+
+    test('StringExtension.splitColumns()', () {
+      expect('10,20,30'.splitColumns(), equals(['10', '20', '30']));
+      expect('10,20,30,'.splitColumns(), equals(['10', '20', '30', '']));
+
+      expect('10,20,"30"'.splitColumns(), equals(['10', '20', '30']));
+      expect('10,20,"30",'.splitColumns(), equals(['10', '20', '30', '']));
+      expect('10,20,"30'.splitColumns(), equals(['10', '20', '"30']));
+      expect('10,20,"30,40'.splitColumns(), equals(['10', '20', '"30', '40']));
+      expect('10,20,"30,'.splitColumns(), equals(['10', '20', '"30', '']));
+
+      expect('10,"20 ""x"" .","30"'.splitColumns(),
+          equals(['10', '20 "x" .', '30']));
+    });
+
+    test("StringExtension.splitColumns(delimiter: ',;')", () {
+      expect('10,;20,;30'.splitColumns(delimiter: ',;'),
+          equals(['10', '20', '30']));
+      expect('10,;20,;30,;'.splitColumns(delimiter: ',;'),
+          equals(['10', '20', '30', '']));
+
+      expect('10,;20,;"30"'.splitColumns(delimiter: ',;'),
+          equals(['10', '20', '30']));
+      expect('10,;20,;"30",;'.splitColumns(delimiter: ',;'),
+          equals(['10', '20', '30', '']));
+      expect('10,;20,;"30'.splitColumns(delimiter: ',;'),
+          equals(['10', '20', '"30']));
+      expect('10,;20,;"30,;40'.splitColumns(delimiter: ',;'),
+          equals(['10', '20', '"30', '40']));
+      expect('10,;20,;"30,;'.splitColumns(delimiter: ',;'),
+          equals(['10', '20', '"30', '']));
+
+      expect('10,;"20 ""x"" .",;"30"'.splitColumns(delimiter: ',;'),
+          equals(['10', '20 "x" .', '30']));
+    });
+
+    test("StringExtension.splitColumns(delimiter: RegExp(r'[,;]'))", () {
+      var d = RegExp(r'[,;]');
+
+      expect('10,20;30'.splitColumns(delimiter: d), equals(['10', '20', '30']));
+      expect('10;20,30,'.splitColumns(delimiter: d),
+          equals(['10', '20', '30', '']));
+
+      expect(
+          '10;20,"30"'.splitColumns(delimiter: d), equals(['10', '20', '30']));
+      expect('10,20;"30";'.splitColumns(delimiter: d),
+          equals(['10', '20', '30', '']));
+      expect(
+          '10;20,"30'.splitColumns(delimiter: d), equals(['10', '20', '"30']));
+      expect('10,20,"30;40'.splitColumns(delimiter: d),
+          equals(['10', '20', '"30', '40']));
+      expect('10;20,"30,'.splitColumns(delimiter: d),
+          equals(['10', '20', '"30', '']));
+
+      expect('10,"20 ""x"" .";"30"'.splitColumns(delimiter: d),
+          equals(['10', '20 "x" .', '30']));
     });
 
     test('IterableStringExtension', () {
@@ -656,7 +799,55 @@ void main() {
       expect(statistics['b']!.mean, equals(50));
     });
 
-    test('Duration.toStringUnit', () {
+    test('ListMapExtension<String,int>', () {
+      var l = <Map<String, int>>[
+        {'i': 2, 'a': 10},
+        {'i': 1, 'a': 2},
+        {'i': 0, 'a': 3},
+      ];
+
+      expect(
+          l.sortedByKey('a'),
+          equals([
+            {'i': 1, 'a': 2},
+            {'i': 0, 'a': 3},
+            {'i': 2, 'a': 10},
+          ]));
+
+      expect(
+          l.sortedByKey('i'),
+          equals([
+            {'i': 0, 'a': 3},
+            {'i': 1, 'a': 2},
+            {'i': 2, 'a': 10},
+          ]));
+
+      l.sortByKey('a');
+
+      expect(
+          l,
+          equals([
+            {'i': 1, 'a': 2},
+            {'i': 0, 'a': 3},
+            {'i': 2, 'a': 10},
+          ]));
+
+      l.sortByKey('i');
+
+      expect(
+          l,
+          equals([
+            {'i': 0, 'a': 3},
+            {'i': 1, 'a': 2},
+            {'i': 2, 'a': 10},
+          ]));
+    });
+
+    test('Duration', () {
+      expect(Duration(days: (365 * 3.5).toInt()).inYears, equals(3));
+      expect(Duration(days: (365 * 3.5).toInt()).inYearsAsDouble,
+          closeTo(3.5, 0.01));
+
       expect(
           Duration(minutes: 10, seconds: 5).toStringUnit(), equals('10 min'));
       expect(Duration(minutes: 10, seconds: 5).toStringUnit(minutes: false),
@@ -680,6 +871,27 @@ void main() {
       expect(Duration(days: 10, hours: 5).toStringUnit(), equals('10 d'));
       expect(Duration(days: 10, hours: 5).toStringUnit(days: false),
           equals('245 h'));
+    });
+
+    test('Duration.formatTo...', () {
+      expect(DateTime(2021, 08, 02).formatToYMD(), equals('2021-08-02'));
+      expect(DateTime(2021, 08, 02).formatToYMD(dateDelimiter: '_'),
+          equals('2021_08_02'));
+
+      expect(DateTime(2021, 08, 02, 10, 11, 12).formatToYMD(),
+          equals('2021-08-02'));
+
+      expect(DateTime(2021, 08, 02, 10, 11, 12).formatToYMDHm(),
+          equals('2021-08-02 10:11'));
+      expect(DateTime(2021, 08, 02, 10, 11, 12).formatToYMDHms(),
+          equals('2021-08-02 10:11:12'));
+
+      expect(
+          DateTime(2021, 08, 02, 10, 11, 12)
+              .formatToYMDHms(dateDelimiter: '_', hourDelimiter: '.'),
+          equals('2021_08_02 10.11.12'));
+
+      expect(DateTime(2021, 8, 2).formatTo('yyyy/MM/dd'), equals('2021/08/02'));
     });
   });
 }

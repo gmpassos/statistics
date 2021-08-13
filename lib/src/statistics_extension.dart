@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
+import 'package:intl/intl.dart';
 
 import 'statistics_base.dart';
 import 'statistics_extension_num.dart';
@@ -483,6 +484,13 @@ extension MapOfNumExtension<K, N extends num> on Map<K, Iterable<N>> {
 
 /// extension for [Duration].
 extension DurationExtension on Duration {
+  /// The number of entire years (365 days) spanned by this [Duration].
+  int get inYears => inDays ~/ 365;
+
+  /// The number of entire years (365 days) spanned by this [Duration].
+  /// Returns a double, with the partial year as decimal.
+  double get inYearsAsDouble => inDays / 365;
+
   /// Format this [Duration] instance to a [String] with the best time unit for the value.
   ///
   /// - [days] if `true` allows `d` unit.
@@ -515,6 +523,38 @@ extension DurationExtension on Duration {
       return toString();
     }
   }
+}
+
+/// Extension for [DateTime].
+extension DateTimeExtension on DateTime {
+  /// Formats to [format], using [DateFormat].
+  String formatTo(String format, {String? locale}) =>
+      DateFormat(format, locale).format(this);
+
+  /// Formats to `yyyy-MM-dd`.
+  String formatToYMD({String dateDelimiter = '-', String? locale}) =>
+      DateFormat('yyyy${dateDelimiter}MM${dateDelimiter}dd', locale)
+          .format(this);
+
+  /// Formats to `yyyy-MM-dd HH:mm`.
+  String formatToYMDHm(
+          {String dateDelimiter = '-',
+          String hourDelimiter = ':',
+          String? locale}) =>
+      DateFormat(
+              'yyyy${dateDelimiter}MM${dateDelimiter}dd HH${hourDelimiter}mm',
+              locale)
+          .format(this);
+
+  /// Formats to `yyyy-MM-dd HH:mm:ss`.
+  String formatToYMDHms(
+          {String dateDelimiter = '-',
+          String hourDelimiter = ':',
+          String? locale}) =>
+      DateFormat(
+              'yyyy${dateDelimiter}MM${dateDelimiter}dd HH${hourDelimiter}mm${hourDelimiter}ss',
+              locale)
+          .format(this);
 }
 
 /// Extension for `Map<K, V>`.
@@ -669,6 +709,18 @@ extension MapExtension<K, V> on Map<K, V> {
     return null;
   }
 
+  /// Returns `true` if [other] have [keys] of equals value.
+  bool equalsKeysValues(Iterable<K> keys, Map<K, V> other) {
+    for (var k in keys) {
+      var v1 = this[k];
+      var v2 = other[k];
+      if (v1 != v2) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /// Prints this [Map] entries to [printer],
   /// using [keyDelimiter] (`"$key$keyDelimiter$value"`) to map each entry to [String].
   ///
@@ -687,6 +739,31 @@ extension MapExtension<K, V> on Map<K, V> {
   }
 }
 
+/// Extension for `List<Map<K, V>>`.
+extension ListMapExtension<K, V> on List<Map<K, V>> {
+  /// Sorts this [List]<[Map]>> by [key].
+  ///
+  /// - [compare] the optional key comparator.
+  void sortByKey(K key, {Comparator<V>? compare}) {
+    var comparator =
+        compare ?? ((dynamic a, dynamic b) => a.compareTo(b) as int);
+
+    sort((m1, m2) {
+      var v1 = m1[key];
+      var v2 = m2[key];
+      if (v1 == null && v2 == null) {
+        return 0;
+      } else if (v1 == null) {
+        return 1;
+      } else if (v2 == null) {
+        return -1;
+      } else {
+        return comparator(v1, v2);
+      }
+    });
+  }
+}
+
 /// Extension for `Iterable<Map<K, V>>`.
 extension IterableMapExtension<K, V> on Iterable<Map<K, V>> {
   /// Groups elements by [groupMapper].
@@ -700,6 +777,13 @@ extension IterableMapExtension<K, V> on Iterable<Map<K, V>> {
     }
 
     return map;
+  }
+
+  /// Returns a sorted List of this [Iterable]<[Map]>, sorting by [key].
+  List<Map<K, V>> sortedByKey(K key, {Comparator<V>? compare}) {
+    var l = List<Map<K, V>>.from(this);
+    l.sortByKey(key);
+    return l;
   }
 
   /// Groups by [key] of each element (a [Map]).
@@ -785,27 +869,23 @@ extension IterableMapExtension<K, V> on Iterable<Map<K, V>> {
 
 /// Extension for `Iterable<Iterable<T>>`.
 extension IterableIterableExtension<T> on Iterable<Iterable<T>> {
-  List<Map<K, V>> toKeysMap<K, V>(
-      {List<K>? keys,
-      bool useHeaderLine = false,
-      Pattern headerDelimiter = ',',
-      bool headerAcceptsQuotedValues = true}) {
+  /// Converts this [Iterable]<[Iterable]<[T]>> (a list of values) to a [List]<[Map]<[K], [V]>>.
+  ///
+  /// - [keys] the keys of the values, in the same order.
+  /// - [useHeaderLine] uses the [first] line as header, for the [keys] of the values.
+  /// - [keepKeys] an options list of keys to keep (will remove keys not present at [keepKeys]).
+  /// - [filter] a filter each resulting [Map] entry. Should return `true` for valid entries.
+  List<Map<K, V>> toKeysMap<K, V>({
+    List<K>? keys,
+    bool useHeaderLine = false,
+    Iterable<K>? keepKeys,
+    bool Function(Map<K, V> map)? filter,
+  }) {
     var lines = this;
 
     if (keys == null && useHeaderLine) {
       var header = first;
-      if (header is Iterable<K>) {
-        keys = header.cast<K>().toList();
-      } else {
-        keys = header
-            .toString()
-            .splitColumns(
-                delimiter: headerDelimiter,
-                acceptsQuotedValues: headerAcceptsQuotedValues)
-            .cast<K>()
-            .toList();
-      }
-
+      keys = header.cast<K>().toList();
       lines = skip(1);
     }
 
@@ -815,15 +895,39 @@ extension IterableIterableExtension<T> on Iterable<Iterable<T>> {
 
     var keysResolved = keys;
 
-    return lines.map((cols) {
-      var m = <K, V>{};
-      for (var i = 0; i < cols.length; ++i) {
-        var v = cols.elementAt(i);
-        var k = keysResolved[i];
-        m[k] = v as V;
-      }
-      return m;
-    }).toList();
+    if (keepKeys != null && keepKeys.isNotEmpty) {
+      var keepKeysResolved = keepKeys.length > 10 && keepKeys is! Set
+          ? keepKeys.toSet()
+          : keepKeys;
+
+      return lines
+          .map((cols) {
+            var m = <K, V>{};
+            for (var i = 0; i < cols.length; ++i) {
+              var v = cols.elementAt(i);
+              var k = keysResolved[i];
+              if (keepKeysResolved.contains(k)) {
+                m[k] = v as V;
+              }
+            }
+            return filter == null || filter(m) ? m : null;
+          })
+          .whereType<Map<K, V>>()
+          .toList();
+    } else {
+      return lines
+          .map((cols) {
+            var m = <K, V>{};
+            for (var i = 0; i < cols.length; ++i) {
+              var v = cols.elementAt(i);
+              var k = keysResolved[i];
+              m[k] = v as V;
+            }
+            return filter == null || filter(m) ? m : null;
+          })
+          .whereType<Map<K, V>>()
+          .toList();
+    }
   }
 }
 
@@ -833,6 +937,12 @@ RegExp _regexpLineBreak = RegExp(r'[\r\n]');
 
 /// Extension for [String].
 extension StringExtension on String {
+  /// Splits this [String] lines.
+  ///
+  /// - [lineDelimiter] the line delimiter [Pattern]. (default: `[\r\n]`).
+  /// - [trimLines] if `true` trims lines.
+  /// - [removeEmptyLines] if `true` removes empty lines.
+  /// - [filter] the filter to apply for each line.
   List<String> splitLines(
       {RegExp? lineDelimiter,
       bool trimLines = true,
@@ -846,46 +956,181 @@ extension StringExtension on String {
         filter: filter);
   }
 
+  /// Splits this [String] in columns.
+  ///
+  /// - [delimiter] the column delimiter [Pattern]. (default: `,`).
+  /// - [acceptsQuotedValues] if `true` accepts values in quotes: `"some value"`
   List<String> splitColumns(
       {Pattern delimiter = ',', bool acceptsQuotedValues = true}) {
     if (!acceptsQuotedValues) {
       return split(delimiter);
     }
+    return _splitColumnsWithQuotedValues(this, delimiter, null);
+  }
 
-    var reDelimiter = _toRegExpDelimiter(delimiter);
-    return _splitColumnsImpl(this, reDelimiter);
+  /// Returns `true` if this [String] [contains] any element of [others].
+  bool containsAny(Iterable<String> others) {
+    for (var s in others) {
+      if (contains(s)) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
 RegExp _toRegExpDelimiter(Pattern delimiter) {
-  var reDelimiter = delimiter is RegExp
-      ? RegExp('(?:"(.*?)"(?:${delimiter.pattern}|\$)|${delimiter.pattern})',
-          multiLine: false)
-      : RegExp(
-          '(?:"(.*?)"(?:${RegExp.escape(delimiter.toString())}|\$)|${RegExp.escape(delimiter.toString())})',
-          multiLine: false);
-  return reDelimiter;
+  if (delimiter is RegExp) {
+    return RegExp(
+        '(?:"(.*?)"(?:(${delimiter.pattern})|\$)|(?:(${delimiter.pattern})|\$))',
+        multiLine: false);
+  } else {
+    var spaced = RegExp.escape(delimiter.toString());
+    return RegExp('(?:"(.*?)"(?:($spaced)|\$)|(?:($spaced)|\$))',
+        multiLine: false);
+  }
 }
 
-List<String> _splitColumnsImpl(String e, RegExp reDelimiter) {
-  var cols = <String>[];
+List<String> _splitColumnsWithQuotedValues(
+    String s, Pattern delimiter, RegExp? reDelimiter) {
+  if (delimiter is String) {
+    return _splitColumnsWithQuotedValuesString(s, delimiter);
+  } else {
+    return _splitColumnsWithQuotedValuesRegexp(s, delimiter, reDelimiter);
+  }
+}
 
+List<String> _splitColumnsWithQuotedValuesString(String s, String delimiter) {
+  var length = s.length;
+  var lengthM1 = length - 1;
+  var delimiterLng = delimiter.length;
+  var quoteDelimiter = '"$delimiter';
+  var quoteDelimiterLng = quoteDelimiter.length;
+  var endsWithQuote = s.endsWith('"');
+
+  var cols = <String>[];
   var init = 0;
 
-  for (var m in reDelimiter.allMatches(e)) {
-    var quoted = m.group(1);
-    if (quoted != null) {
-      cols.add(quoted);
-    } else {
-      var v = e.substring(init, m.start);
-      cols.add(v);
+  while (init <= length) {
+    if (init >= length) {
+      cols.add('');
+      break;
     }
-    init = m.end;
+    var c = s[init];
+    if (c == '"') {
+      var quoteEnd = s.indexOf(quoteDelimiter, init + 1);
+
+      if (quoteEnd > 0) {
+        var val = s.substring(init + 1, quoteEnd);
+        val = _normalizeQuotedValue(val);
+
+        if (quoteEnd + quoteDelimiterLng == length) {
+          cols.add(val);
+          cols.add('');
+          break;
+        } else {
+          cols.add(val);
+          init = quoteEnd + quoteDelimiterLng;
+        }
+      } else if (endsWithQuote) {
+        var val = s.substring(init + 1, lengthM1);
+        val = _normalizeQuotedValue(val);
+        cols.add(val);
+        break;
+      } else {
+        var idx = s.indexOf(delimiter, init);
+        if (idx >= 0) {
+          var val = s.substring(init, idx);
+          cols.add(val);
+          init = idx + delimiterLng;
+        } else {
+          var val = s.substring(init);
+          cols.add(val);
+          break;
+        }
+      }
+    } else {
+      var idx = s.indexOf(delimiter, init);
+      if (idx >= 0) {
+        var val = s.substring(init, idx);
+        cols.add(val);
+        init = idx + delimiterLng;
+      } else {
+        var val = s.substring(init);
+        cols.add(val);
+        break;
+      }
+    }
   }
 
-  if (init < e.length) {
-    var v = e.substring(init);
-    cols.add(v);
+  return cols;
+}
+
+String _normalizeQuotedValue(String s) {
+  var idx = s.indexOf('""', 0);
+  if (idx < 0) return s;
+
+  var str = StringBuffer();
+  str.write(s.substring(0, idx));
+  str.write('"');
+
+  var init = idx + 2;
+  while (true) {
+    idx = s.indexOf('""', init);
+    if (idx < 0) {
+      str.write(s.substring(init));
+      break;
+    } else {
+      if (idx > init) {
+        str.write(s.substring(init, idx));
+      }
+      str.write('"');
+      init = idx + 2;
+    }
+  }
+
+  return str.toString();
+}
+
+List<String> _splitColumnsWithQuotedValuesRegexp(
+    String s, Pattern delimiter, RegExp? reDelimiter) {
+  var cols = <String>[];
+  var init = 0;
+
+  var length = s.length;
+
+  reDelimiter ??= _toRegExpDelimiter(delimiter);
+
+  for (var m in reDelimiter.allMatches(s)) {
+    var quoted = m.group(1);
+
+    var atEnd = m.end == length;
+    var withDelimiter = m.group(2) != null || m.group(3) != null;
+
+    if (quoted != null) {
+      quoted = _normalizeQuotedValue(quoted);
+      cols.add(quoted);
+      if (atEnd) {
+        if (withDelimiter) {
+          cols.add('');
+        }
+        break;
+      }
+    } else {
+      var v = s.substring(init, m.start);
+
+      if (atEnd) {
+        cols.add(v);
+        if (withDelimiter) {
+          cols.add('');
+        }
+        break;
+      } else {
+        cols.add(v);
+      }
+    }
+
+    init = m.end;
   }
 
   return cols;
@@ -935,7 +1180,8 @@ extension IterableStringExtension on Iterable<String> {
     }
 
     var reDelimiter = _toRegExpDelimiter(delimiter);
-    return map((e) => _splitColumnsImpl(e, reDelimiter)).toList();
+    return map((e) => _splitColumnsWithQuotedValues(e, delimiter, reDelimiter))
+        .toList();
   }
 
   List<int> toIntsList() => map((e) => int.parse(e)).toList();

@@ -245,6 +245,18 @@ void main() {
       expect(_asNum(10).naturalExponent, equals(22026.465794806718));
     });
 
+    test('naturalExponent', () {
+      expect(10.0.truncate(), equals(10));
+      expect(10.10.truncate(), equals(10));
+
+      expect(10.12345.truncateDecimals(2), equals(10.12));
+      expect(10.12345.truncateDecimals(1), equals(10.1));
+      expect(10.12345.truncateDecimals(0), equals(10.0));
+
+      expect(10.naturalExponent, equals(22026.465794806718));
+      expect(_asNum(10).naturalExponent, equals(22026.465794806718));
+    });
+
     test('toIntsList', () {
       expect(<double>[].toIntsList(), isEmpty);
       expect(<double>[].toIntsList(), isEmpty);
