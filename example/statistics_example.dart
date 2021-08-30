@@ -1,7 +1,7 @@
 import 'package:statistics/statistics.dart';
 
 void main() {
-  var ns = [10, 20.0, 30];
+  var ns = [10, 20.0, 25, 30];
   print('ns: $ns');
 
   // Numeric extension:
@@ -25,6 +25,8 @@ void main() {
   print('Statistics.standardDeviation: ${statistics.standardDeviation}');
   print('Statistics.sum: ${statistics.sum}');
   print('Statistics.center: ${statistics.center}');
+  print(
+      'Statistics.median: ${statistics.median} -> ${statistics.medianLow} , ${statistics.medianHigh}');
   print('Statistics.squaresSum: ${statistics.squaresSum}');
 
   print('Statistics: $statistics');
@@ -45,22 +47,23 @@ void main() {
 // ---------------------------------------------
 // OUTPUT:
 // ---------------------------------------------
-// ns: [10, 20.0, 30]
-// mean: 20.0
-// sdv: 8.16496580927726
-// squares: [100, 400.0, 900]
+// ns: [10, 20.0, 25, 30]
+// mean: 21.25
+// sdv: 6.931585316505886
+// squares: [100, 400.0, 625, 900]
 // Statistics.max: 30
 // Statistics.min: 10
-// Statistics.mean: 20.0
-// Statistics.standardDeviation: 21.602468994692867
-// Statistics.sum: 60.0
-// Statistics.center: 20.0
-// Statistics.squaresSum: 1400.0
-// Statistics: {~20 +-21.6024 [10..(20)..30] #3.0}
+// Statistics.mean: 21.25
+// Statistics.standardDeviation: 22.5
+// Statistics.sum: 85.0
+// Statistics.center: 25
+// Statistics.median: 22.5 -> 20.0 , 25
+// Statistics.squaresSum: 2025.0
+// Statistics: {~21.25 +-22.5 [10..(25)..30] #4}
 // ---
 // CSV:
 // #,a,b
-// 1,10.0,100.0
-// 2,20.0,200.0
-// 3,0.0,300.0
+// 1,10,100
+// 2,20,200
+// 3,0,300
 //

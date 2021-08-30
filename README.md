@@ -60,7 +60,7 @@ The class [Statistics][statistics_class], that have many pre-computed statistics
 import 'package:statistics/statistics.dart';
 
 void main() {
-  var ns = [10, 20.0, 30];
+  var ns = [10, 20.0, 25, 30];
   var statistics = ns.statistics;
 
   print('Statistics.max: ${ statistics.max }');
@@ -69,6 +69,7 @@ void main() {
   print('Statistics.standardDeviation: ${ statistics.standardDeviation }');
   print('Statistics.sum: ${ statistics.sum }');
   print('Statistics.center: ${ statistics.center }');
+  print('Statistics.median: ${statistics.median} -> ${statistics.medianLow} , ${statistics.medianHigh}');
   print('Statistics.squaresSum: ${ statistics.squaresSum }');
 
   print('Statistics: $statistics');
@@ -80,12 +81,13 @@ OUTPUT:
 ```text
 Statistics.max: 30
 Statistics.min: 10
-Statistics.mean: 20.0
-Statistics.standardDeviation: 21.602468994692867
-Statistics.sum: 60.0
-Statistics.center: 20.0
-Statistics.squaresSum: 1400.0
-Statistics: {~20 +-21.6024 [10..(20)..30] #3.0}
+Statistics.mean: 21.25
+Statistics.standardDeviation: 22.5
+Statistics.sum: 85.0
+Statistics.center: 25
+Statistics.median: 22.5 -> 20.0 , 25
+Statistics.squaresSum: 2025.0
+Statistics: {~21.25 +-22.5 [10..(25)..30] #4}
 ```
 
 ### CSV
