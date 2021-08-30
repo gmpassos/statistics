@@ -1,3 +1,12 @@
+## 1.0.5
+
+- `Statistics`:
+  - Added `medianHigh`, `medianLow` and `median`.
+    - Change constructor: required `medianHigh`.
+  - `center` points to `medianHigh`.
+- `NumExtension`:
+  - Added: `num.cast`.
+
 ## 1.0.4
 
 - New metric tools:

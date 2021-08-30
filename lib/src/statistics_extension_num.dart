@@ -864,6 +864,18 @@ extension IterableIntExtension on Iterable<int> {
 
 /// extension for `num`.
 extension NumExtension on num {
+  /// Cast this number to [N], where [N] extends [num].
+  /// Calls [toInt] or [toDouble] to perform the casting.
+  N cast<N extends num>() {
+    if (N == int) {
+      return toInt() as N;
+    } else if (N == double) {
+      return toDouble() as N;
+    } else {
+      return this as N;
+    }
+  }
+
   /// Returns the square of `this` number.
   num get square => this * this;
 

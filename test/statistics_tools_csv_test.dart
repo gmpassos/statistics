@@ -139,8 +139,8 @@ void main() {
       expect(
           csv5,
           equals('mean,standardDeviation,length,min,max,sum,squaresSum\n'
-              '40.0,43.20493798938573,6.0,20,60,120,2800\n'
-              '80.0,81.64965809277261,6.0,60,100,240,10000\n'));
+              '40.0,43.20493798938573,6,20,60,120,2800\n'
+              '80.0,81.64965809277261,6,60,100,240,10000\n'));
 
       expect(list2.csvFileName('test', 'list'),
           matches(RegExp(r'^test--list--\d+\.csv$')));

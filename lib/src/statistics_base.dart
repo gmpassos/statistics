@@ -176,7 +176,7 @@ String? formatDecimal(Object? value,
 /// A statistics summary of a numeric collection.
 class Statistics<N extends num> extends DataEntry {
   /// The length/size of the numeric collection.
-  double length;
+  num length;
 
   /// Returns `true` if [length] == `0`.
   bool get isEmpty => length == 0;
@@ -191,10 +191,41 @@ class Statistics<N extends num> extends DataEntry {
   N max;
 
   /// The center value of the numeric collection.
-  N center;
+  /// (Equivalent to [medianHigh]).
+  N get center => medianHigh;
 
   /// The center value index of the numeric collection: ([length] ~/ `2`)
-  int get centerIndex => length ~/ 2;
+  /// (Equivalent to [medianHighIndex]).
+  int get centerIndex => medianHighIndex;
+
+  /// The lower median value. See [median].
+  N medianLow;
+
+  /// The [medianLow] value index.
+  int get medianLowIndex =>
+      length % 2 == 0 ? medianHighIndex - 1 : medianHighIndex;
+
+  /// The higher median value. See [median].
+  N medianHigh;
+
+  /// The [medianHigh] value index.
+  int get medianHighIndex => length ~/ 2;
+
+  /// The median value. Also the average between [medianLow] and [medianHigh].
+  ///
+  /// - For sets of odd size the median is a single value, that separates the
+  ///   higher half from the lower half of the set. (In this case [medianLow] and [medianHigh] are the same value).
+  /// - For sets of even size the median is the average of a pair of values, the [medianLow] and
+  ///   [medianHigh] values.
+  num get median {
+    // To avoid any floating point precision loss:
+    if (medianLow == medianHigh) {
+      return medianHigh;
+    }
+
+    var median = (medianLow + medianHigh) / 2;
+    return median;
+  }
 
   /// The total sum of the numeric collection.
   num sum;
@@ -209,23 +240,24 @@ class Statistics<N extends num> extends DataEntry {
   double standardDeviation;
 
   /// Returns the computed [Statistics] of the lower part of the numeric collection, from index `0` (inclusive) to [centerIndex] (exclusive).
-  Statistics? lowerStatistics;
+  Statistics<N>? lowerStatistics;
 
   /// Returns the computed [Statistics] of the upper part of the numeric collection, from index [centerIndex] (inclusive) to [length] (exclusive).
-  Statistics? upperStatistics;
+  Statistics<N>? upperStatistics;
 
   Statistics(
-    num length,
+    this.length,
     this.min,
-    this.max,
-    this.center, {
+    this.max, {
+    N? medianLow,
+    required this.medianHigh,
     double? mean,
     double? standardDeviation,
     num? sum,
     num? squaresSum,
     this.lowerStatistics,
     this.upperStatistics,
-  })  : length = length.toDouble(),
+  })  : medianLow = medianLow ?? medianHigh,
         sum = sum ?? (mean! * length),
         squaresSum =
             squaresSum ?? ((standardDeviation! * standardDeviation) * length),
@@ -235,20 +267,29 @@ class Statistics<N extends num> extends DataEntry {
 
   factory Statistics._empty(Iterable<N> list) {
     var zero = list.castElement(0);
-    return Statistics(0, zero, zero, zero, sum: zero, squaresSum: zero);
+    return Statistics(0, zero, zero,
+        medianHigh: zero, sum: zero, squaresSum: zero);
   }
 
   factory Statistics._single(N n) {
-    return Statistics(1, n, n, n,
-        sum: n, squaresSum: n * n, mean: n.toDouble(), standardDeviation: 0);
+    return Statistics(1, n, n,
+        medianHigh: n,
+        sum: n,
+        squaresSum: n * n,
+        mean: n.toDouble(),
+        standardDeviation: 0);
   }
 
   /// Computes a [Statistics] summary from [data].
   ///
+  /// - [alreadySortedData] if `true` will avoid sorting of [data].
+  ///   This allows some usage optimization, do not pass an inconsistent value.
   /// - [computeLowerAndUpper] if `true` will compute [lowerStatistics] and [upperStatistics].
   /// - [keepData] if `true` will keep a copy of [data] at [data].
   factory Statistics.compute(Iterable<N> data,
-      {bool computeLowerAndUpper = true, bool keepData = false}) {
+      {bool alreadySortedData = false,
+      bool computeLowerAndUpper = true,
+      bool keepData = false}) {
     var length = data.length;
     if (length == 0) {
       var statistics = Statistics._empty(data);
@@ -267,13 +308,25 @@ class Statistics<N extends num> extends DataEntry {
     }
 
     var listSorted = List<N>.from(data);
-    listSorted.sort();
+    if (!alreadySortedData) {
+      listSorted.sort();
+    }
 
     var first = listSorted.first;
     var min = first;
     var max = listSorted.last;
-    var centerIndex = listSorted.length ~/ 2;
-    var center = listSorted[centerIndex];
+
+    var evenSet = length % 2 == 0;
+    var medianHighIndex = length ~/ 2;
+    var medianHigh = listSorted[medianHighIndex];
+    var medianLow = evenSet ? listSorted[medianHighIndex - 1] : medianHigh;
+
+    if (alreadySortedData) {
+      if (min > max || medianLow > medianHigh) {
+        throw ArgumentError(
+            "Inconsistent argument 'alreadySortedData': min:$min > max:$max ; medianLow:$medianLow > medianHigh:$medianHigh");
+      }
+    }
 
     num sum = first;
     var squaresSum = first * first;
@@ -288,12 +341,20 @@ class Statistics<N extends num> extends DataEntry {
 
     var standardDeviation = math.sqrt(squaresSum / length);
 
-    Statistics? lowerStatistics;
-    Statistics? upperStatistics;
+    Statistics<N>? lowerStatistics;
+    Statistics<N>? upperStatistics;
 
     if (computeLowerAndUpper) {
-      var lower = listSorted.sublist(0, centerIndex);
-      var upper = listSorted.sublist(centerIndex);
+      List<N> lower;
+      List<N> upper;
+
+      if (evenSet) {
+        lower = listSorted.sublist(0, medianHighIndex);
+        upper = listSorted.sublist(medianHighIndex);
+      } else {
+        lower = listSorted.sublist(0, medianHighIndex + 1);
+        upper = listSorted.sublist(medianHighIndex);
+      }
 
       lowerStatistics = Statistics.compute(lower,
           computeLowerAndUpper: false, keepData: false);
@@ -301,11 +362,12 @@ class Statistics<N extends num> extends DataEntry {
           computeLowerAndUpper: false, keepData: false);
     }
 
-    var statistics = Statistics(
+    var statistics = Statistics<N>(
       length,
       min,
       max,
-      center,
+      medianLow: medianLow,
+      medianHigh: medianHigh,
       sum: sum,
       squaresSum: squaresSum,
       mean: mean,
@@ -319,6 +381,69 @@ class Statistics<N extends num> extends DataEntry {
     }
 
     return statistics;
+  }
+
+  Type get nType => N;
+
+  /// Casts this instance to `Statistics<T>`.
+  Statistics<T> cast<T extends num>() {
+    if (T == int) {
+      if (this is Statistics<T>) {
+        return this as Statistics<T>;
+      }
+
+      return Statistics<int>(
+        length,
+        min.toInt(),
+        max.toInt(),
+        medianLow: medianLow.toInt(),
+        medianHigh: medianHigh.toInt(),
+        mean: mean,
+        standardDeviation: standardDeviation,
+        sum: sum,
+        squaresSum: squaresSum,
+        lowerStatistics: lowerStatistics?.cast<int>(),
+        upperStatistics: upperStatistics?.cast<int>(),
+      ) as Statistics<T>;
+    } else if (T == double) {
+      if (this is Statistics<T>) {
+        return this as Statistics<T>;
+      }
+
+      return Statistics<double>(
+        length,
+        min.toDouble(),
+        max.toDouble(),
+        medianLow: medianLow.toDouble(),
+        medianHigh: medianHigh.toDouble(),
+        mean: mean,
+        standardDeviation: standardDeviation,
+        sum: sum,
+        squaresSum: squaresSum,
+        lowerStatistics: lowerStatistics?.cast<double>(),
+        upperStatistics: upperStatistics?.cast<double>(),
+      ) as Statistics<T>;
+    } else if (T == num) {
+      if (nType == T) {
+        return this as Statistics<T>;
+      }
+
+      return Statistics<num>(
+        length,
+        min,
+        max,
+        medianLow: medianLow,
+        medianHigh: medianHigh,
+        mean: mean,
+        standardDeviation: standardDeviation,
+        sum: sum,
+        squaresSum: squaresSum,
+        lowerStatistics: lowerStatistics?.cast<num>(),
+        upperStatistics: upperStatistics?.cast<num>(),
+      ) as Statistics<T>;
+    } else {
+      return this as Statistics<T>;
+    }
   }
 
   List<N>? data;
@@ -356,12 +481,59 @@ class Statistics<N extends num> extends DataEntry {
     return '{~$meanStr +-$standardDeviationStr [$minStr..($centerStr)..$maxStr] #$length}';
   }
 
+  /// Multiply this statistics fields by [n].
+  Statistics<num> multiplyBy(num n) {
+    return Statistics(
+      length * n,
+      min * n,
+      max * n,
+      medianLow: medianLow * n,
+      medianHigh: medianHigh * n,
+      sum: sum * n,
+      squaresSum: squaresSum * n,
+      mean: mean * n,
+      standardDeviation: (standardDeviation * n).ifNaN(0.0),
+    );
+  }
+
+  /// Divide this statistics fields by [n].
+  Statistics<double> divideBy(num n) {
+    return Statistics(
+      length / n,
+      min / n,
+      max / n,
+      medianLow: medianLow / n,
+      medianHigh: medianHigh / n,
+      sum: sum / n,
+      squaresSum: squaresSum / n,
+      mean: mean / n,
+      standardDeviation: (standardDeviation / n).ifNaN(0.0),
+    );
+  }
+
+  /// Sum this statistics fields with [other] fields.
+  Statistics<num> sumWith(Statistics other) {
+    return Statistics(
+      length + other.length,
+      min + other.min,
+      max + other.max,
+      medianLow: medianLow + other.medianLow,
+      medianHigh: medianHigh + other.medianHigh,
+      sum: sum + other.sum,
+      squaresSum: squaresSum + other.squaresSum,
+      mean: mean + other.mean,
+      standardDeviation:
+          (standardDeviation + other.standardDeviation).ifNaN(0.0),
+    );
+  }
+
   Statistics<double> operator /(Statistics other) {
     return Statistics(
       length / other.length,
       min / other.min,
       max / other.max,
-      center / other.center,
+      medianLow: medianLow / other.medianLow,
+      medianHigh: medianHigh / other.medianHigh,
       sum: sum / other.sum,
       squaresSum: squaresSum / other.squaresSum,
       mean: mean / other.mean,
@@ -375,7 +547,8 @@ class Statistics<N extends num> extends DataEntry {
       length + other.length,
       math.min(min.toDouble(), other.min.toDouble()),
       math.max(max.toDouble(), other.max.toDouble()),
-      (center + other.center) / 2,
+      medianLow: (medianLow + other.medianLow) / 2,
+      medianHigh: (medianHigh + other.medianHigh) / 2,
       sum: sum + other.sum,
       squaresSum: squaresSum + other.squaresSum,
       mean: (sum + other.sum) / (length + other.length),

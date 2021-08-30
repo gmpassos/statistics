@@ -1190,3 +1190,17 @@ extension IterableStringExtension on Iterable<String> {
 
   List<num> toNumsList() => map((e) => num.parse(e)).toList();
 }
+
+/// Extension for `Iterable<Statistics>`.
+extension IterableStatisticsExtension<N extends num>
+    on Iterable<Statistics<N>> {
+  /// Returns the mean of the [Statistics] elements of this collection.
+  Statistics<double> get statisticsMean {
+    var sum = reduce((value, element) {
+      var s = value.sumWith(element).cast<N>();
+      return s;
+    });
+    var mean = sum.divideBy(length);
+    return mean;
+  }
+}
