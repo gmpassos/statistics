@@ -48,10 +48,19 @@ class Chronometer implements Comparable<Chronometer> {
   bool get isFinished => _stopTime != null && isStarted;
 
   /// Elapsed time in milliseconds ([stopTime] - [startTime]).
-  int get elapsedTimeMs => (_stopTime == null || _startTime == null)
-      ? 0
-      : (_stopTime!.millisecondsSinceEpoch -
-          _startTime!.millisecondsSinceEpoch);
+  int get elapsedTimeMs {
+    var startTime = _startTime;
+    if (startTime == null) {
+      return 0;
+    }
+
+    var stopTime = _stopTime;
+
+    return stopTime == null
+        ? (DateTime.now().millisecondsSinceEpoch -
+            startTime.millisecondsSinceEpoch)
+        : (stopTime.millisecondsSinceEpoch - startTime.millisecondsSinceEpoch);
+  }
 
   /// Elapsed time in seconds ([stopTime] - [startTime]).
   double get elapsedTimeSec => elapsedTimeMs / 1000;

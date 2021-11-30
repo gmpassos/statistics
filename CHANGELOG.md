@@ -1,3 +1,7 @@
+## 1.0.6
+
+- `Chronometer.elapsedTimeMs`: now returns the elapsed time even if not stopped.
+
 ## 1.0.5
 
 - `Statistics`:
