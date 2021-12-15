@@ -1,3 +1,7 @@
+## 1.0.9
+
+- Fix typo: renamed extension with `UInt` to `Uint` to follow Dart style.
+
 ## 1.0.8
 
 - Added extensions:

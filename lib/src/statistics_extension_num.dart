@@ -1211,13 +1211,13 @@ extension Uint8ListExtension on Uint8List {
   BigInt toBigInt({Endian endian = Endian.big}) =>
       toHex(endian: endian).toBigIntFromHex();
 
-  int getUInt8([int byteOffset = 0]) => asByteData().getUint8(byteOffset);
+  int getUint8([int byteOffset = 0]) => asByteData().getUint8(byteOffset);
 
-  int getUInt16([int byteOffset = 0]) => asByteData().getUint16(byteOffset);
+  int getUint16([int byteOffset = 0]) => asByteData().getUint16(byteOffset);
 
-  int getUInt32([int byteOffset = 0]) => asByteData().getUint32(byteOffset);
+  int getUint32([int byteOffset = 0]) => asByteData().getUint32(byteOffset);
 
-  int getUInt64([int byteOffset = 0]) {
+  int getUint64([int byteOffset = 0]) {
     return StatisticsPlatform.instance.readUint64(this, byteOffset);
   }
 
