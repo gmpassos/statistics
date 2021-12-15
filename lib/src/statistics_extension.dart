@@ -555,6 +555,8 @@ extension DateTimeExtension on DateTime {
               'yyyy${dateDelimiter}MM${dateDelimiter}dd HH${hourDelimiter}mm${hourDelimiter}ss',
               locale)
           .format(this);
+
+  Duration get elapsedTime => DateTime.now().difference(this);
 }
 
 /// Extension for `Map<K, V>`.

@@ -1,3 +1,10 @@
+## 1.0.8
+
+- Added extensions:
+  - `DateTime.elapsedTime`.
+  - `int`: `bits/8/16/32/64`, `toUint8List32Reversed`, `toUint8List64Reversed`.
+  - `Uint8List`: `bits/8/16/32/64`.
+
 ## 1.0.7
 
 - `Chronometer.toString`: added parameter `withTime`.

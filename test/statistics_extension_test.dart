@@ -873,7 +873,7 @@ void main() {
           equals('245 h'));
     });
 
-    test('Duration.formatTo...', () {
+    test('Duration.formatTo...', () async {
       expect(DateTime(2021, 08, 02).formatToYMD(), equals('2021-08-02'));
       expect(DateTime(2021, 08, 02).formatToYMD(dateDelimiter: '_'),
           equals('2021_08_02'));
@@ -892,6 +892,10 @@ void main() {
           equals('2021_08_02 10.11.12'));
 
       expect(DateTime(2021, 8, 2).formatTo('yyyy/MM/dd'), equals('2021/08/02'));
+
+      var now = DateTime.now();
+      await Future.delayed(Duration(milliseconds: 100));
+      expect(now.elapsedTime.inMilliseconds, greaterThanOrEqualTo(100));
     });
   });
 }

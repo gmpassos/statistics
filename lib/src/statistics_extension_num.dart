@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:base_codecs/base_codecs.dart';
 import 'package:collection/collection.dart';
 import 'package:statistics/src/statistics_platform.dart';
+import 'package:intl/intl.dart';
 
 import 'statistics_base.dart';
 
@@ -993,6 +994,29 @@ extension IntExtension on int {
   /// Converts this `int` to [BigInt].
   BigInt toBigInt() => BigInt.from(this);
 
+  /// Returns this `int` as a bits [String].
+  String get bits => toRadixString(2);
+
+  /// Returns this `int` as a bits [String] of minimal length [width].
+  String bitsPadded(int width) => bits.numericalPadLeft(width);
+
+  /// Returns this `int` as a 8 bits [String].
+  String get bits8 => bitsPadded(8);
+
+  /// Returns this `int` as a 16 bits [String].
+  String get bits16 => bitsPadded(16);
+
+  /// Returns this `int` as a 32 bits [String].
+  String get bits32 => bitsPadded(32);
+
+  /// Returns this `int` as a 64 bits [String].
+  String get bits64 => bitsPadded(64);
+
+  static final NumberFormat _numberFormat = NumberFormat.decimalPattern();
+
+  /// Formats this `int` to a [String] with thousands separator.
+  String get thousands => _numberFormat.format(this);
+
   /// Converts this 32 bits `int` to 4 bytes.
   Uint8List toUint8List32() {
     var bs = Uint8List(4);
@@ -1007,6 +1031,12 @@ extension IntExtension on int {
     StatisticsPlatform.instance.writeUint64(bs, this);
     return bs;
   }
+
+  /// Same as [toUint8List32], but with bytes in reversed order.
+  Uint8List toUint8List32Reversed() => toUint8List32().reverseBytes();
+
+  /// Same as [toUint8List64], but with bytes in reversed order.
+  Uint8List toUint8List64Reversed() => toUint8List64().reverseBytes();
 
   /// Converts this 32 bits `int` to HEX.
   String toHex32() => toUint8List32().toHex();
@@ -1119,15 +1149,37 @@ extension StringToNumExtension on String {
 
 /// Extension for [Uint8List].
 extension Uint8ListExtension on Uint8List {
+  /// Returns this bytes as [String] of bits of length [width].
+  String bitsPadded(int width) =>
+      map((e) => e.bits8).join().numericalPadLeft(width);
+
+  /// Returns this bytes as [String] of bits.
+  String get bits => map((e) => e.bits8).join();
+
+  /// Returns this bytes as 8 bits [String].
+  String get bits8 => bitsPadded(8);
+
+  /// Returns this bytes as 16 bits [String].
+  String get bits16 => bitsPadded(16);
+
+  /// Returns this bytes as 32 bits [String].
+  String get bits32 => bitsPadded(32);
+
+  /// Returns this bytes as 64 bits [String].
+  String get bits64 => bitsPadded(64);
+
   static final ListEquality<int> _listIntEquality = ListEquality<int>();
 
+  /// Returns `true` of [other] elements are equals.
   bool equals(Uint8List other) => _listIntEquality.equals(this, other);
 
+  /// A sub `Uint8List` view of regeion.
   Uint8List subView([int offset = 0, int? length]) {
     length ??= this.length - offset;
     return buffer.asUint8List(offset, length);
   }
 
+  /// A sub `Uint8List` view of the tail.
   Uint8List subViewTail(int tailLength) {
     var length = this.length;
     var offset = length - tailLength;
@@ -1135,75 +1187,82 @@ extension Uint8ListExtension on Uint8List {
     return subView(offset, lng);
   }
 
+  /// Returns a [ByteData] of `this` [buffer] with the respective offset and length.
   ByteData asByteData() => buffer.asByteData(offsetInBytes, lengthInBytes);
 
+  /// Returns a copy of `this` instance.
   Uint8List copy() => Uint8List.fromList(this);
 
+  /// Returns `this` instance in a reversed order.
   Uint8List reverseBytes() => Uint8List.fromList(reversed.toList());
 
+  /// Converts `this` bytes to HEX.
   String toHex({Endian endian = Endian.big}) {
     return endian == Endian.big ? toHexBigEndian() : toHexLittleEndian();
   }
 
+  /// Converts `this` bytes to HEX (big-endian).
   String toHexBigEndian() => base16.encode(this);
 
+  /// Converts `this` bytes to HEX (little-endian).
   String toHexLittleEndian() => base16.encode(reverseBytes());
 
+  /// Converts `this` bytes to a [BigInt] (through [toHex]).
   BigInt toBigInt({Endian endian = Endian.big}) =>
       toHex(endian: endian).toBigIntFromHex();
 
-  int toUInt8([int byteOffset = 0]) => asByteData().getUint8(byteOffset);
+  int getUInt8([int byteOffset = 0]) => asByteData().getUint8(byteOffset);
 
-  int toUInt16([int byteOffset = 0]) => asByteData().getUint16(byteOffset);
+  int getUInt16([int byteOffset = 0]) => asByteData().getUint16(byteOffset);
 
-  int toUInt32([int byteOffset = 0]) => asByteData().getUint32(byteOffset);
+  int getUInt32([int byteOffset = 0]) => asByteData().getUint32(byteOffset);
 
-  int toUInt64([int byteOffset = 0]) {
+  int getUInt64([int byteOffset = 0]) {
     return StatisticsPlatform.instance.readUint64(this, byteOffset);
   }
 
-  int toInt8([int byteOffset = 0]) => asByteData().getInt8(byteOffset);
+  int getInt8([int byteOffset = 0]) => asByteData().getInt8(byteOffset);
 
-  int toInt16([int byteOffset = 0]) => asByteData().getInt16(byteOffset);
+  int getInt16([int byteOffset = 0]) => asByteData().getInt16(byteOffset);
 
-  int toInt32([int byteOffset = 0]) => asByteData().getInt32(byteOffset);
+  int getInt32([int byteOffset = 0]) => asByteData().getInt32(byteOffset);
 
-  int toInt64([int byteOffset = 0]) =>
+  int getInt64([int byteOffset = 0]) =>
       StatisticsPlatform.instance.readInt64(this, byteOffset);
 
-  List<int> toUintList8() => List<int>.from(this);
+  List<int> toListOfUint8() => List<int>.from(this);
 
-  List<int> toUintList16() {
+  List<int> toListOfUint16() {
     final byteData = asByteData();
     return List<int>.generate(length ~/ 2, (i) => byteData.getUint16(i * 2));
   }
 
-  List<int> toUintList32() {
+  List<int> toListOfUint32() {
     final byteData = asByteData();
     return List<int>.generate(length ~/ 4, (i) => byteData.getUint32(i * 4));
   }
 
-  List<int> toUintList64() {
+  List<int> toListOfUint64() {
     return List<int>.generate(length ~/ 8,
         (i) => StatisticsPlatform.instance.readUint64(this, i * 8));
   }
 
-  List<int> toIntList8() {
+  List<int> toListOfInt8() {
     final byteData = asByteData();
     return List<int>.generate(length, (i) => byteData.getInt8(i));
   }
 
-  List<int> toIntList16() {
+  List<int> toListOfInt16() {
     final byteData = asByteData();
     return List<int>.generate(length ~/ 2, (i) => byteData.getInt16(i * 2));
   }
 
-  List<int> toIntList32() {
+  List<int> toListOfInt32() {
     final byteData = asByteData();
     return List<int>.generate(length ~/ 4, (i) => byteData.getInt32(i * 4));
   }
 
-  List<int> toIntList64() {
+  List<int> toListOfInt64() {
     return List<int>.generate(
         length ~/ 8, (i) => StatisticsPlatform.instance.readInt64(this, i * 8));
   }

@@ -13,10 +13,37 @@ void main() {
       expect(-123.toBigInt(), equals(BigInt.from(-123)));
     });
 
+    test('bits', () {
+      expect(123.bits, equals('1111011'));
+      expect(123.bits8, equals('01111011'));
+      expect(123.bitsPadded(11), equals('00001111011'));
+      expect(123.bits16, equals('0000000001111011'));
+      expect(123.bits32, equals('00000000000000000000000001111011'));
+      expect(
+          123.bits64,
+          equals(
+              '0000000000000000000000000000000000000000000000000000000001111011'));
+    });
+
+    test('thousands', () {
+      expect(123.thousands, equals('123'));
+      expect(1123.thousands, equals('1,123'));
+      expect(1123456.thousands, equals('1,123,456'));
+
+      expect((-123).thousands, equals('-123'));
+      expect((-1123).thousands, equals('-1,123'));
+      expect((-1123456).thousands, equals('-1,123,456'));
+    });
+
     test('toUint8List32/64', () {
       expect(123.toUint8List32(), equals(Uint8List.fromList([0, 0, 0, 123])));
       expect((-123).toUint8List32(),
           equals(Uint8List.fromList([255, 255, 255, 133])));
+
+      expect(123.toUint8List32Reversed(),
+          equals(Uint8List.fromList([123, 0, 0, 0])));
+      expect((-123).toUint8List32Reversed(),
+          equals(Uint8List.fromList([133, 255, 255, 255])));
 
       expect((0xFFFFFFFF), equals(4294967295));
 
@@ -25,6 +52,9 @@ void main() {
 
       expect((-123).toUint8List64(),
           equals(Uint8List.fromList([255, 255, 255, 255, 255, 255, 255, 133])));
+
+      expect((-123).toUint8List64Reversed(),
+          equals(Uint8List.fromList([133, 255, 255, 255, 255, 255, 255, 255])));
 
       expect(int.parse('000000FDFCFBFAF9', radix: 16).toUint8List64(),
           equals(Uint8List.fromList([0, 0, 0, 253, 252, 251, 250, 249])));
@@ -948,6 +978,23 @@ void main() {
       expect(Uint8List.fromList([255, 255, 255, 255]).toBigInt(),
           equals(BigInt.parse('4294967295')));
 
+      expect(Uint8List.fromList([32, 64]).bits, equals('0010000001000000'));
+
+      expect(Uint8List.fromList([32, 64, 128, 255]).bits,
+          equals('00100000010000001000000011111111'));
+
+      expect(Uint8List.fromList([125]).bits8, equals('01111101'));
+
+      expect(Uint8List.fromList([255, 128]).bits16, equals('1111111110000000'));
+
+      expect(Uint8List.fromList([255, 128]).bits32,
+          equals('00000000000000001111111110000000'));
+
+      expect(
+          Uint8List.fromList([255, 128]).bits64,
+          equals(
+              '0000000000000000000000000000000000000000000000001111111110000000'));
+
       expect(
           Uint8List.fromList([255, 255, 255, 255])
               .toBigInt(endian: Endian.little),
@@ -961,76 +1008,80 @@ void main() {
       expect(Uint8List.fromList([255, 0, 0, 0, 0, 0, 0, 0]).toBigInt(),
           equals(BigInt.parse('18374686479671623680')));
 
-      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt8(0), equals(1));
-      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt8(1), equals(2));
-      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt8(2), equals(3));
+      expect(Uint8List.fromList([1, 2, 3, 4]).getUInt8(0), equals(1));
+      expect(Uint8List.fromList([1, 2, 3, 4]).getUInt8(1), equals(2));
+      expect(Uint8List.fromList([1, 2, 3, 4]).getUInt8(2), equals(3));
 
-      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt16(0), equals(258));
-      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt16(1), equals(515));
+      expect(Uint8List.fromList([1, 2, 3, 4]).getUInt16(0), equals(258));
+      expect(Uint8List.fromList([1, 2, 3, 4]).getUInt16(1), equals(515));
 
-      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt32(0), equals(16909060));
-      expect(Uint8List.fromList([1, 2, 3, 4, 0]).toUInt32(1), equals(33752064));
+      expect(Uint8List.fromList([1, 2, 3, 4]).getUInt32(0), equals(16909060));
+      expect(
+          Uint8List.fromList([1, 2, 3, 4, 0]).getUInt32(1), equals(33752064));
 
       expect(
           Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7])
-              .toUInt64(0)
+              .getUInt64(0)
               .toString(),
           equals('1108152157446'));
 
       expect(
           Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
-              .toUInt64(1)
+              .getUInt64(1)
               .toString(),
           equals('283686952306183'));
 
       expect(
           Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
-              .toInt8(4)
+              .getInt8(4)
               .toString(),
           equals('3'));
 
       expect(
           Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
-              .toInt16(4)
+              .getInt16(4)
               .toString(),
           equals('772'));
 
       expect(
           Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
-              .toInt32(4)
+              .getInt32(4)
               .toString(),
           equals('50595078'));
 
       expect(
           Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
-              .toInt64(1)
+              .getInt64(1)
               .toString(),
           equals('283686952306183'));
 
-      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toUintList8(),
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toListOfUint8(),
           equals([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]));
 
-      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toUintList16(),
+      expect(
+          Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toListOfUint16(),
           equals([0, 258, 772, 1286, 1800]));
 
-      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toUintList32(),
+      expect(
+          Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toListOfUint32(),
           equals([258, 50595078]));
 
-      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toUintList64(),
+      expect(
+          Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toListOfUint64(),
           equals([1108152157446]));
 
       //
 
-      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toIntList8(),
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toListOfInt8(),
           equals([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]));
 
-      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toIntList16(),
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toListOfInt16(),
           equals([0, 258, 772, 1286, 1800]));
 
-      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toIntList32(),
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toListOfInt32(),
           equals([258, 50595078]));
 
-      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toIntList64(),
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toListOfInt64(),
           equals([1108152157446]));
 
       //
