@@ -854,6 +854,7 @@ void main() {
     test('castElement', () {
       f<N extends num>(List<N> l) {
         var element = l.castElement(l.castsToDouble ? 1.1 : 1);
+        // ignore: unnecessary_type_check
         expect(element is N, isTrue);
 
         if (N != num) {
