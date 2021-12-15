@@ -1,9 +1,57 @@
+@Tags(['num'])
+import 'dart:typed_data';
+
 import 'package:statistics/statistics.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('int', () {
     setUp(() {});
+
+    test('toBigInt', () {
+      expect(123.toBigInt(), equals(BigInt.from(123)));
+      expect(-123.toBigInt(), equals(BigInt.from(-123)));
+    });
+
+    test('toUint8List32/64', () {
+      expect(123.toUint8List32(), equals(Uint8List.fromList([0, 0, 0, 123])));
+      expect((-123).toUint8List32(),
+          equals(Uint8List.fromList([255, 255, 255, 133])));
+
+      expect((0xFFFFFFFF), equals(4294967295));
+
+      expect((0xFFFFFFFF).toUint8List32(),
+          equals(Uint8List.fromList([255, 255, 255, 255])));
+
+      expect((-123).toUint8List64(),
+          equals(Uint8List.fromList([255, 255, 255, 255, 255, 255, 255, 133])));
+
+      expect(int.parse('000000FDFCFBFAF9', radix: 16).toUint8List64(),
+          equals(Uint8List.fromList([0, 0, 0, 253, 252, 251, 250, 249])));
+
+      expect(int.parse('0000FEFDFCFBFAF9', radix: 16).toUint8List64(),
+          equals(Uint8List.fromList([0, 0, 254, 253, 252, 251, 250, 249])));
+    });
+
+    test('toHex32', () {
+      expect(1.toHex32(), equals('00000001'));
+      expect((-1).toHex32(), equals('FFFFFFFF'));
+
+      expect(123.toHex32(), equals('0000007B'));
+      expect((-123).toHex32(), equals('FFFFFF85'));
+    });
+
+    test('toHex64', () {
+      expect(123.toHex64(), equals('000000000000007B'));
+      expect((-123).toHex64(), equals('FFFFFFFFFFFFFF85'));
+    });
+
+    test('toHex64', () {
+      expect(123.toStringPadded(4), equals('0123'));
+      expect(123.toStringPadded(1), equals('123'));
+      expect(123.toStringPadded(6), equals('000123'));
+      expect((-123).toStringPadded(6), equals('-000123'));
+    });
 
     test('toIntsList', () {
       expect(<int>[].toIntsList(), isEmpty);
@@ -218,8 +266,79 @@ void main() {
     });
   });
 
+  group('BigInt', () {
+    setUp(() {});
+
+    test('to...()', () {
+      var bigInt1 = 1.toBigInt();
+      var bigIntN1 = (-1).toBigInt();
+      var bigInt123 = 123.toBigInt();
+      var bigIntN123 = (-123).toBigInt();
+
+      expect(bigInt1, equals(BigInt.from(1)));
+      expect(bigIntN1, equals(BigInt.from(-1)));
+
+      expect(bigInt123, equals(BigInt.from(123)));
+      expect(bigIntN123, equals(BigInt.from(-123)));
+
+      expect(bigInt1.toHex(), equals('1'));
+      expect(bigIntN1.toHex(), equals('-1'));
+      expect(bigInt1.toHex(width: 2), equals('01'));
+      expect(bigIntN1.toHex(width: 2), equals('-01'));
+
+      expect(bigInt123.toHex(), equals('7B'));
+      expect(bigIntN123.toHex(), equals('-7B'));
+      expect(bigInt123.toHex(width: 4), equals('007B'));
+      expect(bigIntN123.toHex(width: 4), equals('-007B'));
+
+      expect(bigInt1.toHexUnsigned(), equals('1'));
+      expect(bigIntN1.toHexUnsigned(), equals('FF'));
+      expect(bigInt1.toHexUnsigned(width: 2), equals('01'));
+      expect(bigIntN1.toHexUnsigned(width: 2), equals('FF'));
+
+      expect(bigInt123.toHexUnsigned(), equals('7B'));
+      expect(bigIntN123.toHexUnsigned(), equals('85'));
+      expect(bigInt123.toHexUnsigned(width: 4), equals('007B'));
+      expect(bigIntN123.toHexUnsigned(width: 4), equals('FF85'));
+
+      expect(bigInt1.toHex32(), equals('00000001'));
+      expect(bigIntN1.toHex32(), equals('FFFFFFFF'));
+
+      expect(bigInt123.toHex32(), equals('0000007B'));
+      expect(bigIntN123.toHex32(), equals('FFFFFF85'));
+
+      expect(bigInt123.toHex64(), equals('000000000000007B'));
+      expect(bigIntN123.toHex64(), equals('FFFFFFFFFFFFFF85'));
+
+      expect(bigInt1.toUint8List32(), equals([0, 0, 0, 1]));
+      expect(bigIntN1.toUint8List32(), equals([255, 255, 255, 255]));
+
+      expect(bigInt123.toUint8List32(), equals([0, 0, 0, 123]));
+      expect(bigIntN123.toUint8List32(), equals([255, 255, 255, 133]));
+
+      expect(bigInt1.toUint8List64(), equals([0, 0, 0, 0, 0, 0, 0, 1]));
+      expect(bigIntN1.toUint8List64(),
+          equals([255, 255, 255, 255, 255, 255, 255, 255]));
+
+      expect(bigInt123.toUint8List64(), equals([0, 0, 0, 0, 0, 0, 0, 123]));
+      expect(bigIntN123.toUint8List64(),
+          equals([255, 255, 255, 255, 255, 255, 255, 133]));
+    });
+  });
+
   group('double', () {
     setUp(() {});
+
+    test('toPercentage', () {
+      expect(0.1122.toPercentage(), equals('11.22%'));
+      expect(0.1122.toPercentage(suffix: ' pct'), equals('11.22 pct'));
+
+      expect(0.11.toPercentage(fractionDigits: 0), equals('11%'));
+      expect(0.1122.toPercentage(fractionDigits: 0), equals('11%'));
+
+      expect(1.1122.toPercentage(), equals('111.22%'));
+      expect(1.1122.toPercentage(fractionDigits: 0), equals('111%'));
+    });
 
     test('ifNaN', () {
       expect(10.0.ifNaN(11), equals(10));
@@ -274,8 +393,8 @@ void main() {
     test('toStringsList', () {
       expect(<double>[].toStringsList(), isEmpty);
       expect(<double>[].toStringsList(), isEmpty);
-      expect(<double>[10.0].toStringsList(), equals(['10.0']));
-      expect(<double>[10.0, 20.0].toStringsList(), equals(['10.0', '20.0']));
+      expect(<double>[10.1].toStringsList(), equals(['10.1']));
+      expect(<double>[10.1, 20.2].toStringsList(), equals(['10.1', '20.2']));
     });
 
     test('mapToSet', () {
@@ -734,16 +853,226 @@ void main() {
 
     test('castElement', () {
       f<N extends num>(List<N> l) {
-        expect(l.castElement(0) is N, isTrue);
+        var element = l.castElement(l.castsToDouble ? 1.1 : 1);
+        expect(element is N, isTrue);
 
         if (N != num) {
-          expect(l.castElement(0).runtimeType, equals(N));
+          expect(element.runtimeType, equals(N),
+              reason: 'Value: $element ; Type: ${element.runtimeType} != $N');
         }
       }
 
       f(<int>[10, 20]);
-      f(<double>[10.0, 20.20]);
+      f(<double>[10.1, 20.20]);
       f(<num>[10, 20.20]);
+    });
+  });
+
+  group('Numeric String', () {
+    setUp(() {});
+
+    test('to...()', () {
+      expect('123'.toInt(), equals(123));
+      expect('123.4'.toDouble(), equals(123.4));
+
+      expect('123'.toNum(), equals(123));
+      expect('123.4'.toNum(), equals(123.4));
+
+      expect('123'.toBigInt(), equals(BigInt.from(123)));
+      expect('-123'.toBigInt(), equals(BigInt.from(-123)));
+
+      expect('01'.toBigIntFromHex(), equals(BigInt.from(1)));
+      expect('FF'.toBigIntFromHex(), equals(BigInt.from(255)));
+
+      expect('000001'.toBigIntFromHex(), equals(BigInt.from(1)));
+      expect('0000FF'.toBigIntFromHex(), equals(BigInt.from(255)));
+
+      expect('0102'.toBigIntFromHex(), equals(BigInt.from(258)));
+      expect('FFFF'.toBigIntFromHex(), equals(BigInt.from(65535)));
+
+      expect('FFFFFFFF'.toBigIntFromHex(), equals(BigInt.from(4294967295)));
+
+      expect('FFFFFFFFFFFFFFFF'.toBigIntFromHex(),
+          equals(BigInt.parse('18446744073709551615')));
+
+      expect('FFFFFFFFFFFFFFFFFFFF'.toBigIntFromHex(),
+          equals(BigInt.parse('1208925819614629174706175')));
+
+      expect('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'.toBigIntFromHex(),
+          equals(BigInt.parse('340282366920938463463374607431768211455')));
+    });
+  });
+
+  group('Numeric Uint8List', () {
+    setUp(() {});
+
+    test('equals', () {
+      expect(
+          Uint8List.fromList([0, 0, 0, 123])
+              .equals(Uint8List.fromList([0, 0, 0, 123])),
+          isTrue);
+
+      expect(
+          Uint8List.fromList([1, 10, 20, 30]).copy(), equals([1, 10, 20, 30]));
+
+      expect(Uint8List.fromList([1, 10, 20, 30]).reverseBytes(),
+          equals([30, 20, 10, 1]));
+
+      expect(
+          Uint8List.fromList([0, 0, 0, 123])
+              .equals(Uint8List.fromList([0, 0, 1, 123])),
+          isFalse);
+
+      expect(Uint8List.fromList([0, 0, 0, 123, 0, 0, 0, 123]).subView(2, 4),
+          equals([0, 123, 0, 0]));
+
+      expect(Uint8List.fromList([0, 0, 0, 123, 0, 0, 0, 123]).subView(3),
+          equals([123, 0, 0, 0, 123]));
+
+      expect(Uint8List.fromList([0, 0, 0, 123, 0, 1, 2, 3, 4]).subViewTail(4),
+          equals([1, 2, 3, 4]));
+
+      expect(Uint8List.fromList([0, 0, 0, 123]).toHexBigEndian(),
+          equals('0000007B'));
+
+      expect(Uint8List.fromList([0, 0, 0, 123]).toHexLittleEndian(),
+          equals('7B000000'));
+
+      expect(Uint8List.fromList([0, 0, 0, 123]).toBigInt(),
+          equals(BigInt.parse('123')));
+
+      expect(Uint8List.fromList([0, 0, 0, 123]).toBigInt(endian: Endian.little),
+          equals(BigInt.parse('2063597568')));
+
+      expect(Uint8List.fromList([255, 255, 255, 255]).toBigInt(),
+          equals(BigInt.parse('4294967295')));
+
+      expect(
+          Uint8List.fromList([255, 255, 255, 255])
+              .toBigInt(endian: Endian.little),
+          equals(BigInt.parse('4294967295')));
+
+      expect(
+          Uint8List.fromList([255, 255, 255, 255, 255, 255, 255, 255])
+              .toBigInt(),
+          equals(BigInt.parse('18446744073709551615')));
+
+      expect(Uint8List.fromList([255, 0, 0, 0, 0, 0, 0, 0]).toBigInt(),
+          equals(BigInt.parse('18374686479671623680')));
+
+      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt8(0), equals(1));
+      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt8(1), equals(2));
+      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt8(2), equals(3));
+
+      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt16(0), equals(258));
+      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt16(1), equals(515));
+
+      expect(Uint8List.fromList([1, 2, 3, 4]).toUInt32(0), equals(16909060));
+      expect(Uint8List.fromList([1, 2, 3, 4, 0]).toUInt32(1), equals(33752064));
+
+      expect(
+          Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7])
+              .toUInt64(0)
+              .toString(),
+          equals('1108152157446'));
+
+      expect(
+          Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
+              .toUInt64(1)
+              .toString(),
+          equals('283686952306183'));
+
+      expect(
+          Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
+              .toInt8(4)
+              .toString(),
+          equals('3'));
+
+      expect(
+          Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
+              .toInt16(4)
+              .toString(),
+          equals('772'));
+
+      expect(
+          Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
+              .toInt32(4)
+              .toString(),
+          equals('50595078'));
+
+      expect(
+          Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
+              .toInt64(1)
+              .toString(),
+          equals('283686952306183'));
+
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toUintList8(),
+          equals([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]));
+
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toUintList16(),
+          equals([0, 258, 772, 1286, 1800]));
+
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toUintList32(),
+          equals([258, 50595078]));
+
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toUintList64(),
+          equals([1108152157446]));
+
+      //
+
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toIntList8(),
+          equals([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]));
+
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toIntList16(),
+          equals([0, 258, 772, 1286, 1800]));
+
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toIntList32(),
+          equals([258, 50595078]));
+
+      expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toIntList64(),
+          equals([1108152157446]));
+
+      //
+
+      expect(
+          Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).encodeUint8List(),
+          equals([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]));
+
+      expect(
+          Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).encodeUint16List(),
+          equals([0, 0, 0, 0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8]));
+
+      expect(Uint8List.fromList([0, 1, 2]).encodeUint32List(),
+          equals([0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2]));
+
+      expect(
+          Uint8List.fromList([0, 1, 2]).encodeUint64List(),
+          equals([
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2
+          ]));
     });
   });
 }

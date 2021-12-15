@@ -17,7 +17,7 @@ void main() {
       expect(eq.hash(10) == eq.hash(11), isFalse);
 
       expect(eq.isValidKey(10), isTrue);
-      expect(eq.isValidKey(10.0), isFalse);
+      expect(eq.isValidKey(10.1), isFalse);
     });
 
     test('DoubleEquality', () {
@@ -31,7 +31,7 @@ void main() {
       expect(eq.hash(10) == eq.hash(11), isFalse);
 
       expect(eq.isValidKey(10.0), isTrue);
-      expect(eq.isValidKey(10), isFalse);
+      expect(eq.isValidKey('x'), isFalse);
     });
 
     test('NumEquality', () {

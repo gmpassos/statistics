@@ -1,3 +1,15 @@
+## 1.0.7
+
+- `Chronometer.toString`: added parameter `withTime`.
+- Added `StatisticsPlatform` to ensure safe `int` serialization in any Dart platform.
+- `double` extension: added `toPercentage`.
+- `int` extension: added `toBigInt`, `toUint8List32`, `toUint8List64`, `toHex32`, `toHex64`, `toStringPadded`.
+- Added extension for `BigInt` and `Uint8List`.
+- Added numeric extension for `String`.
+- Migrated code coverage to use package `coverage`.
+- base_codecs: ^1.0.1
+- coverage: ^1.0.3
+
 ## 1.0.6
 
 - `Chronometer.elapsedTimeMs`: now returns the elapsed time even if not stopped.

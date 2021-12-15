@@ -1,11 +1,16 @@
 import 'dart:math';
+import 'dart:typed_data';
 
+import 'package:base_codecs/base_codecs.dart';
 import 'package:collection/collection.dart';
+import 'package:statistics/src/statistics_platform.dart';
 
 import 'statistics_base.dart';
 
 /// extension for `Iterable<N>` (`N` extends `num`).
 extension IterableNExtension<N extends num> on Iterable<N> {
+  bool get castsToDouble => N == double;
+
   /// Casts [n] to [N].
   N castElement(num n) {
     if (N == int) {
@@ -965,6 +970,13 @@ extension DoubleExtension on double {
     var mod = pow(10.0, fractionDigits).toDouble();
     return ((this * mod).round().toDouble() / mod);
   }
+
+  /// Converts to a percentage string (multiplying by `100`).
+  ///
+  /// - [fractionDigits] is the number of fraction digits.
+  /// - [suffix] the percentage suffix. Default: `%`
+  String toPercentage({int fractionDigits = 2, String suffix = '%'}) =>
+      (this * 100).toStringAsFixed(fractionDigits) + suffix;
 }
 
 /// extension for `int`.
@@ -977,4 +989,291 @@ extension IntExtension on int {
 
   /// Returns the natural exponent, [e], to the power of `this` number.
   double get naturalExponent => exp(this);
+
+  /// Converts this `int` to [BigInt].
+  BigInt toBigInt() => BigInt.from(this);
+
+  /// Converts this 32 bits `int` to 4 bytes.
+  Uint8List toUint8List32() {
+    var bs = Uint8List(4);
+    var data = bs.asByteData();
+    data.setUint32(0, this);
+    return bs;
+  }
+
+  /// Converts this 64 bits `int` to 8 bytes.
+  Uint8List toUint8List64() {
+    var bs = Uint8List(8);
+    StatisticsPlatform.instance.writeUint64(bs, this);
+    return bs;
+  }
+
+  /// Converts this 32 bits `int` to HEX.
+  String toHex32() => toUint8List32().toHex();
+
+  /// Converts this 64 bits `int` to HEX.
+  String toHex64() => toUint8List64().toHex();
+
+  /// Converts to a [String] of [width] and left padded with `0`.
+  String toStringPadded(int width) {
+    var s = toString();
+    return s.numericalPadLeft(width);
+  }
+}
+
+/// extension for [BigInt].
+extension BigIntExtension on BigInt {
+  String toHex({int width = 0}) {
+    var hex = toRadixString(16).toUpperCase();
+    if (width > 0) {
+      if (isNegative) {
+        hex = hex.substring(1);
+        return '-' + hex.padLeft(width, '0');
+      } else {
+        return hex.padLeft(width, '0');
+      }
+    }
+    return hex;
+  }
+
+  String toHexUnsigned({int width = 0}) {
+    if (isNegative) {
+      var hex = toHex();
+      if (hex.startsWith('-')) {
+        hex = hex.substring(1);
+      }
+
+      if (hex.length % 2 != 0) {
+        hex = '0' + hex;
+      }
+
+      var bs = hex.decodeHex();
+      var bs2 = Uint8List.fromList(bs.map((e) => 256 - e).toList());
+
+      var hex2 = bs2.toHex();
+      if (width > 0) {
+        hex2 = hex2.padLeft(width, 'F');
+      }
+      return hex2;
+    } else {
+      var hex = toHex();
+      if (width > 0) {
+        hex = hex.padLeft(width, '0');
+      }
+      return hex;
+    }
+  }
+
+  String toHex32() {
+    if (isNegative) {
+      return toHexUnsigned(width: 8);
+    } else {
+      return toHex(width: 8);
+    }
+  }
+
+  String toHex64() {
+    if (isNegative) {
+      return toHexUnsigned(width: 16);
+    } else {
+      return toHex(width: 16);
+    }
+  }
+
+  Uint8List toUint8List32() => toInt().toUint8List32();
+
+  Uint8List toUint8List64() => toInt().toUint8List64();
+}
+
+/// Numeric extension for [String].
+extension StringToNumExtension on String {
+  /// Parses this [String] to a [num].
+  num toNum() => num.parse(this);
+
+  /// Parses this [String] to a [int].
+  int toInt() => int.parse(this);
+
+  /// Parses this [String] to a [double].
+  double toDouble() => double.parse(this);
+
+  /// Converts this [String] to a [BigInt] parsing as a integer text.
+  BigInt toBigInt() => BigInt.parse(this);
+
+  /// Converts this [String] to a [BigInt] parsing as a HEX sequence.
+  BigInt toBigIntFromHex() => BigInt.parse(this, radix: 16);
+
+  /// Same as [padLeft] with `0`, but respects the numerical signal.
+  String numericalPadLeft(int width) {
+    var s = this;
+    if (s.startsWith('-')) {
+      var n = s.substring(1);
+      return '-' + n.padLeft(width, '0');
+    } else {
+      return s.padLeft(width, '0');
+    }
+  }
+
+  /// Decodes this [String] as an `HEX` sequence of bytes ([Uint8List]).
+  Uint8List decodeHex() => base16.decode(this);
+}
+
+/// Extension for [Uint8List].
+extension Uint8ListExtension on Uint8List {
+  static final ListEquality<int> _listIntEquality = ListEquality<int>();
+
+  bool equals(Uint8List other) => _listIntEquality.equals(this, other);
+
+  Uint8List subView([int offset = 0, int? length]) {
+    length ??= this.length - offset;
+    return buffer.asUint8List(offset, length);
+  }
+
+  Uint8List subViewTail(int tailLength) {
+    var length = this.length;
+    var offset = length - tailLength;
+    var lng = length - offset;
+    return subView(offset, lng);
+  }
+
+  ByteData asByteData() => buffer.asByteData(offsetInBytes, lengthInBytes);
+
+  Uint8List copy() => Uint8List.fromList(this);
+
+  Uint8List reverseBytes() => Uint8List.fromList(reversed.toList());
+
+  String toHex({Endian endian = Endian.big}) {
+    return endian == Endian.big ? toHexBigEndian() : toHexLittleEndian();
+  }
+
+  String toHexBigEndian() => base16.encode(this);
+
+  String toHexLittleEndian() => base16.encode(reverseBytes());
+
+  BigInt toBigInt({Endian endian = Endian.big}) =>
+      toHex(endian: endian).toBigIntFromHex();
+
+  int toUInt8([int byteOffset = 0]) => asByteData().getUint8(byteOffset);
+
+  int toUInt16([int byteOffset = 0]) => asByteData().getUint16(byteOffset);
+
+  int toUInt32([int byteOffset = 0]) => asByteData().getUint32(byteOffset);
+
+  int toUInt64([int byteOffset = 0]) {
+    return StatisticsPlatform.instance.readUint64(this, byteOffset);
+  }
+
+  int toInt8([int byteOffset = 0]) => asByteData().getInt8(byteOffset);
+
+  int toInt16([int byteOffset = 0]) => asByteData().getInt16(byteOffset);
+
+  int toInt32([int byteOffset = 0]) => asByteData().getInt32(byteOffset);
+
+  int toInt64([int byteOffset = 0]) =>
+      StatisticsPlatform.instance.readInt64(this, byteOffset);
+
+  List<int> toUintList8() => List<int>.from(this);
+
+  List<int> toUintList16() {
+    final byteData = asByteData();
+    return List<int>.generate(length ~/ 2, (i) => byteData.getUint16(i * 2));
+  }
+
+  List<int> toUintList32() {
+    final byteData = asByteData();
+    return List<int>.generate(length ~/ 4, (i) => byteData.getUint32(i * 4));
+  }
+
+  List<int> toUintList64() {
+    return List<int>.generate(length ~/ 8,
+        (i) => StatisticsPlatform.instance.readUint64(this, i * 8));
+  }
+
+  List<int> toIntList8() {
+    final byteData = asByteData();
+    return List<int>.generate(length, (i) => byteData.getInt8(i));
+  }
+
+  List<int> toIntList16() {
+    final byteData = asByteData();
+    return List<int>.generate(length ~/ 2, (i) => byteData.getInt16(i * 2));
+  }
+
+  List<int> toIntList32() {
+    final byteData = asByteData();
+    return List<int>.generate(length ~/ 4, (i) => byteData.getInt32(i * 4));
+  }
+
+  List<int> toIntList64() {
+    return List<int>.generate(
+        length ~/ 8, (i) => StatisticsPlatform.instance.readInt64(this, i * 8));
+  }
+}
+
+extension ListIntExtension on List<int> {
+  Uint8List encodeUint8List() {
+    final length = this.length;
+
+    final bs = Uint8List(length);
+    final byteData = bs.asByteData();
+    var byteDataOffset = 0;
+
+    for (var i = 0; i < length; ++i) {
+      var n = this[i];
+      byteData.setUint8(byteDataOffset, n);
+      byteDataOffset++;
+    }
+
+    return bs;
+  }
+
+  Uint8List encodeUint16List() {
+    final length = this.length;
+
+    final bs = Uint8List(length * 2);
+    final byteData = bs.asByteData();
+    var byteDataOffset = 0;
+
+    for (var i = 0; i < length; ++i) {
+      var n = this[i];
+      byteData.setUint16(byteDataOffset, n);
+      byteDataOffset += 2;
+    }
+
+    return bs;
+  }
+
+  Uint8List encodeUint32List() {
+    final length = this.length;
+
+    final bs = Uint8List(length * 4);
+    final byteData = bs.asByteData();
+    var byteDataOffset = 0;
+
+    for (var i = 0; i < length; ++i) {
+      var n = this[i];
+      byteData.setUint32(byteDataOffset, n);
+      byteDataOffset += 4;
+    }
+
+    return bs;
+  }
+
+  Uint8List encodeUint64List() {
+    final p = StatisticsPlatform.instance;
+
+    final length = this.length;
+    final bs = Uint8List(length * 8);
+
+    var byteDataOffset = 0;
+
+    for (var i = 0; i < length; ++i) {
+      var n = this[i];
+
+      p.writeUint64(bs, n, byteDataOffset);
+
+      byteDataOffset += 8;
+    }
+
+    return bs;
+  }
 }

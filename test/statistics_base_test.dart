@@ -148,8 +148,8 @@ void main() {
       expect(statistics.isMeanInRange(10, 19), isFalse);
       expect(statistics.isMeanInRange(10, 30, 20, 21), isFalse);
 
-      expect(
-          statistics.toString(), equals('{~25 +-27.3861 [10..(30)..40] #4}'));
+      expect(statistics.toString(precision: 2),
+          equals('{~25 +-27.38 [10..(30)..40] #4}'));
       expect(statistics.toString(precision: 0),
           equals('{~25.0 +-27.386127875258307 [10..(30)..40] #4}'));
 

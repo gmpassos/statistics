@@ -109,16 +109,23 @@ class Chronometer implements Comparable<Chronometer> {
   }
 
   /// Returns a [String] with information of this chronometer:
+  ///
+  /// - If [withTime] is `true` will add `startTime` and `elapsedTime` to the [String].
+  ///
   /// Example:
   /// ```
   ///   Backpropagation{elapsedTime: 2955 ms, hertz: 2030456.8527918782 Hz, ops: 6000000, startTime: 2021-04-30 22:16:54.437147, stopTime: 2021-04-30 22:16:57.392758}
   /// ```
   @override
-  String toString() {
+  String toString({bool withTime = true}) {
+    var timeStr = withTime
+        ? ', startTime: $_startTime .. +${elapsedTime.toStringUnit()}'
+        : '';
+
     return '$name{ elapsedTime: $elapsedTimeMs ms'
         ', hertz: $hertzAsString'
         ', ops: $operationsAsString${failedOperations != 0 ? ' (fails: $failedOperationsAsString)' : ''}'
-        ', startTime: $_startTime .. +${elapsedTime.toStringUnit()} }';
+        '$timeStr }';
   }
 
   Chronometer operator +(Chronometer other) {

@@ -202,8 +202,9 @@ void main() {
           isTrue);
 
       expect(
-          Float32x4(50, 20, 30, 40).map((e) => '${e.x};${e.y};${e.z};${e.w}'),
-          equals('50.0;20.0;30.0;40.0'));
+          Float32x4(50.1, 20.1, 30.1, 40.1).map((e) =>
+              '${e.x.toStringAsFixed(1)};${e.y.toStringAsFixed(1)};${e.z.toStringAsFixed(1)};${e.w.toStringAsFixed(1)}'),
+          equals('50.1;20.1;30.1;40.1'));
     });
   });
 }
