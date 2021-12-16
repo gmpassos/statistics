@@ -1060,6 +1060,28 @@ extension IntExtension on int {
     var s = toString();
     return s.numericalPadLeft(width);
   }
+
+  /// Converts `this` as a `Int16` to bytes ([Uint8List]).
+  Uint8List int16ToBytes() =>
+      Uint8List(2)..asByteData().setInt16(0, this, Endian.big);
+
+  /// Converts `this` as a `Uint16` to bytes ([Uint8List]).
+  Uint8List uInt16ToBytes() =>
+      Uint8List(2)..asByteData().setUint16(0, this, Endian.big);
+
+  /// Converts `this` as a `Int32` to bytes ([Uint8List]).
+  Uint8List int32ToBytes() =>
+      Uint8List(4)..asByteData().setInt32(0, this, Endian.big);
+
+  /// Converts `this` as a `Uint32` to bytes ([Uint8List]).
+  Uint8List uInt32ToBytes() =>
+      Uint8List(4)..asByteData().setUint32(0, this, Endian.big);
+
+  /// Converts `this` as a `Int64` to bytes ([Uint8List]).
+  Uint8List int64ToBytes() => Uint8List(8)..setInt64(this);
+
+  /// Converts `this` as a `Uint64` to bytes ([Uint8List]).
+  Uint8List uInt64ToBytes() => Uint8List(8)..setUint64(this);
 }
 
 /// extension for [BigInt].

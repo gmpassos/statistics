@@ -5,7 +5,7 @@
   - `Uint8List`: `copyAsUnmodifiable`, `asUnmodifiableView`, `toStringLatin1/bytes`, `toStringUTF8/bytes`,
      `setUint8/16/32/64`, `setInt8/16/32/64`.
   - `List<int>`: `toUint8List`, `asUint8List`, `compareWith`.
-  - `int`: `isSafeInteger`, `checkSafeInteger`.
+  - `int`: `isSafeInteger`, `checkSafeInteger`, `int16/32/64ToBytes`, `uInt16/32/64ToBytes`.
   - `BigInt`: `isSafeInteger`, `checkSafeInteger`.
 - Improved documentation.
 - Fix typo: renamed extension with `UInt` to `Uint` to follow Dart style.

@@ -45,6 +45,18 @@ void main() {
       expect((-123).toUint8List32Reversed(),
           equals(Uint8List.fromList([133, 255, 255, 255])));
 
+      expect(0xFF01.uInt16ToBytes(), equals(Uint8List.fromList([255, 1])));
+      expect(0xFF01FF01.uInt32ToBytes(),
+          equals(Uint8List.fromList([255, 1, 255, 1])));
+      expect(0x01FF01FF01FF01.uInt64ToBytes(),
+          equals(Uint8List.fromList([0, 1, 255, 1, 255, 1, 255, 1])));
+
+      expect(0xFF01.int16ToBytes(), equals(Uint8List.fromList([255, 1])));
+      expect(0xFF01FF01.int32ToBytes(),
+          equals(Uint8List.fromList([255, 1, 255, 1])));
+      expect(0x01FF01FF01FF01.int64ToBytes(),
+          equals(Uint8List.fromList([0, 1, 255, 1, 255, 1, 255, 1])));
+
       expect((0xFFFFFFFF), equals(4294967295));
 
       expect((0xFFFFFFFF).toUint8List32(),
