@@ -1,4 +1,6 @@
+import 'dart:convert' as dart_convert;
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:intl/intl.dart';
@@ -939,6 +941,22 @@ RegExp _regexpLineBreak = RegExp(r'[\r\n]');
 
 /// Extension for [String].
 extension StringExtension on String {
+  /// Encodes this [String] to `LATIN-1`.
+  Uint8List encodeLatin1() => dart_convert.latin1.encode(this);
+
+  /// Encodes this [String] to `LATIN-1` bytes.
+  Uint8List encodeLatin1Bytes() => encodeLatin1();
+
+  /// Encodes this [String] to `UTF-8` bytes.
+  List<int> encodeUTF8() => dart_convert.utf8.encode(this);
+
+  /// Encodes this [String] to `UTF-8` bytes.
+  Uint8List encodeUTF8Bytes() => Uint8List.fromList(encodeUTF8());
+
+  /// Truncates `this` [String] if necessary, appending [suffix] at the end.
+  String truncate(int maxLength, {String suffix = '!...'}) =>
+      length > maxLength ? substring(0, maxLength) + suffix : this;
+
   /// Splits this [String] lines.
   ///
   /// - [lineDelimiter] the line delimiter [Pattern]. (default: `[\r\n]`).

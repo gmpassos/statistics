@@ -673,6 +673,12 @@ void main() {
     });
 
     test('StringExtension', () {
+      expect('abcdef'.truncate(10), equals('abcdef'));
+      expect('abcdef'.truncate(3), equals('abc!...'));
+
+      expect('abc'.encodeLatin1Bytes(), equals([97, 98, 99]));
+      expect('€'.encodeUTF8Bytes(), equals([226, 130, 172]));
+
       var s = 'a,b\n1,2\n10,20\n100,"20 0",300\n';
 
       expect(s.containsAny(['a', 'b']), isTrue);

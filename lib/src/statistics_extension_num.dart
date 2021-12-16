@@ -1118,12 +1118,6 @@ extension BigIntExtension on BigInt {
 
 /// Numeric extension for [String].
 extension StringToNumExtension on String {
-  /// Encodes this [String] to `LATIN-1` bytes.
-  Uint8List encodeLatin1() => dart_convert.latin1.encode(this);
-
-  /// Encodes this [String] to `UTF-8` bytes.
-  Uint8List encodeUTF8() => Uint8List.fromList(dart_convert.utf8.encode(this));
-
   /// Parses this [String] to a [num].
   num toNum() => num.parse(this);
 

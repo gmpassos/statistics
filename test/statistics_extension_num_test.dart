@@ -931,9 +931,6 @@ void main() {
 
       expect('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'.toBigIntFromHex(),
           equals(BigInt.parse('340282366920938463463374607431768211455')));
-
-      expect('abc'.encodeUTF8(), equals([97, 98, 99]));
-      expect('€'.encodeUTF8(), equals([226, 130, 172]));
     });
   });
 
