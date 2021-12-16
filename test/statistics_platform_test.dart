@@ -90,6 +90,12 @@ void main() {
 
       p.checkSafeIntegerByBigInt(9007199254740991.toBigInt());
       p.checkSafeIntegerByBigInt(-9007199254740991.toBigInt());
+
+      expect(9007199254740991.isSafeInteger, isTrue);
+      9007199254740991.checkSafeInteger();
+
+      expect(9007199254740991.toBigInt().isSafeInteger, isTrue);
+      9007199254740991.toBigInt().checkSafeInteger();
     });
 
     test('64 bits Limits', () {

@@ -9,6 +9,8 @@ import 'package:intl/intl.dart';
 import 'statistics_base.dart';
 import 'statistics_platform.dart';
 
+final StatisticsPlatform _platform = StatisticsPlatform.instance;
+
 /// extension for `Iterable<N>` (`N` extends `num`).
 extension IterableNExtension<N extends num> on Iterable<N> {
   bool get castsToDouble => N == double;
@@ -983,6 +985,14 @@ extension DoubleExtension on double {
 
 /// extension for `int`.
 extension IntExtension on int {
+  /// Returns `true` if this `int` is safe for the current platform ([StatisticsPlatform]).
+  bool get isSafeInteger => _platform.isSafeInteger(this);
+
+  /// Checks if this `int` is safe for the current platform ([StatisticsPlatform]).
+  void checkSafeInteger() {
+    _platform.checkSafeInteger(this);
+  }
+
   /// Returns the square of `this` number.
   int get square => this * this;
 
@@ -1029,7 +1039,7 @@ extension IntExtension on int {
   /// Converts this 64 bits `int` to 8 bytes.
   Uint8List toUint8List64() {
     var bs = Uint8List(8);
-    StatisticsPlatform.instance.writeUint64(bs, this);
+    _platform.writeUint64(bs, this);
     return bs;
   }
 
@@ -1054,6 +1064,14 @@ extension IntExtension on int {
 
 /// extension for [BigInt].
 extension BigIntExtension on BigInt {
+  /// Returns `true` if this as `int` is safe for the current platform ([StatisticsPlatform]).
+  bool get isSafeInteger => _platform.isSafeIntegerByBigInt(this);
+
+  /// Checks if this as `int` is safe for the current platform ([StatisticsPlatform]).
+  void checkSafeInteger() {
+    _platform.checkSafeIntegerByBigInt(this);
+  }
+
   String toHex({int width = 0}) {
     var hex = toRadixString(16).toUpperCase();
     if (width > 0) {
@@ -1245,7 +1263,7 @@ extension Uint8ListExtension on Uint8List {
 
   /// Returns a `Uint64` at [byteOffset] of this bytes buffer (reads 8 bytes).
   int getUint64([int byteOffset = 0]) {
-    return StatisticsPlatform.instance.readUint64(this, byteOffset);
+    return _platform.readUint64(this, byteOffset);
   }
 
   /// Returns a `Int8` at [byteOffset] of this bytes buffer (reads 1 byte).
@@ -1258,8 +1276,7 @@ extension Uint8ListExtension on Uint8List {
   int getInt32([int byteOffset = 0]) => asByteData().getInt32(byteOffset);
 
   /// Returns a `Int64` at [byteOffset] of this bytes buffer (reads 8 bytes).
-  int getInt64([int byteOffset = 0]) =>
-      StatisticsPlatform.instance.readInt64(this, byteOffset);
+  int getInt64([int byteOffset = 0]) => _platform.readInt64(this, byteOffset);
 
   /// Converts this bytes to a [List] of `Uint8`.
   List<int> toListOfUint8() => List<int>.from(this);
@@ -1278,8 +1295,8 @@ extension Uint8ListExtension on Uint8List {
 
   /// Converts this bytes to a [List] of `Uint64`.
   List<int> toListOfUint64() {
-    return List<int>.generate(length ~/ 8,
-        (i) => StatisticsPlatform.instance.readUint64(this, i * 8));
+    return List<int>.generate(
+        length ~/ 8, (i) => _platform.readUint64(this, i * 8));
   }
 
   /// Converts this bytes to a [List] of `Int8`.
@@ -1303,7 +1320,7 @@ extension Uint8ListExtension on Uint8List {
   /// Converts this bytes to a [List] of `Int64`.
   List<int> toListOfInt64() {
     return List<int>.generate(
-        length ~/ 8, (i) => StatisticsPlatform.instance.readInt64(this, i * 8));
+        length ~/ 8, (i) => _platform.readInt64(this, i * 8));
   }
 }
 
@@ -1356,7 +1373,7 @@ extension ListIntExtension on List<int> {
 
   /// Encodes this [List] to a [Uint8List] of `Uint64`.
   Uint8List encodeUint64List() {
-    final p = StatisticsPlatform.instance;
+    final p = _platform;
 
     final length = this.length;
     final bs = Uint8List(length * 8);

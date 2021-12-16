@@ -4,6 +4,8 @@
   - `String: `encodeLatin1`, `encodeUTF8`, `truncate`.
   - `Uint8List`: `copyAsUnmodifiable`, `asUnmodifiableView`, `toStringLatin1/bytes`, `toStringUTF8/bytes`.
   - `List<int>`: `toUint8List`, `asUint8List`, `compareWith`.
+  - `int`: `isSafeInteger`, `checkSafeInteger`.
+  - `BigInt`: `isSafeInteger`, `checkSafeInteger`.
 - Improved documentation.
 - Fix typo: renamed extension with `UInt` to `Uint` to follow Dart style.
 
