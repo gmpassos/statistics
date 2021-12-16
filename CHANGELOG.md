@@ -1,5 +1,10 @@
 ## 1.0.9
 
+- Added extensions:
+  - `String: `encodeLatin1` and `encodeUTF8`.
+  - `Uint8List`: `copyAsUnmodifiable`, `asUnmodifiableView`, `toStringLatin1`, `toStringUTF8`.
+  - `List<int>`: `toUint8List`.
+- Improved documentation.
 - Fix typo: renamed extension with `UInt` to `Uint` to follow Dart style.
 
 ## 1.0.8

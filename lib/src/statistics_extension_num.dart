@@ -1238,57 +1238,73 @@ extension Uint8ListExtension on Uint8List {
   BigInt toBigInt({Endian endian = Endian.big}) =>
       toHex(endian: endian).toBigIntFromHex();
 
+  /// Returns a `Uint8` at [byteOffset] of this bytes buffer (reads 1 byte).
   int getUint8([int byteOffset = 0]) => asByteData().getUint8(byteOffset);
 
+  /// Returns a `Uint16` at [byteOffset] of this bytes buffer (reads 2 bytes).
   int getUint16([int byteOffset = 0]) => asByteData().getUint16(byteOffset);
 
+  /// Returns a `Uint32` at [byteOffset] of this bytes buffer (reads 4 bytes).
   int getUint32([int byteOffset = 0]) => asByteData().getUint32(byteOffset);
 
+  /// Returns a `Uint64` at [byteOffset] of this bytes buffer (reads 8 bytes).
   int getUint64([int byteOffset = 0]) {
     return StatisticsPlatform.instance.readUint64(this, byteOffset);
   }
 
+  /// Returns a `Int8` at [byteOffset] of this bytes buffer (reads 1 byte).
   int getInt8([int byteOffset = 0]) => asByteData().getInt8(byteOffset);
 
+  /// Returns a `Int16` at [byteOffset] of this bytes buffer (reads 2 bytes).
   int getInt16([int byteOffset = 0]) => asByteData().getInt16(byteOffset);
 
+  /// Returns a `Int32` at [byteOffset] of this bytes buffer (reads 4 bytes).
   int getInt32([int byteOffset = 0]) => asByteData().getInt32(byteOffset);
 
+  /// Returns a `Int64` at [byteOffset] of this bytes buffer (reads 8 bytes).
   int getInt64([int byteOffset = 0]) =>
       StatisticsPlatform.instance.readInt64(this, byteOffset);
 
+  /// Converts this bytes to a [List] of `Uint8`.
   List<int> toListOfUint8() => List<int>.from(this);
 
+  /// Converts this bytes to a [List] of `Uint16`.
   List<int> toListOfUint16() {
     final byteData = asByteData();
     return List<int>.generate(length ~/ 2, (i) => byteData.getUint16(i * 2));
   }
 
+  /// Converts this bytes to a [List] of `Uint32`.
   List<int> toListOfUint32() {
     final byteData = asByteData();
     return List<int>.generate(length ~/ 4, (i) => byteData.getUint32(i * 4));
   }
 
+  /// Converts this bytes to a [List] of `Uint64`.
   List<int> toListOfUint64() {
     return List<int>.generate(length ~/ 8,
         (i) => StatisticsPlatform.instance.readUint64(this, i * 8));
   }
 
+  /// Converts this bytes to a [List] of `Int8`.
   List<int> toListOfInt8() {
     final byteData = asByteData();
     return List<int>.generate(length, (i) => byteData.getInt8(i));
   }
 
+  /// Converts this bytes to a [List] of `Int16`.
   List<int> toListOfInt16() {
     final byteData = asByteData();
     return List<int>.generate(length ~/ 2, (i) => byteData.getInt16(i * 2));
   }
 
+  /// Converts this bytes to a [List] of `Int32`.
   List<int> toListOfInt32() {
     final byteData = asByteData();
     return List<int>.generate(length ~/ 4, (i) => byteData.getInt32(i * 4));
   }
 
+  /// Converts this bytes to a [List] of `Int64`.
   List<int> toListOfInt64() {
     return List<int>.generate(
         length ~/ 8, (i) => StatisticsPlatform.instance.readInt64(this, i * 8));
@@ -1296,22 +1312,13 @@ extension Uint8ListExtension on Uint8List {
 }
 
 extension ListIntExtension on List<int> {
-  Uint8List encodeUint8List() {
-    final length = this.length;
+  /// Same as [encodeUint8List].
+  Uint8List toUint8List() => encodeUint8List();
 
-    final bs = Uint8List(length);
-    final byteData = bs.asByteData();
-    var byteDataOffset = 0;
+  /// Encodes this [List] to a [Uint8List] of `Uint8`.
+  Uint8List encodeUint8List() => Uint8List.fromList(this);
 
-    for (var i = 0; i < length; ++i) {
-      var n = this[i];
-      byteData.setUint8(byteDataOffset, n);
-      byteDataOffset++;
-    }
-
-    return bs;
-  }
-
+  /// Encodes this [List] to a [Uint8List] of `Uint16`.
   Uint8List encodeUint16List() {
     final length = this.length;
 
@@ -1328,6 +1335,7 @@ extension ListIntExtension on List<int> {
     return bs;
   }
 
+  /// Encodes this [List] to a [Uint8List] of `Uint32`.
   Uint8List encodeUint32List() {
     final length = this.length;
 
@@ -1344,6 +1352,7 @@ extension ListIntExtension on List<int> {
     return bs;
   }
 
+  /// Encodes this [List] to a [Uint8List] of `Uint64`.
   Uint8List encodeUint64List() {
     final p = StatisticsPlatform.instance;
 
