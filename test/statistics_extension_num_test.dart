@@ -1112,6 +1112,17 @@ void main() {
       expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toUint8List(),
           equals([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]));
 
+      {
+        var ns = [0, 0, 1, 2, 3, 4, 5, 6, 7, 8];
+        var bs = Uint8List.fromList(ns);
+
+        expect(bs.asUint8List, equals(bs));
+        expect(bs.toUint8List(), equals(bs));
+
+        expect(identical(bs.asUint8List, bs), isTrue);
+        expect(identical(bs.toUint8List(), bs), isFalse);
+      }
+
       expect(
           Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).encodeUint8List(),
           equals([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]));

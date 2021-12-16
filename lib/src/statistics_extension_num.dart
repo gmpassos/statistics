@@ -1207,6 +1207,8 @@ extension Uint8ListExtension on Uint8List {
   Uint8List copyAsUnmodifiable() => UnmodifiableUint8ListView(copy());
 
   /// Returns an unmodifiable view of `this` instance.
+  ///
+  /// - Will just cast if is already an [UnmodifiableUint8ListView].
   UnmodifiableUint8ListView get asUnmodifiableView {
     var self = this;
     return self is UnmodifiableUint8ListView
@@ -1314,6 +1316,12 @@ extension Uint8ListExtension on Uint8List {
 extension ListIntExtension on List<int> {
   /// Same as [encodeUint8List].
   Uint8List toUint8List() => encodeUint8List();
+
+  /// Ensures that this [List] is a [Uint8List].
+  ///
+  /// Calls [encodeUint8List] if needed, or just cast to [Uint8List].
+  Uint8List get asUint8List =>
+      this is Uint8List ? (this as Uint8List) : encodeUint8List();
 
   /// Encodes this [List] to a [Uint8List] of `Uint8`.
   Uint8List encodeUint8List() => Uint8List.fromList(this);
