@@ -931,6 +931,9 @@ void main() {
 
       expect('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'.toBigIntFromHex(),
           equals(BigInt.parse('340282366920938463463374607431768211455')));
+
+      expect('abc'.encodeUTF8(), equals([97, 98, 99]));
+      expect('€'.encodeUTF8(), equals([226, 130, 172]));
     });
   });
 
@@ -946,8 +949,28 @@ void main() {
       expect(
           Uint8List.fromList([1, 10, 20, 30]).copy(), equals([1, 10, 20, 30]));
 
+      expect(Uint8List.fromList([1, 10, 20, 30]).copyAsUnmodifiable(),
+          equals([1, 10, 20, 30]));
+
+      expect(() => Uint8List.fromList([1, 2, 3]).copy()..[0] = 10,
+          returnsNormally);
+
+      expect(() => Uint8List.fromList([1, 2, 3]).copyAsUnmodifiable()..[0] = 10,
+          throwsA(isA<Error>()));
+
+      expect(() => Uint8List.fromList([1, 2, 3]).asUnmodifiableView..[0] = 10,
+          throwsA(isA<Error>()));
+
+      expect(Uint8List.fromList([1, 10, 20, 30]).bytesHashCode(),
+          equals(1176475097));
+
       expect(Uint8List.fromList([1, 10, 20, 30]).reverseBytes(),
           equals([30, 20, 10, 1]));
+
+      expect(Uint8List.fromList([65, 66, 67, 68]).toStringLatin1(),
+          equals('ABCD'));
+
+      expect(Uint8List.fromList([226, 130, 172]).toStringUTF8(), equals('€'));
 
       expect(
           Uint8List.fromList([0, 0, 0, 123])

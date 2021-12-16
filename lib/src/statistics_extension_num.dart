@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:typed_data';
+import 'dart:convert' as dart_convert;
 
 import 'package:base_codecs/base_codecs.dart';
 import 'package:collection/collection.dart';
@@ -1117,6 +1118,12 @@ extension BigIntExtension on BigInt {
 
 /// Numeric extension for [String].
 extension StringToNumExtension on String {
+  /// Encodes this [String] to `LATIN-1` bytes.
+  Uint8List encodeLatin1() => dart_convert.latin1.encode(this);
+
+  /// Encodes this [String] to `UTF-8` bytes.
+  Uint8List encodeUTF8() => Uint8List.fromList(dart_convert.utf8.encode(this));
+
   /// Parses this [String] to a [num].
   num toNum() => num.parse(this);
 
@@ -1173,6 +1180,9 @@ extension Uint8ListExtension on Uint8List {
   /// Returns `true` of [other] elements are equals.
   bool equals(Uint8List other) => _listIntEquality.equals(this, other);
 
+  /// Returns a hashcode of this bytes.
+  int bytesHashCode() => _listIntEquality.hash(this);
+
   /// A sub `Uint8List` view of regeion.
   Uint8List subView([int offset = 0, int? length]) {
     length ??= this.length - offset;
@@ -1192,6 +1202,23 @@ extension Uint8ListExtension on Uint8List {
 
   /// Returns a copy of `this` instance.
   Uint8List copy() => Uint8List.fromList(this);
+
+  /// Returns an unmodifiable copy of `this` instance.
+  Uint8List copyAsUnmodifiable() => UnmodifiableUint8ListView(copy());
+
+  /// Returns an unmodifiable view of `this` instance.
+  UnmodifiableUint8ListView get asUnmodifiableView {
+    var self = this;
+    return self is UnmodifiableUint8ListView
+        ? self
+        : UnmodifiableUint8ListView(self);
+  }
+
+  /// Decodes `this` bytes as a `LATIN-1` [String].
+  String toStringLatin1() => dart_convert.latin1.decode(this);
+
+  /// Decodes `this` bytes as a `UTF-8` [String].
+  String toStringUTF8() => dart_convert.utf8.decode(this);
 
   /// Returns `this` instance in a reversed order.
   Uint8List reverseBytes() => Uint8List.fromList(reversed.toList());
