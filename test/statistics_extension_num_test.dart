@@ -1043,6 +1043,8 @@ void main() {
       expect(Uint8List.fromList([255, 0, 0, 0, 0, 0, 0, 0]).toBigInt(),
           equals(BigInt.parse('18374686479671623680')));
 
+      //
+
       expect(Uint8List.fromList([1, 2, 3, 4]).getUint8(0), equals(1));
       expect(Uint8List.fromList([1, 2, 3, 4]).getUint8(1), equals(2));
       expect(Uint8List.fromList([1, 2, 3, 4]).getUint8(2), equals(3));
@@ -1065,6 +1067,8 @@ void main() {
               .getUint64(1)
               .toString(),
           equals('283686952306183'));
+
+      //
 
       expect(
           Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
@@ -1089,6 +1093,40 @@ void main() {
               .getInt64(1)
               .toString(),
           equals('283686952306183'));
+
+      //
+
+      expect(Uint8List.fromList([1, 2, 3, 4])..setUint8(20, 1),
+          equals([1, 20, 3, 4]));
+
+      expect(Uint8List.fromList([1, 2, 3, 4])..setUint16(258, 1),
+          equals([1, 1, 2, 4]));
+
+      expect(Uint8List.fromList([1, 2, 3, 4, 5])..setUint32(0xFFFEFDFC, 1),
+          equals([1, 255, 254, 253, 252]));
+
+      expect(
+          Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9])
+            ..setUint64(0xFFFEFDFCFBFAF9F8, 1),
+          equals([1, 255, 254, 253, 252, 251, 250, 249, 248]));
+
+      //
+
+      expect(Uint8List.fromList([1, 2, 3, 4])..setInt8(20, 1),
+          equals([1, 20, 3, 4]));
+
+      expect(Uint8List.fromList([1, 2, 3, 4])..setInt16(258, 1),
+          equals([1, 1, 2, 4]));
+
+      expect(Uint8List.fromList([1, 2, 3, 4, 5])..setInt32(0xFFFEFDFC, 1),
+          equals([1, 255, 254, 253, 252]));
+
+      expect(
+          Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9])
+            ..setInt64(0xFFFEFDFCFBFAF9F8, 1),
+          equals([1, 255, 254, 253, 252, 251, 250, 249, 248]));
+
+      //
 
       expect(Uint8List.fromList([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]).toListOfUint8(),
           equals([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]));

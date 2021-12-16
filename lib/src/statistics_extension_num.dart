@@ -1278,6 +1278,38 @@ extension Uint8ListExtension on Uint8List {
   /// Returns a `Int64` at [byteOffset] of this bytes buffer (reads 8 bytes).
   int getInt64([int byteOffset = 0]) => _platform.readInt64(this, byteOffset);
 
+  /// Sets [n] as a `Uint8` at [byteOffset].
+  void setUint8(int n, [int byteOffset = 0]) =>
+      asByteData().setUint8(byteOffset, n);
+
+  /// Sets [n] as a `Uint16` at [byteOffset].
+  void setUint16(int n, [int byteOffset = 0]) =>
+      asByteData().setUint16(byteOffset, n);
+
+  /// Sets [n] as a `Uint32` at [byteOffset].
+  void setUint32(int n, [int byteOffset = 0]) =>
+      asByteData().setUint32(byteOffset, n);
+
+  /// Sets [n] as a `Uint64` at [byteOffset].
+  void setUint64(int n, [int byteOffset = 0]) =>
+      _platform.writeUint64(this, n, byteOffset);
+
+  /// Sets [n] as a `Int8` at [byteOffset].
+  void setInt8(int n, [int byteOffset = 0]) =>
+      asByteData().setInt8(byteOffset, n);
+
+  /// Sets [n] as a `Int16` at [byteOffset].
+  void setInt16(int n, [int byteOffset = 0]) =>
+      asByteData().setInt16(byteOffset, n);
+
+  /// Sets [n] as a `Int32` at [byteOffset].
+  void setInt32(int n, [int byteOffset = 0]) =>
+      asByteData().setInt32(byteOffset, n);
+
+  /// Sets [n] as a `Int64` at [byteOffset].
+  void setInt64(int n, [int byteOffset = 0]) =>
+      _platform.writeInt64(this, n, byteOffset);
+
   /// Converts this bytes to a [List] of `Uint8`.
   List<int> toListOfUint8() => List<int>.from(this);
 

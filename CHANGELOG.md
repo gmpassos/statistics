@@ -2,7 +2,8 @@
 
 - Added extensions:
   - `String: `encodeLatin1`, `encodeUTF8`, `truncate`.
-  - `Uint8List`: `copyAsUnmodifiable`, `asUnmodifiableView`, `toStringLatin1/bytes`, `toStringUTF8/bytes`.
+  - `Uint8List`: `copyAsUnmodifiable`, `asUnmodifiableView`, `toStringLatin1/bytes`, `toStringUTF8/bytes`,
+     `setUint8/16/32/64`, `setInt8/16/32/64`.
   - `List<int>`: `toUint8List`, `asUint8List`, `compareWith`.
   - `int`: `isSafeInteger`, `checkSafeInteger`.
   - `BigInt`: `isSafeInteger`, `checkSafeInteger`.
