@@ -1,4 +1,4 @@
-import 'package:statistics/src/statistics_metric.dart';
+import 'package:statistics/statistics.dart';
 import 'package:test/test.dart';
 
 void main() {

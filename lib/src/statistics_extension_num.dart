@@ -1,13 +1,13 @@
-import 'dart:math';
-import 'dart:typed_data';
 import 'dart:convert' as dart_convert;
+import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:base_codecs/base_codecs.dart';
 import 'package:collection/collection.dart';
-import 'package:statistics/src/statistics_platform.dart';
 import 'package:intl/intl.dart';
 
 import 'statistics_base.dart';
+import 'statistics_platform.dart';
 
 /// extension for `Iterable<N>` (`N` extends `num`).
 extension IterableNExtension<N extends num> on Iterable<N> {
@@ -106,7 +106,7 @@ extension IterableNumExtension on Iterable<num> {
       total += n * n;
     }
 
-    var deviation = sqrt(total / length);
+    var deviation = math.sqrt(total / length);
 
     return deviation;
   }
@@ -203,7 +203,7 @@ extension IterableNumExtension on Iterable<num> {
   List<num> get square => map((n) => n * n).toList();
 
   /// Returns the square roots of this numeric collection.
-  List<double> get squareRoot => map(sqrt).toList();
+  List<double> get squareRoot => map(math.sqrt).toList();
 
   /// Returns the absolute values of this numeric collection.
   List<num> get abs => map((n) => n.abs()).toList();
@@ -387,7 +387,7 @@ extension IterableDoubleExtension on Iterable<double> {
       total += n * n;
     }
 
-    var deviation = sqrt(total / length);
+    var deviation = math.sqrt(total / length);
 
     return deviation;
   }
@@ -484,7 +484,7 @@ extension IterableDoubleExtension on Iterable<double> {
   List<double> get square => map((n) => n * n).toList();
 
   /// Returns the square roots of this numeric collection.
-  List<double> get squareRoot => map(sqrt).toList();
+  List<double> get squareRoot => map(math.sqrt).toList();
 
   /// Returns the absolute values of this numeric collection.
   List<double> get abs => map((n) => n.abs()).toList();
@@ -669,7 +669,7 @@ extension IterableIntExtension on Iterable<int> {
       total += n * n;
     }
 
-    var deviation = sqrt(total / length);
+    var deviation = math.sqrt(total / length);
 
     return deviation;
   }
@@ -766,7 +766,7 @@ extension IterableIntExtension on Iterable<int> {
   List<int> get square => map((n) => n * n).toList();
 
   /// Returns the square roots of this numeric collection.
-  List<double> get squareRoot => map(sqrt).toList();
+  List<double> get squareRoot => map(math.sqrt).toList();
 
   /// Returns the absolute values of this numeric collection.
   List<int> get abs => map((n) => n.abs()).toList();
@@ -887,10 +887,10 @@ extension NumExtension on num {
   num get square => this * this;
 
   /// Returns the square root of `this` number.
-  double get squareRoot => sqrt(this);
+  double get squareRoot => math.sqrt(this);
 
   /// Returns the natural exponent, [e], to the power of `this` number.
-  double get naturalExponent => exp(this);
+  double get naturalExponent => math.exp(this);
 
   /// Returns the sign of `this` number, regarding the [zeroTolerance].
   ///
@@ -913,10 +913,10 @@ extension DoubleExtension on double {
   double get square => this * this;
 
   /// Returns the square root of `this` number.
-  double get squareRoot => sqrt(this);
+  double get squareRoot => math.sqrt(this);
 
   /// Returns the natural exponent, [e], to the power of `this` number.
-  double get naturalExponent => exp(this);
+  double get naturalExponent => math.exp(this);
 
   /// If `this` number [isNaN] returns [n]. If NOT, returns `this`.
   double ifNaN(double n) => isNaN ? n : this;
@@ -969,7 +969,7 @@ extension DoubleExtension on double {
       return truncateToDouble();
     }
 
-    var mod = pow(10.0, fractionDigits).toDouble();
+    var mod = math.pow(10.0, fractionDigits).toDouble();
     return ((this * mod).round().toDouble() / mod);
   }
 
@@ -987,10 +987,10 @@ extension IntExtension on int {
   int get square => this * this;
 
   /// Returns the square root of `this` number.
-  double get squareRoot => sqrt(this);
+  double get squareRoot => math.sqrt(this);
 
   /// Returns the natural exponent, [e], to the power of `this` number.
-  double get naturalExponent => exp(this);
+  double get naturalExponent => math.exp(this);
 
   /// Converts this `int` to [BigInt].
   BigInt toBigInt() => BigInt.from(this);
@@ -1372,5 +1372,23 @@ extension ListIntExtension on List<int> {
     }
 
     return bs;
+  }
+
+  /// Similar to [String.compareTo].
+  int compareWith(List<int> other) {
+    int len1 = length;
+    int len2 = other.length;
+    int lim = math.min(len1, len2);
+
+    int k = 0;
+    while (k < lim) {
+      var c1 = this[k];
+      var c2 = other[k];
+      if (c1 != c2) {
+        return c1 - c2;
+      }
+      k++;
+    }
+    return len1 - len2;
   }
 }

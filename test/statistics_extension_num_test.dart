@@ -937,7 +937,22 @@ void main() {
   group('Numeric Uint8List', () {
     setUp(() {});
 
-    test('equals', () {
+    test('basic', () {
+      expect(
+          Uint8List.fromList([0, 0, 0, 123])
+              .compareWith(Uint8List.fromList([0, 0, 0, 123])),
+          equals(0));
+
+      expect(
+          Uint8List.fromList([0, 0, 0, 123])
+              .compareWith(Uint8List.fromList([0, 0, 1, 123])),
+          equals(-1));
+
+      expect(
+          Uint8List.fromList([0, 0, 1, 123])
+              .compareWith(Uint8List.fromList([0, 0, 0, 123])),
+          equals(1));
+
       expect(
           Uint8List.fromList([0, 0, 0, 123])
               .equals(Uint8List.fromList([0, 0, 0, 123])),
