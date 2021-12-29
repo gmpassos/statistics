@@ -271,8 +271,27 @@ void main() {
       expect(statistics.medianLow, equals(0));
       expect(statistics.medianHigh, equals(0));
       expect(statistics.median, equals(0));
-
       expect(data.statisticsWithData.data, equals(data));
+    });
+
+    test('BigInt', () {
+      var statistics = Statistics.compute([
+        Statistics.maxSafeInt ~/ 2,
+        Statistics.maxSafeInt,
+        Statistics.maxSafeInt ~/ 2
+      ], useBigIntToCompute: true);
+
+      expect(
+          statistics.sumBigInt,
+          equals(BigInt.from(Statistics.maxSafeInt) +
+              BigInt.from(Statistics.maxSafeInt) -
+              BigInt.one));
+
+      expect(
+          statistics.mean,
+          equals(
+              (BigInt.from(Statistics.maxSafeInt) ~/ 3.toBigInt() * BigInt.two)
+                  .toDouble()));
     });
 
     test('error(alreadySortedData)', () {

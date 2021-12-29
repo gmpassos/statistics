@@ -885,6 +885,9 @@ extension NumExtension on num {
     }
   }
 
+  /// Converts this `num` to [BigInt].
+  BigInt toBigInt() => BigInt.from(this);
+
   /// Returns the square of `this` number.
   num get square => this * this;
 
@@ -911,6 +914,9 @@ extension NumExtension on num {
 
 /// extension for `double`.
 extension DoubleExtension on double {
+  /// Converts this `double` to [BigInt].
+  BigInt toBigInt() => BigInt.from(this);
+
   /// Returns the square of `this` number.
   double get square => this * this;
 

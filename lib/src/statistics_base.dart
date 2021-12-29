@@ -175,6 +175,12 @@ String? formatDecimal(Object? value,
 
 /// A statistics summary of a numeric collection.
 class Statistics<N extends num> extends DataEntry {
+  /// Represents the maximum safe integer in JavaScript: `(2^53 - 1)`
+  static final int maxSafeInt = 9007199254740991;
+
+  /// Square root of [maxSafeInt].
+  static final int maxSafeIntSqrt = math.sqrt(maxSafeInt).toInt();
+
   /// The length/size of the numeric collection.
   num length;
 
@@ -233,6 +239,12 @@ class Statistics<N extends num> extends DataEntry {
   /// The total sum of squares of the numeric collection.
   num squaresSum;
 
+  /// Same as [sum] but as a [BigInt].
+  BigInt sumBigInt;
+
+  /// Same as [squaresSum] but as a [BigInt].
+  BigInt squaresSumBigInt;
+
   /// Returns the mean/average of the numeric collection.
   double mean;
 
@@ -255,12 +267,18 @@ class Statistics<N extends num> extends DataEntry {
     double? standardDeviation,
     num? sum,
     num? squaresSum,
+    BigInt? sumBigInt,
+    BigInt? squaresSumBigInt,
     this.lowerStatistics,
     this.upperStatistics,
   })  : medianLow = medianLow ?? medianHigh,
         sum = sum ?? (mean! * length),
         squaresSum =
             squaresSum ?? ((standardDeviation! * standardDeviation) * length),
+        sumBigInt = sumBigInt ?? sum?.toBigInt() ?? (mean! * length).toBigInt(),
+        squaresSumBigInt = squaresSumBigInt ??
+            squaresSum?.toBigInt() ??
+            ((standardDeviation! * standardDeviation) * length).toBigInt(),
         mean = mean ?? (sum! / length),
         standardDeviation =
             standardDeviation ?? math.sqrt(squaresSum! / length);
@@ -286,10 +304,12 @@ class Statistics<N extends num> extends DataEntry {
   ///   This allows some usage optimization, do not pass an inconsistent value.
   /// - [computeLowerAndUpper] if `true` will compute [lowerStatistics] and [upperStatistics].
   /// - [keepData] if `true` will keep a copy of [data] at [data].
+  /// - [useBigIntToCompute] if `true` will force use of [BigInt] for internal computation to avoid overflow.
   factory Statistics.compute(Iterable<N> data,
       {bool alreadySortedData = false,
       bool computeLowerAndUpper = true,
-      bool keepData = false}) {
+      bool keepData = false,
+      bool useBigIntToCompute = false}) {
     var length = data.length;
     if (length == 0) {
       var statistics = Statistics._empty(data);
@@ -328,18 +348,50 @@ class Statistics<N extends num> extends DataEntry {
       }
     }
 
-    num sum = first;
-    var squaresSum = first * first;
+    num sum;
+    num squaresSum;
+    BigInt sumBigInt;
+    BigInt squaresSumBigInt;
 
-    for (var i = 1; i < length; ++i) {
-      var n = listSorted[i];
-      sum += n;
-      squaresSum += n * n;
+    double mean;
+    double standardDeviation;
+
+    if (useBigIntToCompute || max > (maxSafeIntSqrt ~/ length)) {
+      var firstBigInt = first.toBigInt();
+      sumBigInt = firstBigInt;
+      squaresSumBigInt = firstBigInt * firstBigInt;
+
+      for (var i = 1; i < length; ++i) {
+        var n = listSorted[i];
+        var nBigInt = n.toBigInt();
+        sumBigInt += nBigInt;
+        squaresSumBigInt += nBigInt * nBigInt;
+      }
+
+      sum = sumBigInt.toInt();
+      squaresSum = squaresSumBigInt.toInt();
+
+      var lengthBigInt = length.toBigInt();
+
+      mean = sumBigInt / lengthBigInt;
+      standardDeviation = math.sqrt(squaresSumBigInt / lengthBigInt);
+    } else {
+      sum = first;
+      squaresSum = first * first;
+
+      for (var i = 1; i < length; ++i) {
+        var n = listSorted[i];
+        sum += n;
+        squaresSum += n * n;
+      }
+
+      sumBigInt = sum.toBigInt();
+      squaresSumBigInt = squaresSum.toBigInt();
+
+      mean = sum / length;
+
+      standardDeviation = math.sqrt(squaresSum / length);
     }
-
-    var mean = sum / length;
-
-    var standardDeviation = math.sqrt(squaresSum / length);
 
     Statistics<N>? lowerStatistics;
     Statistics<N>? upperStatistics;
@@ -370,6 +422,8 @@ class Statistics<N extends num> extends DataEntry {
       medianHigh: medianHigh,
       sum: sum,
       squaresSum: squaresSum,
+      sumBigInt: sumBigInt,
+      squaresSumBigInt: squaresSumBigInt,
       mean: mean,
       standardDeviation: standardDeviation,
       lowerStatistics: lowerStatistics,

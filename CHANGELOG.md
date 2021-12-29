@@ -1,3 +1,7 @@
+## 1.0.10
+
+- Optimize `Statistics` to allow computation of big numbers without overflow issues.
+
 ## 1.0.9
 
 - Added extensions:
