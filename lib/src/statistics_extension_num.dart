@@ -1050,7 +1050,12 @@ extension IntExtension on int {
   }
 
   /// Same as [toUint8List32], but with bytes in reversed order.
-  Uint8List toUint8List32Reversed() => toUint8List32().reverseBytes();
+  Uint8List toUint8List32Reversed() {
+    var bs = Uint8List(4);
+    var data = bs.asByteData();
+    data.setUint32(0, this, Endian.little);
+    return bs;
+  }
 
   /// Same as [toUint8List64], but with bytes in reversed order.
   Uint8List toUint8List64Reversed() => toUint8List64().reverseBytes();
@@ -1160,6 +1165,8 @@ extension BigIntExtension on BigInt {
   Uint8List toUint8List32() => toInt().toUint8List32();
 
   Uint8List toUint8List64() => toInt().toUint8List64();
+
+  String get thousands => toInt().thousands;
 }
 
 /// Numeric extension for [String].
@@ -1263,7 +1270,90 @@ extension Uint8ListExtension on Uint8List {
   String toStringUTF8() => dart_convert.utf8.decode(this);
 
   /// Returns `this` instance in a reversed order.
-  Uint8List reverseBytes() => Uint8List.fromList(reversed.toList());
+  Uint8List reverseBytes() {
+    switch (length) {
+      case 1:
+        {
+          var bs = Uint8List(1);
+          bs[0] = this[0];
+          return bs;
+        }
+      case 2:
+        {
+          var bs = Uint8List(2);
+          bs[0] = this[1];
+          bs[1] = this[0];
+          return bs;
+        }
+      case 3:
+        {
+          var bs = Uint8List(3);
+          bs[0] = this[2];
+          bs[1] = this[1];
+          bs[2] = this[0];
+          return bs;
+        }
+      case 4:
+        {
+          var bs = Uint8List(4);
+          bs[0] = this[3];
+          bs[1] = this[2];
+          bs[2] = this[1];
+          bs[3] = this[0];
+          return bs;
+        }
+      case 5:
+        {
+          var bs = Uint8List(5);
+          bs[0] = this[4];
+          bs[1] = this[3];
+          bs[2] = this[2];
+          bs[3] = this[1];
+          bs[4] = this[0];
+          return bs;
+        }
+      case 6:
+        {
+          var bs = Uint8List(6);
+          bs[0] = this[5];
+          bs[1] = this[4];
+          bs[2] = this[3];
+          bs[3] = this[2];
+          bs[4] = this[1];
+          bs[5] = this[0];
+          return bs;
+        }
+      case 7:
+        {
+          var bs = Uint8List(7);
+          bs[0] = this[6];
+          bs[1] = this[5];
+          bs[2] = this[4];
+          bs[3] = this[3];
+          bs[4] = this[2];
+          bs[5] = this[1];
+          bs[6] = this[0];
+          return bs;
+        }
+      case 8:
+        {
+          var bs = Uint8List(8);
+          bs[0] = this[7];
+          bs[1] = this[6];
+          bs[2] = this[5];
+          bs[3] = this[4];
+          bs[4] = this[3];
+          bs[5] = this[2];
+          bs[6] = this[1];
+          bs[7] = this[0];
+          return bs;
+        }
+      default:
+        {
+          return Uint8List.fromList(reversed.toList());
+        }
+    }
+  }
 
   /// Converts `this` bytes to HEX.
   String toHex({Endian endian = Endian.big}) {

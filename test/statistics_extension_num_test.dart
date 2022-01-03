@@ -33,6 +33,14 @@ void main() {
       expect((-123).thousands, equals('-123'));
       expect((-1123).thousands, equals('-1,123'));
       expect((-1123456).thousands, equals('-1,123,456'));
+
+      expect(123.toBigInt().thousands, equals('123'));
+      expect(1123.toBigInt().thousands, equals('1,123'));
+      expect(1123456.toBigInt().thousands, equals('1,123,456'));
+
+      expect((-123).toBigInt().thousands, equals('-123'));
+      expect((-1123).toBigInt().thousands, equals('-1,123'));
+      expect((-1123456).toBigInt().thousands, equals('-1,123,456'));
     });
 
     test('toUint8List32/64', () {
@@ -416,6 +424,11 @@ void main() {
 
       expect(10.naturalExponent, equals(22026.465794806718));
       expect(_asNum(10).naturalExponent, equals(22026.465794806718));
+    });
+
+    test('toBigInt', () {
+      expect(10.0.toBigInt(), equals(10.toBigInt()));
+      expect(12.3.toBigInt(), equals(12.toBigInt()));
     });
 
     test('toIntsList', () {
@@ -988,8 +1001,40 @@ void main() {
       expect(Uint8List.fromList([1, 10, 20, 30]).bytesHashCode(),
           equals(1176475097));
 
-      expect(Uint8List.fromList([1, 10, 20, 30]).reverseBytes(),
-          equals([30, 20, 10, 1]));
+      {
+        expect(Uint8List.fromList([10]).reverseBytes(), equals([10]));
+
+        expect(Uint8List.fromList([10, 20]).reverseBytes(), equals([20, 10]));
+
+        expect(Uint8List.fromList([10, 20, 30]).reverseBytes(),
+            equals([30, 20, 10]));
+
+        expect(Uint8List.fromList([10, 20, 30, 40]).reverseBytes(),
+            equals([40, 30, 20, 10]));
+
+        expect(Uint8List.fromList([10, 20, 30, 40, 50]).reverseBytes(),
+            equals([50, 40, 30, 20, 10]));
+
+        expect(Uint8List.fromList([10, 20, 30, 40, 50, 60]).reverseBytes(),
+            equals([60, 50, 40, 30, 20, 10]));
+
+        expect(Uint8List.fromList([10, 20, 30, 40, 50, 60, 70]).reverseBytes(),
+            equals([70, 60, 50, 40, 30, 20, 10]));
+
+        expect(
+            Uint8List.fromList([10, 20, 30, 40, 50, 60, 70, 80]).reverseBytes(),
+            equals([80, 70, 60, 50, 40, 30, 20, 10]));
+
+        expect(
+            Uint8List.fromList([10, 20, 30, 40, 50, 60, 70, 80, 90])
+                .reverseBytes(),
+            equals([90, 80, 70, 60, 50, 40, 30, 20, 10]));
+
+        expect(
+            Uint8List.fromList([10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+                .reverseBytes(),
+            equals([100, 90, 80, 70, 60, 50, 40, 30, 20, 10]));
+      }
 
       expect(Uint8List.fromList([65, 66, 67, 68]).toStringLatin1(),
           equals('ABCD'));

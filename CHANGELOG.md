@@ -1,3 +1,8 @@
+## 1.0.11
+
+- Improved performance: `toUint8List32Reversed` and `reverseBytes`.
+- Added `BigInt.thousands`.
+
 ## 1.0.10
 
 - Optimize `Statistics` to allow computation of big numbers without overflow issues.

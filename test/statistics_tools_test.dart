@@ -216,6 +216,7 @@ void main() {
 
       expect(chronometer.isStarted, isFalse);
       expect(chronometer.isFinished, isFalse);
+      expect(chronometer.elapsedTimeMs, equals(0));
 
       chronometer.start();
 
@@ -264,10 +265,17 @@ void main() {
 
       chronometer2.start();
       await Future.delayed(Duration(milliseconds: 100));
-      chronometer2.stop(operations: 1);
 
       expect(chronometer2.elapsedTimeMs >= 100, isTrue);
       expect(chronometer2.elapsedTimeMs < 200, isTrue);
+
+      chronometer2.stop(operations: 1);
+
+      var elapsedTime = chronometer2.elapsedTimeMs;
+
+      await Future.delayed(Duration(milliseconds: 100));
+
+      expect(chronometer2.elapsedTimeMs, equals(elapsedTime));
 
       expect(chronometer2.elapsedTimeSec >= 0.1, isTrue);
       expect(chronometer2.elapsedTimeSec < 0.2, isTrue);
