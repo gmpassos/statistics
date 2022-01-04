@@ -9,7 +9,6 @@ environment:
 dependencies:
   intl: ^0.17.0
   collection: ^1.15.0
-  base_codecs: ^1.0.1
   data_serializer: ^1.0.2
 
 dev_dependencies:
