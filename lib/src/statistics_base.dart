@@ -39,6 +39,16 @@ num? parseNum(dynamic o, [num? def]) {
   return d ?? def;
 }
 
+/// Parses [o] as [BigInt]. If can't parse returns [def].
+BigInt? parseBigInt(dynamic o, [BigInt? def]) {
+  if (o == null) return def;
+  if (o is BigInt) return o;
+  if (o is num) return BigInt.from(o);
+
+  var s = o.toString().trim();
+  return BigInt.tryParse(s) ?? parseNum(s)?.toBigInt() ?? def;
+}
+
 final RegExp _regexpDateTimeFormat = RegExp(
     r'(\d{1,4})[/.-](\d\d?)[/.-](\d{1,4})(?:\s+(\d\d?)[:.](\d\d?)(?:[:.](\d\d?))?(?:\s+(\S+))?)?');
 

@@ -15,6 +15,16 @@ void main() {
       expect(parseInt('10.1'), equals(10));
     });
 
+    test('parseBigInt', () {
+      expect(parseBigInt(10), equals(10.toBigInt()));
+      expect(parseBigInt(10.1), equals(10.toBigInt()));
+      expect(parseBigInt('a b', 404.toBigInt()), equals(404.toBigInt()));
+
+      expect(parseBigInt('10'), equals(10.toBigInt()));
+      expect(parseBigInt('10.0'), equals(10.toBigInt()));
+      expect(parseBigInt('10.1'), equals(10.toBigInt()));
+    });
+
     test('parseDouble', () {
       expect(parseDouble(10), equals(10));
       expect(parseDouble(10.2), equals(10.20));

@@ -1,3 +1,7 @@
+## 1.0.12
+
+- Added `parseBigInt`.
+
 ## 1.0.11
 
 - Improved performance: `toUint8List32Reversed` and `reverseBytes`.
