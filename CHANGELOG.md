@@ -3,7 +3,7 @@
 - Added `parseBigInt`.
 - Moved some extension methods to package `data_serializer`.
 - Moved `StatisticsPlatform` to package `data_serializer` as `DataSerializerPlatform`.
-- Exporting `data_serializer ^1.0.2`
+- Exporting `data_serializer ^1.0.3`
 
 ## 1.0.11
 
