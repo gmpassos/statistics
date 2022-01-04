@@ -153,6 +153,14 @@ Extension:
 
 See the [API Documentation][api_doc] for a full list of functions, extension and classes.
 
+## data_serializer
+
+The `statistics` package exports the package [data_serializer][data_serializer] to help the handling of primitives, data, bytes and files.
+
+- ***Some extension in `data_serializer` were originally in the `statistics` package.***
+
+[data_serializer]: https://pub.dev/packages/data_serializer
+
 ## Test Coverage
 
 [![Codecov](https://img.shields.io/codecov/c/github/gmpassos/statistics)](https://app.codecov.io/gh/gmpassos/statistics)
@@ -178,16 +186,16 @@ Any help from the open-source community is always welcome and needed:
 
 - Found an issue?
     - Please fill a bug report with details.
-- Wish a feature?
-    - Open a feature request with use cases.
-- Are you using and liking the project?
-    - Promote the project: create an article, do a post or make a donation.
-- Are you a developer?
-    - Fix a bug and send a pull request.
-    - Implement a new feature.
-    - Improve the Unit Tests.
-- Have you already helped in any way?
-    - **Many thanks from me, the contributors and everybody that uses this project!**
+    - Wish a feature?
+        - Open a feature request with use cases.
+    - Are you using and liking the project?
+        - Promote the project: create an article, do a post or make a donation.
+    - Are you a developer?
+        - Fix a bug and send a pull request.
+        - Implement a new feature.
+        - Improve the Unit Tests.
+    - Have you already helped in any way?
+        - **Many thanks from me, the contributors and everybody that uses this project!**
 
 *If you donate 1 hour of your time, you can contribute a lot,
 because others will do the same, just be part and start with your 1 hour.*
