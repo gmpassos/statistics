@@ -1,3 +1,7 @@
+## 1.0.13
+
+- Added `BayesianNetwork`.
+
 ## 1.0.12
 
 - Added `parseBigInt`.
