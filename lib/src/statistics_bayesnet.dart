@@ -443,9 +443,11 @@ class Factor {
     newVars.addAll(other._variables);
     newVars = newVars.toSet().toList();
 
+    var allConditions = Variable.allConditions(newVars);
+
     // compute the joined probability table;
     var newP = <Condition, double>{};
-    for (var cond in Variable.allConditions(newVars)) {
+    for (var cond in allConditions) {
       var prob = 1.0;
 
       for (var c in other._probabilities.keys) {
