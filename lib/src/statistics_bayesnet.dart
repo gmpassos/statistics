@@ -1,3 +1,12 @@
+/*
+Part of this code was inspired by the Java project:
+- https://github.com/Cansn0w/BayesianNetwork
+- MIT License
+- Authors:
+  - Di Lu
+  - Chenrui Liu
+*/
+
 import 'package:collection/collection.dart';
 
 /// A Bayesian Network implementation.
