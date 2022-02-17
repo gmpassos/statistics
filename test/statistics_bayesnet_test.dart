@@ -74,22 +74,22 @@ void main() {
       var analyser = bayesNet.analyser;
 
       var result1 = analyser.showAnswer('P(c|m,b)');
-      expect(result1.probability, inInclusiveRange(0.600000, 0.600001));
+      expect(result1.probability, _inRange(0.600000));
 
       var result2 = analyser.showAnswer('P(-c|m,b)');
-      expect(result2.probability, inInclusiveRange(0.399999, 0.400001));
+      expect(result2.probability, _inRange(0.399999));
 
       var result3 = analyser.showAnswer('P(c|m,-b)');
-      expect(result3.probability, inInclusiveRange(0.547826, 0.547827));
+      expect(result3.probability, _inRange(0.400000));
 
       var result4 = analyser.showAnswer('P(-c|m,-b)');
-      expect(result4.probability, inInclusiveRange(0.452173, 0.452174));
+      expect(result4.probability, _inRange(0.600000));
 
       var result5 = analyser.showAnswer('P(s|m,b)');
-      expect(result5.probability, inInclusiveRange(0.600000, 0.600001));
+      expect(result5.probability, _inRange(0.800000));
 
       var result6 = analyser.showAnswer('P(s|m,-b)');
-      expect(result6.probability, inInclusiveRange(0.534050, 0.534051));
+      expect(result6.probability, _inRange(0.600000));
     });
 
     test('sprinkler', () {
@@ -151,28 +151,28 @@ void main() {
       var analyser = bayesNet.analyser;
 
       var result1 = analyser.showAnswer('P(c|s,r)');
-      expect(result1.probability, inInclusiveRange(0.307692, 0.307693));
+      expect(result1.probability, _inRange(0.307692));
 
       var result2 = analyser.showAnswer('P(c|s,-r)');
-      expect(result2.probability, inInclusiveRange(0.027027, 0.027028));
+      expect(result2.probability, _inRange(0.027027));
 
       var result3 = analyser.showAnswer('P(c|-s,-r)');
-      expect(result3.probability, inInclusiveRange(0.2000000, 0.2000001));
+      expect(result3.probability, _inRange(0.2000000));
 
       var result4 = analyser.showAnswer('P(w|-s,-r)');
-      expect(result4.probability, inInclusiveRange(0.4805194, 0.4805195));
+      expect(result4.probability, _inRange(0.4805194));
 
       var result5 = analyser.showAnswer('P(w|s,r)');
-      expect(result5.probability, inInclusiveRange(0.596153, 0.596154));
+      expect(result5.probability, _inRange(0.596153));
 
       var result6 = analyser.showAnswer('P(c|w,r)');
-      expect(result6.probability, inInclusiveRange(0.556521, 0.556522));
+      expect(result6.probability, _inRange(0.556521));
 
       var result7 = analyser.showAnswer('P(c|w,s)');
-      expect(result7.probability, inInclusiveRange(0.074468, 0.074469));
+      expect(result7.probability, _inRange(0.074468));
 
       var result8 = analyser.showAnswer('P(c|-w)');
-      expect(result8.probability, inInclusiveRange(0.417977, 0.417978));
+      expect(result8.probability, _inRange(0.417977));
     });
 
     test('cancer', () {
@@ -202,7 +202,7 @@ void main() {
 
       print(bayesNet);
 
-      _testBayesNetCancer(bayesNet, 0.0001);
+      _testBayesNetCancer(bayesNet);
     });
 
     test('cancer by event', () {
@@ -216,7 +216,7 @@ void main() {
 
       print(bayesNet);
 
-      _testBayesNetCancer(bayesNet, 0.0001);
+      _testBayesNetCancer(bayesNet);
     });
 
     test('cancer by events (x1000)', () async {
@@ -230,7 +230,7 @@ void main() {
 
       print(bayesNet);
 
-      _testBayesNetCancer(bayesNet, 0.0001);
+      _testBayesNetCancer(bayesNet);
     });
   });
 }
@@ -289,7 +289,8 @@ EventMonitor _generateCancerEvents(int multiplier) {
   return eventMonitor;
 }
 
-void _testBayesNetCancer(BayesianNetwork bayesNet, double tolerance) {
+void _testBayesNetCancer(BayesianNetwork bayesNet,
+    [double tolerance = 0.0001]) {
   var analyser = bayesNet.analyser;
 
   var result1 = analyser.showAnswer('C=T | X=P');
@@ -305,4 +306,5 @@ void _testBayesNetCancer(BayesianNetwork bayesNet, double tolerance) {
   expect(analyser.ask('P(c)'), equals(result3));
 }
 
-Matcher _inRange(double v, double t) => inInclusiveRange(v - t, v + t);
+Matcher _inRange(double value, [double tolerance = 0.0001]) =>
+    inInclusiveRange(value - tolerance, value + tolerance);

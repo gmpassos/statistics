@@ -104,14 +104,14 @@ class BayesianNetwork extends Iterable<String>
     selectedNodesSet = nodes.where((n) => selectedNodesSet.contains(n)).toSet();
 
     selectedNodesSet =
-        selectedNodesSet.expand((n) => n.rootChains().expand((l) => l)).toSet();
+        selectedNodesSet.expand((n) => n.rootChains.expand((l) => l)).toSet();
 
     while (selectedNodes.length < nodes.length) {
       var added = false;
       for (var n in nodes) {
         if (selectedNodesSet.contains(n)) continue;
 
-        var rootChains = n.rootChains();
+        var rootChains = n.rootChains;
         var inChain =
             rootChains.any((c) => c.any((e) => selectedNodesSet.contains(e)));
 
@@ -548,22 +548,35 @@ class Variable extends Validatable implements Comparable<Variable> {
     return chains.first;
   }
 
-  /// Returns the root nodes if this node.
-  List<Variable> rootNodes() =>
+  List<Variable>? _rootNodes;
+
+  /// Returns the root nodes of this node.
+  List<Variable> get rootNodes => (_rootNodes ??= _rootNodesImpl()).toList();
+
+  List<Variable> _rootNodesImpl() =>
       network.rootNodes.where((e) => e.containsNode(this)).toList();
 
+  List<Variable>? _rootChain;
+
   /// Returns the smallest chain until the root.
-  List<Variable> rootChain() {
-    var rootNodes = this.rootNodes();
+  List<Variable> get rootChain => (_rootChain ??= _rootChainImpl()).toList();
+
+  List<Variable> _rootChainImpl() {
+    var rootNodes = this.rootNodes;
     if (rootNodes.isEmpty) return <Variable>[this];
 
     var chains = rootNodes.map((r) => r.nodeChain(this)).toList();
     return _shortestChain(chains);
   }
 
+  List<List<Variable>>? _rootChains;
+
   /// Returns all the chains until the root.
-  List<List<Variable>> rootChains() {
-    var rootNodes = this.rootNodes();
+  List<List<Variable>> get rootChains =>
+      (_rootChains ??= _rootChainsImpl()).map((e) => e.toList()).toList();
+
+  List<List<Variable>> _rootChainsImpl() {
+    var rootNodes = this.rootNodes;
     if (rootNodes.isEmpty) {
       return <List<Variable>>[
         <Variable>[this]
@@ -572,6 +585,17 @@ class Variable extends Validatable implements Comparable<Variable> {
 
     var chains = rootNodes.map((r) => r.nodeChain(this)).toList();
     return chains;
+  }
+
+  Set<Variable>? _ancestors;
+
+  /// Returns the ancestors [Variable] nodes of this node.
+  Set<Variable> get ancestors => (_ancestors ??= _ancestorsImpl()).toSet();
+
+  Set<Variable> _ancestorsImpl() {
+    if (_parents.isEmpty) return <Variable>{};
+    var list = _parents.expand((p) => [p, ...p.ancestors]).toSet();
+    return list;
   }
 
   /// The domain values of this node.
@@ -775,7 +799,12 @@ class Variable extends Validatable implements Comparable<Variable> {
     return cmp;
   }
 
-  void _disposeCaches() {}
+  void _disposeCaches() {
+    _ancestors = null;
+    _rootNodes = null;
+    _rootChain = null;
+    _rootChains = null;
+  }
 }
 
 extension ListVariableExtension on List<Variable> {
@@ -784,7 +813,7 @@ extension ListVariableExtension on List<Variable> {
     var nodes = this;
 
     var nodesRootChains = Map<Variable, List<Variable>>.fromEntries(
-      nodes.map((e) => MapEntry<Variable, List<Variable>>(e, e.rootChain())),
+      nodes.map((e) => MapEntry<Variable, List<Variable>>(e, e.rootChain)),
     );
 
     nodes.sort((a, b) {
@@ -938,7 +967,7 @@ class _Factor {
           }
         }
         _probabilities = newP;
-        eliminate(e.node);
+        marginalize(e.node);
       }
     }
   }
@@ -951,10 +980,10 @@ class _Factor {
     return p;
   }
 
-  void eliminate(Variable node) {
-    if (!_variables.remove(node)) {
+  void marginalize(Variable eliminateNode) {
+    if (!_variables.remove(eliminateNode)) {
       throw StateError(
-          "This factor does not contain the variable <${node.name}> to eliminate.");
+          "This factor does not contain the variable <${eliminateNode.name}> to eliminate.");
     }
 
     var newP = <Condition, double>{};
@@ -975,7 +1004,7 @@ class _Factor {
     _probabilities = newP;
   }
 
-  _Factor join(_Factor other) {
+  _Factor product(_Factor other) {
     var newVars = _variables.toList();
     newVars.addAll(other._variables);
     newVars = newVars.toSet().toList();
@@ -1333,9 +1362,11 @@ class VariableElimination extends Analyser {
     // All nodes of the query:
     var selectedNodes = [target.node, ...evidence.events.map((e) => e.node)];
 
-    // To eliminate in reverse topological ordering.
-    var nodesInChain = network.nodesInChain(selectedNodes);
+    // All nodes in chain to answer the query:
+    var nodesInChain =
+        selectedNodes.expand((n) => [n, ...n.ancestors]).toSet().toList();
 
+    // To eliminate in reverse topological ordering.
     var order = nodesInChain.nodesInTopologicalOrder.reversed.toList();
 
     // For each variable, make it into a factor.
@@ -1347,15 +1378,15 @@ class VariableElimination extends Analyser {
       // if the variable is a hidden variable, then perform sum out
       if (target.node != v && !evidence.mention(v)) {
         var joinedFactors =
-            factors.reduce((value, element) => value.join(element));
-        joinedFactors.eliminate(v);
+            factors.reduce((value, element) => value.product(element));
+        joinedFactors.marginalize(v);
         factors.clear();
         factors.add(joinedFactors);
       }
     }
 
     // Point wise product of all remaining factors.
-    var result = factors.reduce((value, element) => value.join(element));
+    var result = factors.reduce((value, element) => value.product(element));
 
     // Normalize the result factor
     var resultNormalized = result.normalise();

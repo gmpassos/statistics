@@ -1,3 +1,10 @@
+## 1.0.15
+
+- `Variable` node optimization:
+  - `ancestors`, `rootNodes`, `rootChain`, `rootChain`.
+- `VariableElimination`: 
+  - Optimize resolution of nodes needed to answer a query.
+
 ## 1.0.14
 
 - Improved `BayesianNetwork`.
