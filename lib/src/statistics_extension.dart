@@ -112,11 +112,20 @@ extension ListExtension<T> on List<T> {
   List<int> asInts() =>
       this is List<int> ? this as List<int> : map((v) => parseInt(v)!).toList();
 
+  /// Returns the [length] multiplied by [ratio].
+  int lengthRatio(double ratio) => (length * ratio).toInt();
+
   /// Head of this [List] with [size].
   List<T> head(int size) => sublist(0, size);
 
+  /// Head of this [List] with `size` based the in [sizeRatio] of [length].
+  List<T> headByRatio(double sizeRatio) => head(lengthRatio(sizeRatio));
+
   /// Tail of this [List] with [size].
   List<T> tail(int size) => sublist(length - size);
+
+  /// Tail of this [List] with `size` based the in [sizeRatio] of [length].
+  List<T> tailByRatio(double sizeRatio) => tail(lengthRatio(sizeRatio));
 
   /// Sames as [sublist], but with reversed parameters indexes [endReversed] and [startReversed].
   List<T> sublistReversed(int endReversed, [int? startReversed]) {

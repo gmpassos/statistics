@@ -1,3 +1,11 @@
+## 1.0.14
+
+- Improved `BayesianNetwork`.
+  - Optimized parsing and building of network.
+  - Added `EventMonitor` to help to build a `BayesianNetwork` and probabilities.
+  - Improved documentation.
+- Fix some typos.
+
 ## 1.0.13
 
 - Added `BayesianNetwork`.

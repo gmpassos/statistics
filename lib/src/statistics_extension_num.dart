@@ -1026,16 +1026,39 @@ extension StringToNumExtension on String {
 extension ListIntExtension on List<int> {
   /// Similar to [String.compareTo].
   int compareWith(List<int> other) {
-    int len1 = length;
-    int len2 = other.length;
-    int lim = math.min(len1, len2);
+    final len1 = length;
+    final len2 = other.length;
+    final lim = math.min(len1, len2);
 
-    int k = 0;
+    var k = 0;
     while (k < lim) {
       var c1 = this[k];
       var c2 = other[k];
       if (c1 != c2) {
         return c1 - c2;
+      }
+      k++;
+    }
+    return len1 - len2;
+  }
+}
+
+extension ListComparablesExtension<T> on List<Comparable<T>> {
+  /// Similar to [String.compareTo].
+  int compareWith(List<T> other) {
+    final len1 = length;
+    final len2 = other.length;
+    final lim = math.min(len1, len2);
+
+    var k = 0;
+    while (k < lim) {
+      var c1 = this[k];
+      var c2 = other[k];
+
+      var cmp = c1.compareTo(c2);
+
+      if (cmp != 0) {
+        return cmp;
       }
       k++;
     }

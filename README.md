@@ -90,6 +90,121 @@ Statistics.squaresSum: 2025.0
 Statistics: {~21.25 +-22.5 [10..(25)..30] #4}
 ```
 
+### Bayesian Network
+
+Bayesian Network, also known as Bayes Network, is a very important tool in understanding the dependency
+among events and assigning probabilities to them.
+
+Here's an example of how to build a `BayesianNetwork`.
+
+```dart
+import 'package:statistics/statistics.dart';
+
+void main(){
+  var bayesNet = BayesianNetwork('cancer');
+
+  // C (cancer) = T (true) ; F (false)
+  bayesNet.addNode("C", [
+    'F',
+    'T',
+  ], [], [
+    "C = F: 0.99",
+    "C = T: 0.01",
+  ]);
+
+  // X (exam) = P (positive) ; N (negative)
+  bayesNet.addNode("X", [
+    '+P',
+    '-N',
+  ], [
+    "C"
+  ], [
+    "X = N, C = F: 0.91",
+    "X = P, C = F: 0.09",
+    "X = N, C = T: 0.10",
+    "X = P, C = T: 0.90",
+  ]);
+
+  // Show the network nodes and probabilities:
+  print(bayesNet);
+
+  var analyser = bayesNet.analyser;
+
+  // Ask the probability to have cancer with a positive exame (X = T): 
+  var answer1 = analyser.ask('P(c|x)');
+  print(answer1); // P(c|x) -> C = TRUE | X = P -> 0.09183673469387756
+
+  // Ask the probability to have cancer with a negative exame (X = F):
+  var answer2 = analyser.ask('P(c|-x)');
+  print(answer2); // P(c|-x) -> C = T | X = N -> 0.0011086474501108647
+}
+```
+
+#### Event Monitoring
+
+To help to generate the probabilities you can use the `EventMonitor` class and
+then build the `BayesianNetwork`:
+
+```dart
+import 'package:statistics/statistics.dart';
+
+void main() {
+  // Monitor events to then build a Bayesian Network:
+  // ** Note that this example is NOT USING REAL probabilities for Cancer!
+  var eventMonitor = EventMonitor('cancer');
+
+  // The prevalence of Cancer in the population:
+  // - 1% (10:990):
+
+  for (var i = 0; i < 990; ++i) {
+    eventMonitor.notifyEvent(['CANCER=false']);
+  }
+
+  for (var i = 0; i < 10; ++i) {
+    eventMonitor.notifyEvent(['CANCER=true']);
+  }
+
+  // The Exam performance when the person have cancer:
+  // - 90% Sensitivity.
+  // - 10% false negative (1:9).
+
+  for (var i = 0; i < 9; ++i) {
+    eventMonitor.notifyEvent(['EXAM=positive', 'CANCER=true']);
+  }
+
+  for (var i = 0; i < 1; ++i) {
+    eventMonitor.notifyEvent(['EXAM=negative', 'CANCER=true']);
+  }
+
+  // The Exam performance when the person doesn't have cancer:
+  // - 91% Specificity
+  // - 9% false positive (89:901).
+
+  for (var i = 0; i < 901; ++i) {
+    eventMonitor.notifyEvent(['EXAM=negative', 'CANCER=false']);
+  }
+  for (var i = 0; i < 89; ++i) {
+    eventMonitor.notifyEvent(['EXAM=positive', 'CANCER=false']);
+  }
+
+  var bayesNet = eventMonitor.buildBayesianNetwork();
+
+  var analyser = bayesNet.analyser;
+
+  var answer1 = analyser.ask('P(cancer)');
+  print('- Cancer probability without an Exam:');
+  print('  $answer1'); // P(cancer) -> CANCER = TRUE |  -> 0.01
+
+  var answer2 = analyser.ask('P(cancer|exam)');
+  print('- Cancer probability with a positive Exam:');
+  print('  $answer2'); // P(cancer|exam) -> CANCER = TRUE | EXAM = POSITIVE -> 0.09183673469387756
+}
+```
+
+See a full [example for Bayes Net at GitHub][bayes_example]:
+
+[bayes_example]: https://github.com/gmpassos/statistics/blob/master/example/bayesnet_example.dart
+
 ### CSV
 
 To generate a [CSV][csv_wikipedia] document, just use the extension [generateCSV][generate_csv] in your data collection.

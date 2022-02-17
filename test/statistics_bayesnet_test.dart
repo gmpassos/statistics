@@ -6,9 +6,9 @@ void main() {
     test('basic', () {
       print('--------------------------------------------------------');
 
-      var bayseNet = BayesianNetwork('basic');
+      var bayesNet = BayesianNetwork('basic');
 
-      bayseNet.addNode("M", [
+      bayesNet.addNode("M", [
         'T',
         'F'
       ], [], [
@@ -16,7 +16,7 @@ void main() {
         "M = F: 0.8",
       ]);
 
-      bayseNet.addNode("I", [
+      bayesNet.addNode("I", [
         'T',
         'F'
       ], [
@@ -28,7 +28,7 @@ void main() {
         "I = F, M = F: 0.8",
       ]);
 
-      bayseNet.addNode("B", [
+      bayesNet.addNode("B", [
         'T',
         'F'
       ], [
@@ -40,7 +40,7 @@ void main() {
         "B = F, M = F: 0.95",
       ]);
 
-      bayseNet.addNode("C", [
+      bayesNet.addNode("C", [
         'T',
         'F'
       ], [
@@ -57,7 +57,7 @@ void main() {
         "C = F, I = F, B = F: 0.95",
       ]);
 
-      bayseNet.addNode("S", [
+      bayesNet.addNode("S", [
         'T',
         'F'
       ], [
@@ -69,9 +69,9 @@ void main() {
         "S = F, B = F: 0.4",
       ]);
 
-      print(bayseNet);
+      print(bayesNet);
 
-      var analyser = bayseNet.analyser;
+      var analyser = bayesNet.analyser;
 
       var result1 = analyser.showAnswer('P(c|m,b)');
       expect(result1.probability, inInclusiveRange(0.600000, 0.600001));
@@ -95,9 +95,9 @@ void main() {
     test('sprinkler', () {
       print('--------------------------------------------------------');
 
-      var bayseNet = BayesianNetwork('sprinkler');
+      var bayesNet = BayesianNetwork('sprinkler');
 
-      bayseNet.addNode("C", [
+      bayesNet.addNode("C", [
         'F',
         'T',
       ], [], [
@@ -105,7 +105,7 @@ void main() {
         "C = T: 0.5",
       ]);
 
-      bayseNet.addNode("S", [
+      bayesNet.addNode("S", [
         'F',
         'T',
       ], [
@@ -117,7 +117,7 @@ void main() {
         "S = T, C = T: 0.1",
       ]);
 
-      bayseNet.addNode("R", [
+      bayesNet.addNode("R", [
         'F',
         'T',
       ], [
@@ -129,7 +129,7 @@ void main() {
         "R = T, C = T: 0.8",
       ]);
 
-      bayseNet.addNode("W", [
+      bayesNet.addNode("W", [
         'F',
         'T',
       ], [
@@ -146,9 +146,9 @@ void main() {
         "W = T, S = T, R = T: 0.99",
       ]);
 
-      print(bayseNet);
+      print(bayesNet);
 
-      var analyser = bayseNet.analyser;
+      var analyser = bayesNet.analyser;
 
       var result1 = analyser.showAnswer('P(c|s,r)');
       expect(result1.probability, inInclusiveRange(0.307692, 0.307693));
@@ -172,15 +172,15 @@ void main() {
       expect(result7.probability, inInclusiveRange(0.074468, 0.074469));
 
       var result8 = analyser.showAnswer('P(c|-w)');
-      expect(result8.probability, inInclusiveRange(0.211461, 0.211462));
+      expect(result8.probability, inInclusiveRange(0.417977, 0.417978));
     });
 
     test('cancer', () {
       print('--------------------------------------------------------');
 
-      var bayseNet = BayesianNetwork('cancer');
+      var bayesNet = BayesianNetwork('cancer');
 
-      bayseNet.addNode("C", [
+      bayesNet.addNode("C", [
         'F',
         'T',
       ], [], [
@@ -188,29 +188,121 @@ void main() {
         "C = T: 0.01",
       ]);
 
-      bayseNet.addNode("X", [
-        'F',
-        'T',
+      bayesNet.addNode("X", [
+        '+P',
+        '-N',
       ], [
         "C"
       ], [
-        "X = F, C = F: 0.99",
-        "X = F, C = T: 0.01",
-        "X = T, C = F: 0.10",
-        "X = T, C = T: 0.90",
+        "X = N, C = F: 0.91",
+        "X = P, C = F: 0.09",
+        "X = N, C = T: 0.10",
+        "X = P, C = T: 0.90",
       ]);
 
-      print(bayseNet);
+      print(bayesNet);
 
-      var analyser = bayseNet.analyser;
+      _testBayesNetCancer(bayesNet, 0.0001);
+    });
 
-      var result1 = analyser.showAnswer('C=T | X=T');
-      expect(result1.probability, inInclusiveRange(0.083333, 0.083334));
-      expect(analyser.ask('P(c|x)'), equals(result1));
+    test('cancer by event', () {
+      print('--------------------------------------------------------');
 
-      var result2 = analyser.showAnswer('C=T | X=F');
-      expect(result2.probability, inInclusiveRange(0.000102, 0.000103));
-      expect(analyser.ask('P(c|-x)'), equals(result2));
+      var eventMonitor = _generateCancerEvents(1);
+
+      var bayesNet = BayesianNetwork('cancer');
+
+      eventMonitor.populateNodes(bayesNet);
+
+      print(bayesNet);
+
+      _testBayesNetCancer(bayesNet, 0.0001);
+    });
+
+    test('cancer by events (x1000)', () async {
+      print('--------------------------------------------------------');
+
+      var eventMonitor = _generateCancerEvents(1000);
+
+      var bayesNet = BayesianNetwork('cancer');
+
+      eventMonitor.populateNodes(bayesNet);
+
+      print(bayesNet);
+
+      _testBayesNetCancer(bayesNet, 0.0001);
     });
   });
 }
+
+EventMonitor _generateCancerEvents(int multiplier) {
+  var eventMonitor = EventMonitor('cancer');
+
+  var limit = 990 * multiplier;
+  for (var i = 0; i < limit; ++i) {
+    eventMonitor.notifyEvent(['C=F']);
+  }
+
+  limit = 10 * multiplier;
+  for (var i = 0; i < limit; ++i) {
+    eventMonitor.notifyEvent(['C=T']);
+  }
+
+  limit = 901 * multiplier;
+  for (var i = 0; i < limit; ++i) {
+    eventMonitor.notifyEvent(['X=N', 'C=F']);
+  }
+
+  limit = 89 * multiplier;
+  for (var i = 0; i < limit; ++i) {
+    eventMonitor.notifyEvent(['X=P', 'C=F']);
+  }
+
+  limit = 1 * multiplier;
+  for (var i = 0; i < limit; ++i) {
+    eventMonitor.notifyEvent(['X=N', 'C=T']);
+  }
+
+  limit = 9 * multiplier;
+  for (var i = 0; i < limit; ++i) {
+    eventMonitor.notifyEvent(['X=P', 'C=T']);
+  }
+
+  limit = 10 * multiplier;
+  for (var i = 0; i < limit; ++i) {
+    eventMonitor.notifyEvent(['D=T']);
+    eventMonitor.notifyEvent(['D=F']);
+  }
+
+  // Nodes out of `C` chain:
+  limit = 10 * multiplier;
+  for (var i = 0; i < limit; ++i) {
+    eventMonitor.notifyEvent(['Y=N', 'D=T']);
+  }
+
+  limit = 90 * multiplier;
+  for (var i = 0; i < limit; ++i) {
+    eventMonitor.notifyEvent(['Y=P', 'D=T']);
+  }
+
+  print(eventMonitor);
+  return eventMonitor;
+}
+
+void _testBayesNetCancer(BayesianNetwork bayesNet, double tolerance) {
+  var analyser = bayesNet.analyser;
+
+  var result1 = analyser.showAnswer('C=T | X=P');
+  expect(result1.probability, _inRange(0.091836, tolerance));
+  expect(analyser.ask('P(c|x)'), equals(result1));
+
+  var result2 = analyser.showAnswer('C=T | X=N');
+  expect(result2.probability, _inRange(0.0011, tolerance));
+  expect(analyser.ask('P(c|-x)'), equals(result2));
+
+  var result3 = analyser.showAnswer('C=T');
+  expect(result3.probability, _inRange(0.01, tolerance));
+  expect(analyser.ask('P(c)'), equals(result3));
+}
+
+Matcher _inRange(double v, double t) => inInclusiveRange(v - t, v + t);
