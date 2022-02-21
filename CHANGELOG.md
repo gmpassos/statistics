@@ -1,3 +1,8 @@
+## 1.0.16
+
+- `ListComparablesExtension` changed to `IterableComparablesExtension`.
+- New `IterableUint8ListExtension`, `ListAnswerExtension` and `ListOfListAnswer`.
+
 ## 1.0.15
 
 - `Variable` node optimization:

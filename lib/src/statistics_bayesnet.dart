@@ -8,8 +8,7 @@ Part of this code was inspired by the Java project:
 */
 
 import 'package:collection/collection.dart';
-
-import 'statistics_extension_num.dart';
+import 'package:statistics/statistics.dart';
 
 final _regexpSpace = RegExp(r'\s+');
 
@@ -202,7 +201,7 @@ class BayesianNetwork extends Iterable<String>
 
   void _checkNotFrozen() {
     if (isFrozen) {
-      throw StateError("Network already frozen!");
+      throw ValidationError("Network already frozen!");
     }
   }
 
@@ -221,16 +220,20 @@ class BayesianNetwork extends Iterable<String>
   }
 
   /// Returns `true` if contains a node with [name].
-  bool hasNode(String name) => _nodes.containsKey(name);
+  bool hasNodeWithName(String name) => _nodes.containsKey(name);
 
   /// Returns a [Variable] node with [name].
-  Variable getNode(String name) {
+  Variable getNodeByName(String name) {
     var node = _nodes[name];
     if (node == null) {
-      throw StateError("No such variable <" + name + ">.");
+      throw ValidationError("No `Variable` node with name: $name");
     }
     return node;
   }
+
+  /// Returns a [List] of [Variable]s nodes with matching [names].
+  List<Variable> getNodesByNames(Iterable<String> names) =>
+      _nodes.values.where((e) => names.contains(e.name)).toList();
 
   Condition _parseCondition(String line) {
     line = line.replaceAll(_regexpSpace, '');
@@ -483,7 +486,7 @@ class Variable extends Validatable implements Comparable<Variable> {
 
   @override
   Object? validate() {
-    if (_probabilities.values.any((n) => n.isNaN || n.isInfinite)) {
+    if (_probabilities.values.any((n) => n.isNaN || n.isInfinite || n < 0)) {
       return this;
     }
 
@@ -635,7 +638,7 @@ class Variable extends Validatable implements Comparable<Variable> {
     }
 
     var name = e[0];
-    var node = network.getNode(name);
+    var node = network.getNodeByName(name);
 
     return Event.byOutcomeName(node, e[1]);
   }
@@ -661,7 +664,7 @@ class Variable extends Validatable implements Comparable<Variable> {
     _checkNotFrozen();
 
     try {
-      _addParent(network.getNode(name));
+      _addParent(network.getNodeByName(name));
     } catch (e) {
       throw ValidationError(
           'The specified parent node "$name" does not exist (yet).');
@@ -753,13 +756,19 @@ class Variable extends Validatable implements Comparable<Variable> {
     return null;
   }
 
+  static final IterableEquality _iterableEquality = IterableEquality();
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is Variable &&
           runtimeType == other.runtimeType &&
           name == other.name &&
-          network == other.network;
+          (identical(network, other.network) ||
+              (network.name == other.network.name &&
+                  network._nodes.length == other.network._nodes.length &&
+                  _iterableEquality.equals(
+                      network._nodes.keys, other.network._nodes.keys)));
 
   @override
   int get hashCode => name.hashCode ^ network.nodesLength;
@@ -1083,10 +1092,24 @@ class Answer implements Comparable<Answer> {
   /// The original unparsed query.
   final String originalQuery;
 
+  late final double fitness;
+
   Answer(this.query, this.targetValue, this.selectedValues, this.probability,
       {String? originalQuery, double? probabilityUnnormalized})
       : originalQuery = originalQuery ?? query,
-        probabilityUnnormalized = probabilityUnnormalized ?? probability;
+        probabilityUnnormalized = probabilityUnnormalized ?? probability,
+        fitness = _computeFitness(probability, probabilityUnnormalized);
+
+  static double _computeFitness(double probability,
+      [double? probabilityUnnormalized]) {
+    if (probabilityUnnormalized != null) {
+      var squaresSum = ((probability * probability) +
+          (probabilityUnnormalized * probabilityUnnormalized));
+      return squaresSum / 2;
+    } else {
+      return probability;
+    }
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -1116,11 +1139,142 @@ class Answer implements Comparable<Answer> {
   int compareTo(Answer other) {
     if (identical(this, other)) return 0;
 
-    var cmp = probability.compareTo(other.probability);
+    var cmp = fitness.compareTo(other.fitness);
     if (cmp == 0) {
-      cmp = query.compareTo(other.query);
+      if (cmp == 0) {
+        cmp = probability.compareTo(other.probability);
+        if (cmp == 0) {
+          cmp = query.compareTo(other.query);
+        }
+      }
     }
     return cmp;
+  }
+}
+
+extension ListAnswerExtension on List<Answer> {
+  /// Sorts the [Answer] [List] by [Answer.probability].
+  void sortByProbability() =>
+      sort((a, b) => a.probability.compareTo(b.probability));
+
+  /// Sorts the [Answer] [List] by [Answer.probabilityUnnormalized].
+  void sortByProbabilityUnnormalized() => sort(
+      (a, b) => a.probabilityUnnormalized.compareTo(b.probabilityUnnormalized));
+
+  /// Sorts the [Answer] [List] by [Answer.fitness].
+  void sortByFitness() => sort((a, b) => a.fitness.compareTo(b.fitness));
+
+  /// Sorts the [Answer] [List] by [Answer.selectedValues].
+  void sortBySelectedValues() {
+    sort((a, b) {
+      var cmp = a.selectedValues.compareWith(b.selectedValues);
+      if (cmp == 0) {
+        cmp = a.targetValue.compareTo(b.targetValue);
+      }
+      return cmp;
+    });
+  }
+
+  /// Sorts the [Answer] [List] by [Answer.selectedValues] signals.
+  void sortBySelectedValuesSignal() {
+    sort((a, b) {
+      var cmp = a.selectedValues
+          .map((e) => e.signal.index)
+          .compareWith(b.selectedValues.map((e) => e.signal.index));
+      if (cmp == 0) {
+        cmp = a.targetValue.compareTo(b.targetValue);
+      }
+      return cmp;
+    });
+  }
+
+  /// Sorts the [Answer] [List] by [Answer.targetValue].
+  void sortByTargetValue() {
+    sort((a, b) {
+      var cmp = a.targetValue.compareTo(b.targetValue);
+      if (cmp == 0) {
+        cmp = a.selectedValues.compareWith(b.selectedValues);
+      }
+      return cmp;
+    });
+  }
+
+  /// Sorts the [Answer] [List] by [Answer.targetValue].
+  void sortByQuery() => sort((a, b) => a.query.compareTo(b.query));
+
+  /// Groups [Answer]s by [Answer.selectedValues] [Variable].
+  Map<Variable, List<Answer>> groupBySelectedVariable() =>
+      this.groupBy((e) => e.selectedValues.first.variable);
+
+  /// Groups [Answer]s by [Answer.targetValue] [Variable].
+  Map<Variable, List<Answer>> groupByTargetVariable() =>
+      this.groupBy((e) => e.targetValue.variable);
+
+  /// Filters [Answer]s with [Answer.selectedValues] matching [signal].
+  List<Answer> withSelectedValueSignal(ValueSignal signal) =>
+      where((e) => e.selectedValues.any((e) => e.signal == signal)).toList();
+
+  /// Filters [Answer]s with [Answer.name] matching [valueName].
+  List<Answer> withSelectedValueName(String valueName) =>
+      where((e) => e.selectedValues.any((e) => e.name == valueName)).toList();
+
+  /// Returns the [Value] matching [valueName] [Answer.probability] mean.
+  double valueProbabilityMean(String valueName) =>
+      withSelectedValueName(valueName).map((e) => e.probability).mean;
+
+  /// Returns the [Value] matching [valueName] [Answer.probabilityUnnormalized] mean.
+  double valueProbabilityUnnormalizedMean(String valueName) =>
+      withSelectedValueName(valueName)
+          .map((e) => e.probabilityUnnormalized)
+          .mean;
+
+  /// Returns the performance by [Answer.probability] of opposite values:
+  ///
+  /// - Formula: `(positiveProbability + (1 - negativeProbability)) / 2`
+  ///   - positiveProbability: the mean probability of positive values.
+  ///   - negativeProbability: the mean probability of negative values.
+  double oppositeValuesPerformance(String positiveValue, String negativeValue) {
+    var positiveProb = valueProbabilityMean(positiveValue);
+    var negativeProb = valueProbabilityMean(negativeValue);
+    var performance = ((positiveProb) + (1 - negativeProb)) / 2;
+    return performance;
+  }
+
+  /// Returns the performance by [Answer.probabilityUnnormalized] of opposite values:
+  ///
+  /// - Formula: `(positiveProbability + (1 - negativeProbability)) / 2`
+  ///   - positiveProbability: the mean probability unnormalized of positive values.
+  ///   - negativeProbability: the mean probability unnormalized of negative values.
+  double oppositeValuesPerformanceUnnormalized(
+      String positiveValue, String negativeValue) {
+    var positiveProb = valueProbabilityUnnormalizedMean(positiveValue);
+    var negativeProb = valueProbabilityUnnormalizedMean(negativeValue);
+    var performance = ((positiveProb) + (1 - negativeProb)) / 2;
+    return performance;
+  }
+}
+
+extension ListOfListAnswerExtension on List<List<Answer>> {
+  /// Sort sub lists by [ListAnswerExtension.oppositeValuesPerformance].
+  void sortByOppositeValuesPerformance(
+      String positiveValue, String negativeValue) {
+    sort((a, b) {
+      var p1 = a.oppositeValuesPerformance(positiveValue, negativeValue);
+      var p2 = b.oppositeValuesPerformance(positiveValue, negativeValue);
+      return p1.compareTo(p2);
+    });
+  }
+
+  /// Sort sub lists by [ListAnswerExtension.oppositeValuesPerformanceUnnormalized].
+  void sortByOppositeValuesPerformanceUnnormalized(
+      String positiveValue, String negativeValue) {
+    sort((a, b) {
+      var p1 =
+          a.oppositeValuesPerformanceUnnormalized(positiveValue, negativeValue);
+      var p2 =
+          b.oppositeValuesPerformanceUnnormalized(positiveValue, negativeValue);
+      return p1.compareTo(p2);
+    });
   }
 }
 
@@ -1327,7 +1481,7 @@ abstract class Analyser {
     var name = Value.resolveName(s, networkCache: network);
     var signal = Value.resolveSignal(name: s);
 
-    var node = network.getNode(name);
+    var node = network.getNodeByName(name);
 
     var valueName = node.getValueName(signal: signal);
 

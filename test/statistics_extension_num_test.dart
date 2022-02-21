@@ -843,6 +843,48 @@ void main() {
               .compareWith(Uint8List.fromList([0, 0, 0, 123])),
           equals(1));
     });
+
+    test('basic', () {
+      var l1 = [
+        Uint8List.fromList([0, 0, 0, 123]),
+        Uint8List.fromList([0, 0, 0, 124])
+      ];
+      var l2 = [
+        Uint8List.fromList([0, 0, 0, 123]),
+        Uint8List.fromList([0, 0, 0, 124])
+      ];
+      var l3 = [
+        Uint8List.fromList([0, 0, 0, 123]),
+        Uint8List.fromList([0, 0, 0, 125])
+      ];
+      var l4 = [
+        Uint8List.fromList([0, 0, 0, 124]),
+        Uint8List.fromList([0, 0, 0, 124])
+      ];
+      var l5 = [
+        Uint8List.fromList([0, 0, 0, 12]),
+        Uint8List.fromList([0, 0, 0, 13])
+      ];
+      var l6 = [
+        Uint8List.fromList([0, 0, 0, 1230]),
+        Uint8List.fromList([0, 0, 0, 1231])
+      ];
+
+      expect(l1.compareWith(l1), equals(0));
+      expect(l1.compareWith(l2), equals(0));
+
+      expect(l1.compareWith(l3), equals(-1));
+      expect(l3.compareWith(l1), equals(1));
+
+      expect(l1.compareWith(l4), equals(-1));
+      expect(l4.compareWith(l1), equals(1));
+
+      expect(l1.compareWith(l5), equals(111));
+      expect(l5.compareWith(l1), equals(-111));
+
+      expect(l1.compareWith(l6), equals(-83));
+      expect(l6.compareWith(l1), equals(83));
+    });
   });
 }
 

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:intl/intl.dart';
@@ -1043,23 +1044,54 @@ extension ListIntExtension on List<int> {
   }
 }
 
-extension ListComparablesExtension<T> on List<Comparable<T>> {
+extension IterableComparablesExtension<T> on Iterable<Comparable<T>> {
+  /// Compares two [Iterable]s.
+  ///
   /// Similar to [String.compareTo].
-  int compareWith(List<T> other) {
+  int compareWith(Iterable<T> other) {
+    if (identical(this, other)) return 0;
+
     final len1 = length;
     final len2 = other.length;
     final lim = math.min(len1, len2);
 
     var k = 0;
     while (k < lim) {
-      var c1 = this[k];
-      var c2 = other[k];
+      var c1 = elementAt(k);
+      var c2 = other.elementAt(k);
 
       var cmp = c1.compareTo(c2);
 
       if (cmp != 0) {
         return cmp;
       }
+      k++;
+    }
+    return len1 - len2;
+  }
+}
+
+extension IterableUint8ListExtension on Iterable<Uint8List> {
+  /// Compares two [Iterable]s of [Uint8List].
+  ///
+  /// Similar to [String.compareTo].
+  int compareWith(Iterable<Uint8List> other) {
+    if (identical(this, other)) return 0;
+
+    int len1 = length;
+    int len2 = other.length;
+    int lim = math.min(len1, len2);
+
+    int k = 0;
+    while (k < lim) {
+      var c1 = elementAt(k);
+      var c2 = other.elementAt(k);
+
+      var cmp = c1.compareWith(c2);
+      if (cmp != 0) {
+        return cmp;
+      }
+
       k++;
     }
     return len1 - len2;

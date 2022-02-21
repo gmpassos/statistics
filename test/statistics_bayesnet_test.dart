@@ -203,6 +203,32 @@ void main() {
       print(bayesNet);
 
       _testBayesNetCancer(bayesNet);
+
+      {
+        var bayesNet2 = BayesianNetwork('cancer');
+
+        bayesNet2.addNode("C", [
+          'F',
+          'T',
+        ], [], [
+          "C = F: 0.99",
+          "C = T: 0.01",
+        ]);
+
+        bayesNet2.addNode("X", [
+          '+P',
+          '-N',
+        ], [
+          "C"
+        ], [
+          "X = N, C = F: 0.91",
+          "X = P, C = F: 0.09",
+          "X = N, C = T: 0.10",
+          "X = P, C = T: 0.90",
+        ]);
+
+        expect(bayesNet, equals(bayesNet2));
+      }
     });
 
     test('cancer by event', () {
@@ -216,7 +242,7 @@ void main() {
 
       print(bayesNet);
 
-      _testBayesNetCancer(bayesNet);
+      _testBayesNetCancer(bayesNet, hasGhostBranch: true);
     });
 
     test('cancer by events (x1000)', () async {
@@ -230,7 +256,55 @@ void main() {
 
       print(bayesNet);
 
-      _testBayesNetCancer(bayesNet);
+      _testBayesNetCancer(bayesNet, hasGhostBranch: true);
+    });
+
+    test('invalid 1', () {
+      expect(() {
+        BayesianNetwork('invalid', unseenMinimalProbability: -0.1);
+      }, throwsA(isA<ArgumentError>()));
+    });
+
+    test('invalid 2', () {
+      var bayesNet = BayesianNetwork('invalid');
+
+      expect(() {
+        bayesNet.addNode("C", [
+          'F',
+          'T',
+        ], [], [
+          "C = F: -0.99",
+          "C = T: 0.01",
+        ]);
+      }, throwsA(isA<ValidationError>()));
+    });
+
+    test('invalid 3', () {
+      var bayesNet = BayesianNetwork('invalid');
+
+      bayesNet.addNode("C", [
+        'F',
+        'T',
+      ], [], [
+        "C = F: 0.99",
+        "C = T: 0.01",
+      ]);
+
+      expect(bayesNet.isFrozen, isFalse);
+
+      bayesNet.freeze();
+
+      expect(bayesNet.isFrozen, isTrue);
+
+      expect(() {
+        bayesNet.addNode("X", [
+          'F',
+          'T',
+        ], [], [
+          "X = F: 0.40",
+          "X = T: 0.60",
+        ]);
+      }, throwsA(isA<ValidationError>()));
     });
   });
 }
@@ -290,7 +364,49 @@ EventMonitor _generateCancerEvents(int multiplier) {
 }
 
 void _testBayesNetCancer(BayesianNetwork bayesNet,
-    [double tolerance = 0.0001]) {
+    {double tolerance = 0.0001, bool hasGhostBranch = false}) {
+  expect(bayesNet.isValid, isTrue);
+
+  expect(bayesNet.hasNodeWithName('C'), isTrue);
+  expect(bayesNet.hasNodeWithName('X'), isTrue);
+  expect(bayesNet.hasNodeWithName('Z'), isFalse);
+
+  expect(bayesNet.getNodeByName('C').parentsLength, 0);
+  expect(bayesNet.getNodeByName('X').parentsLength, 1);
+
+  expect(() {
+    bayesNet.getNodeByName('Z');
+  }, throwsA(isA<ValidationError>()));
+
+  if (hasGhostBranch) {
+    expect(bayesNet.nodes.map((e) => e.name), equals(['C', 'X', 'D', 'Y']));
+    expect(bayesNet.nodesInTopologicalOrder.map((e) => e.name),
+        equals(['C', 'D', 'X', 'Y']));
+
+    expect(
+        bayesNet.nodesInChain([bayesNet.getNodeByName('C')]).map((e) => e.name),
+        equals(['C', 'X']));
+
+    expect(
+        bayesNet
+            .nodesInChain(bayesNet.getNodesByNames(['C', 'D']))
+            .map((e) => e.name),
+        equals(['C', 'D', 'X', 'Y']));
+  } else {
+    expect(bayesNet.nodesInTopologicalOrder.map((e) => e.name),
+        equals(['C', 'X']));
+
+    expect(
+        bayesNet.nodesInChain([bayesNet.getNodeByName('C')]).map((e) => e.name),
+        equals(['C', 'X']));
+
+    expect(
+        bayesNet
+            .nodesInChain(bayesNet.getNodesByNames(['C', 'D']))
+            .map((e) => e.name),
+        equals(['C', 'X']));
+  }
+
   var analyser = bayesNet.analyser;
 
   var result1 = analyser.showAnswer('C=T | X=P');
@@ -304,6 +420,85 @@ void _testBayesNetCancer(BayesianNetwork bayesNet,
   var result3 = analyser.showAnswer('C=T');
   expect(result3.probability, _inRange(0.01, tolerance));
   expect(analyser.ask('P(c)'), equals(result3));
+
+  {
+    var questions = analyser.generateQuestions('X');
+    expect(questions.length, equals(hasGhostBranch ? 6 : 2));
+  }
+
+  {
+    var questions =
+        analyser.generateQuestions('X', ignoreVariables: ['D', 'Y']);
+    expect(questions.length, equals(2));
+
+    var answers = analyser.quiz(questions);
+
+    for (var e in answers) {
+      print(e);
+    }
+
+    expect(answers[0].selectedValues[0].name, equals('F'));
+    expect(answers[1].selectedValues[0].name, equals('T'));
+
+    expect(answers[0].probability, _inRange(0.09, 0.01));
+    expect(answers[1].probability, _inRange(0.90, 0.01));
+
+    var groupByTarget = answers.groupByTargetVariable();
+
+    expect(groupByTarget.keys.map((e) => e.name).toList(), equals(['X']));
+    expect(
+        groupByTarget.values
+            .map((e) => e.map((e) => e.targetValue.variable.name).toList())
+            .toList(),
+        equals([
+          ['X', 'X']
+        ]));
+
+    var groupBySelVar = answers.groupBySelectedVariable();
+
+    expect(groupBySelVar.keys.map((e) => e.name).toList(), equals(['C']));
+    expect(
+        groupBySelVar.values
+            .map((e) => e.map((e) => e.targetValue.variable.name).toList())
+            .toList(),
+        equals([
+          ['X', 'X']
+        ]));
+
+    answers.sortBySelectedValues();
+    expect(answers.map((e) => e.query).toList(), [
+      'X = P | C = F',
+      'X = P | C = T',
+    ]);
+
+    answers.sortByTargetValue();
+    expect(answers.map((e) => e.query).toList(), [
+      'X = P | C = F',
+      'X = P | C = T',
+    ]);
+
+    answers.sortByProbability();
+    expect(answers.map((e) => e.query).toList(), [
+      'X = P | C = F',
+      'X = P | C = T',
+    ]);
+
+    answers.sortBySelectedValuesSignal();
+    expect(answers.map((e) => e.query).toList(), [
+      'X = P | C = F',
+      'X = P | C = T',
+    ]);
+
+    bayesNet.disposeCaches();
+
+    if (hasGhostBranch) {
+      expect(bayesNet.nodesInTopologicalOrder.map((e) => e.name),
+          equals(['C', 'D', 'X', 'Y']));
+    } else {
+      expect(bayesNet.nodesInTopologicalOrder.map((e) => e.name),
+          equals(['C', 'X']));
+    }
+  }
 }
 
 Matcher _inRange(double value, [double tolerance = 0.0001]) =>
