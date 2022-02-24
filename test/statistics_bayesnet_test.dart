@@ -74,22 +74,22 @@ void main() {
       var analyser = bayesNet.analyser;
 
       var result1 = analyser.showAnswer('P(c|m,b)');
-      expect(result1.probability, _inRange(0.600000));
+      expect(result1.probability, _isNear(0.600000));
 
       var result2 = analyser.showAnswer('P(-c|m,b)');
-      expect(result2.probability, _inRange(0.399999));
+      expect(result2.probability, _isNear(0.399999));
 
       var result3 = analyser.showAnswer('P(c|m,-b)');
-      expect(result3.probability, _inRange(0.400000));
+      expect(result3.probability, _isNear(0.400000));
 
       var result4 = analyser.showAnswer('P(-c|m,-b)');
-      expect(result4.probability, _inRange(0.600000));
+      expect(result4.probability, _isNear(0.600000));
 
       var result5 = analyser.showAnswer('P(s|m,b)');
-      expect(result5.probability, _inRange(0.800000));
+      expect(result5.probability, _isNear(0.800000));
 
       var result6 = analyser.showAnswer('P(s|m,-b)');
-      expect(result6.probability, _inRange(0.600000));
+      expect(result6.probability, _isNear(0.600000));
     });
 
     test('sprinkler', () {
@@ -151,28 +151,28 @@ void main() {
       var analyser = bayesNet.analyser;
 
       var result1 = analyser.showAnswer('P(c|s,r)');
-      expect(result1.probability, _inRange(0.307692));
+      expect(result1.probability, _isNear(0.307692));
 
       var result2 = analyser.showAnswer('P(c|s,-r)');
-      expect(result2.probability, _inRange(0.027027));
+      expect(result2.probability, _isNear(0.027027));
 
       var result3 = analyser.showAnswer('P(c|-s,-r)');
-      expect(result3.probability, _inRange(0.2000000));
+      expect(result3.probability, _isNear(0.2000000));
 
       var result4 = analyser.showAnswer('P(w|-s,-r)');
-      expect(result4.probability, _inRange(0.4805194));
+      expect(result4.probability, _isNear(0.4805194));
 
       var result5 = analyser.showAnswer('P(w|s,r)');
-      expect(result5.probability, _inRange(0.596153));
+      expect(result5.probability, _isNear(0.596153));
 
       var result6 = analyser.showAnswer('P(c|w,r)');
-      expect(result6.probability, _inRange(0.556521));
+      expect(result6.probability, _isNear(0.556521));
 
       var result7 = analyser.showAnswer('P(c|w,s)');
-      expect(result7.probability, _inRange(0.074468));
+      expect(result7.probability, _isNear(0.074468));
 
       var result8 = analyser.showAnswer('P(c|-w)');
-      expect(result8.probability, _inRange(0.417977));
+      expect(result8.probability, _isNear(0.417977));
     });
 
     test('cancer', () {
@@ -379,7 +379,7 @@ void _testBayesNetCancer(BayesianNetwork bayesNet,
   }, throwsA(isA<ValidationError>()));
 
   if (hasGhostBranch) {
-    expect(bayesNet.nodes.map((e) => e.name), equals(['C', 'X', 'D', 'Y']));
+    expect(bayesNet.nodes.map((e) => e.name), equals(['C', 'D', 'X', 'Y']));
     expect(bayesNet.nodesInTopologicalOrder.map((e) => e.name),
         equals(['C', 'D', 'X', 'Y']));
 
@@ -410,15 +410,15 @@ void _testBayesNetCancer(BayesianNetwork bayesNet,
   var analyser = bayesNet.analyser;
 
   var result1 = analyser.showAnswer('C=T | X=P');
-  expect(result1.probability, _inRange(0.091836, tolerance));
+  expect(result1.probability, _isNear(0.091836, tolerance));
   expect(analyser.ask('P(c|x)'), equals(result1));
 
   var result2 = analyser.showAnswer('C=T | X=N');
-  expect(result2.probability, _inRange(0.0011, tolerance));
+  expect(result2.probability, _isNear(0.0011, tolerance));
   expect(analyser.ask('P(c|-x)'), equals(result2));
 
   var result3 = analyser.showAnswer('C=T');
-  expect(result3.probability, _inRange(0.01, tolerance));
+  expect(result3.probability, _isNear(0.01, tolerance));
   expect(analyser.ask('P(c)'), equals(result3));
 
   {
@@ -440,8 +440,8 @@ void _testBayesNetCancer(BayesianNetwork bayesNet,
     expect(answers[0].selectedValues[0].name, equals('F'));
     expect(answers[1].selectedValues[0].name, equals('T'));
 
-    expect(answers[0].probability, _inRange(0.09, 0.01));
-    expect(answers[1].probability, _inRange(0.90, 0.01));
+    expect(answers[0].probability, _isNear(0.09, 0.01));
+    expect(answers[1].probability, _isNear(0.90, 0.01));
 
     var groupByTarget = answers.groupByTargetVariable();
 
@@ -501,5 +501,5 @@ void _testBayesNetCancer(BayesianNetwork bayesNet,
   }
 }
 
-Matcher _inRange(double value, [double tolerance = 0.0001]) =>
+Matcher _isNear(double value, [double tolerance = 0.0001]) =>
     inInclusiveRange(value - tolerance, value + tolerance);

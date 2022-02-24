@@ -7,6 +7,8 @@ Part of this code was inspired by the Java project:
   - Chenrui Liu
 */
 
+import 'dart:collection';
+
 import 'package:collection/collection.dart';
 import 'package:statistics/statistics.dart';
 
@@ -1626,9 +1628,15 @@ class EventMonitor implements NetworkCache {
       totals.update(groupKey, (total) => total + count, ifAbsent: () => count);
     }
 
-    var variablesProbabilities = <String, ObservedEventProbabilities>{};
+    // Need a sorted `HashMap`:
+    var variablesProbabilities =
+        // ignore: prefer_collection_literals
+        LinkedHashMap<String, ObservedEventProbabilities>();
 
-    for (var e in _eventsCount.entries) {
+    var eventsEntries = _eventsCount.entries.toList();
+    _sortEventsByTopology(eventsEntries);
+
+    for (var e in eventsEntries) {
       var event = e.key;
       var groupKey = event.groupKey;
       var group = groups[groupKey]!;
@@ -1677,7 +1685,7 @@ class EventMonitor implements NetworkCache {
       }
     }
 
-    for (var e in _eventsCount.entries) {
+    for (var e in eventsEntries) {
       var event = e.key;
       var count = e.value;
       var groupKey = event.groupKey;
@@ -1700,10 +1708,7 @@ class EventMonitor implements NetworkCache {
     network.freeze();
   }
 
-  @override
-  String toString() {
-    var entries = _eventsCount.entries.toList();
-
+  void _sortEventsByTopology(List<MapEntry<ObservedEvent, int>> entries) {
     entries.sort((a, b) {
       var values1 = a.key.values.toList();
       var values2 = b.key.values.toList();
@@ -1718,6 +1723,12 @@ class EventMonitor implements NetworkCache {
 
       return cmp;
     });
+  }
+
+  @override
+  String toString() {
+    var entries = _eventsCount.entries.toList();
+    _sortEventsByTopology(entries);
 
     return 'EventMonitor[$name]<\n  '
         '${entries.map((e) => '${e.key}: ${e.value}').join('\n  ')}\n>';

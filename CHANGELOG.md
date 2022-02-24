@@ -1,3 +1,10 @@
+## 1.0.17
+
+- New type `Pair`.
+- New `Forecaster` framework.
+- `EventMonitor`:
+  - Now allows out-of-order events from the Bayesian Network topology.
+
 ## 1.0.16
 
 - `ListComparablesExtension` changed to `IterableComparablesExtension`.

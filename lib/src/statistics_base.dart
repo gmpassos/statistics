@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:collection/collection.dart';
+
 import 'statistics_extension_num.dart';
 
 /// Parses [o] as `double`. If can't parse returns [def].
@@ -648,4 +650,79 @@ abstract class DataEntry {
   /// Returns the [DataEntry] as a [Map] of fields and values.
   Map<String, dynamic> getDataMap() =>
       Map.fromIterables(getDataFields(), getDataValues());
+}
+
+/// A pair of [T].
+class Pair<T> implements Comparable<Pair<T>> {
+  /// Element A of pair.
+  final T a;
+
+  /// Element B of pair.
+  final T b;
+
+  Pair(this.a, this.b);
+
+  /// Returns this [Pair] as a [List] `[a,b]`.
+  List<T> get asList => [a, b];
+
+  /// Returns this [Pair] as a [MapEntry].
+  MapEntry<T, T> get asMapEntry => MapEntry<T, T>(a, b);
+
+  static final _iterableEquality = IterableEquality();
+
+  /// Equality.
+  ///
+  /// - If [T] is [Iterable] uses [IterableEquality.equals].
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    if (other is! Pair) return false;
+
+    var a = this.a;
+
+    if (a is Iterable) {
+      var b = this.b as Iterable;
+      return _iterableEquality.equals(a, other.a) &&
+          _iterableEquality.equals(b, other.b);
+    } else {
+      return a == other.a && b == other.b;
+    }
+  }
+
+  /// HashCode.
+  ///
+  /// - If [T] is [Iterable] uses [IterableEquality.hash].
+  @override
+  int get hashCode {
+    var a = this.a;
+
+    if (a is Iterable) {
+      var b = this.b as Iterable;
+      return _iterableEquality.hash(a) ^ _iterableEquality.hash(b);
+    } else {
+      return a.hashCode ^ b.hashCode;
+    }
+  }
+
+  /// Compare `this` with [other] if [T] implements [Comparable].
+  @override
+  int compareTo(Pair<T> other) {
+    var a = this.a;
+    if (a is Comparable) {
+      var cmp = a.compareTo(other.a);
+      if (cmp == 0) {
+        var b = this.b as Comparable;
+        cmp = b.compareTo(other.b);
+      }
+      return cmp;
+    }
+
+    throw UnimplementedError("Type `$T` does NOT implement `Comparable`");
+  }
+
+  @override
+  String toString() {
+    return '($a , $b)';
+  }
 }

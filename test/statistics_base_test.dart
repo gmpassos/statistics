@@ -5,6 +5,28 @@ void main() {
   group('Numerical Parsers', () {
     setUp(() {});
 
+    test('Pair', () {
+      var p1 = Pair(10, 20);
+
+      expect(p1.a, equals(10));
+      expect(p1.b, equals(20));
+
+      var p2 = Pair(10, 20);
+      var p3 = Pair(10, 30);
+
+      expect(p3.a, equals(10));
+      expect(p3.b, equals(30));
+
+      expect(p1 == p2, isTrue);
+      expect(p1.hashCode, equals(p2.hashCode));
+      expect(p1.compareTo(p2), equals(0));
+
+      expect(p1 == p3, isFalse);
+      expect(p1.hashCode, isNot(equals(p3.hashCode)));
+      expect(p1.compareTo(p3), lessThan(0));
+      expect(p3.compareTo(p1), greaterThan(0));
+    });
+
     test('parseInt', () {
       expect(parseInt(10), equals(10));
       expect(parseInt(10.1), equals(10));
