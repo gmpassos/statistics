@@ -1,10 +1,5 @@
 /*
-Part of this code was inspired by the Java project:
-- https://github.com/Cansn0w/BayesianNetwork
-- MIT License
-- Authors:
-  - Di Lu
-  - Chenrui Liu
+Author: Graciliano M. P.
 */
 
 import 'dart:collection';
@@ -42,6 +37,24 @@ abstract class Validatable {
   }
 }
 
+abstract class Freezeable {
+  void checkNotFrozen() {
+    if (isFrozen) {
+      throw ValidationError("$runtimeType already frozen!");
+    }
+  }
+
+  bool _frozen = false;
+
+  bool get isFrozen => _frozen;
+
+  bool freeze() {
+    if (_frozen) return false;
+    _frozen = true;
+    return true;
+  }
+}
+
 /// An interface for a network cache. This stores some internal resolutions.
 abstract class NetworkCache {
   Map<String, String> get _resolvedVariablesNamesCache;
@@ -51,11 +64,13 @@ abstract class NetworkCache {
 
 /// A Bayesian Network implementation.
 class BayesianNetwork extends Iterable<String>
-    with Validatable
+    with Validatable, Freezeable
     implements NetworkCache {
   /// Name of the network.
   final String name;
-  final Map<String, Variable> _nodes = <String, Variable>{};
+  final Map<String, BayesVariable> _nodes = <String, BayesVariable>{};
+  final Map<String, BayesDependency> _dependencies =
+      <String, BayesDependency>{};
 
   /// The minimal probability for an unseen value.
   ///
@@ -71,20 +86,22 @@ class BayesianNetwork extends Iterable<String>
     }
   }
 
-  /// The root [Variable] nodes.
-  List<Variable> get rootNodes => _nodes.values.where((e) => e.isRoot).toList();
+  /// The root [BayesVariable] nodes.
+  List<BayesVariable> get rootNodes =>
+      _nodes.values.where((e) => e.isRoot).toList();
 
-  /// All the [Variable] nodes of this network.
-  List<Variable> get nodes => _nodes.values.toList();
+  /// All the [BayesVariable] nodes of this network.
+  List<BayesVariable> get nodes => _nodes.values.toList();
 
-  /// All the [Variable] nodes of this network in a sorted in a topological order.
-  List<Variable> get nodesInTopologicalOrder => nodes.nodesInTopologicalOrder;
+  /// All the [BayesVariable] nodes of this network in a sorted in a topological order.
+  List<BayesVariable> get nodesInTopologicalOrder =>
+      nodes.nodesInTopologicalOrder;
 
-  final Map<_IterableKey<Variable>, List<Variable>> _nodesInChainCache =
-      <_IterableKey<Variable>, List<Variable>>{};
+  final Map<_IterableKey<BayesVariable>, List<BayesVariable>>
+      _nodesInChainCache = <_IterableKey<BayesVariable>, List<BayesVariable>>{};
 
-  /// Returns the [Variable] nodes in the chain composed by [selectedNodes].
-  List<Variable> nodesInChain(Iterable<Variable> selectedNodes) {
+  /// Returns the [BayesVariable] nodes in the chain composed by [selectedNodes].
+  List<BayesVariable> nodesInChain(Iterable<BayesVariable> selectedNodes) {
     var selectedNodesSet = selectedNodes.toSet();
     var cacheKey = _IterableKey(selectedNodesSet);
     var cached = _nodesInChainCache[cacheKey];
@@ -98,8 +115,8 @@ class BayesianNetwork extends Iterable<String>
     return nodes.toList();
   }
 
-  List<Variable> _nodesInChainImpl(
-      Set<Variable> selectedNodesSet, Iterable<Variable> selectedNodes) {
+  List<BayesVariable> _nodesInChainImpl(Set<BayesVariable> selectedNodesSet,
+      Iterable<BayesVariable> selectedNodes) {
     var nodes = this.nodes;
 
     selectedNodesSet = nodes.where((n) => selectedNodesSet.contains(n)).toSet();
@@ -141,32 +158,34 @@ class BayesianNetwork extends Iterable<String>
     return invalid;
   }
 
-  /// Returns the total number of [Variable] nodes of this network.
+  /// Returns the total number of [BayesVariable] nodes of this network.
   int get nodesLength => _nodes.length;
 
-  /// Returns all the [Variable] nodes names.
+  /// Returns all the [BayesVariable] nodes names.
   List<String> get variablesNames => _nodes.keys.toList();
 
-  Analyser? _analyser;
+  BayesAnalyser? _analyser;
 
-  /// Returns an [Analyser].
+  /// Returns an [BayesAnalyser].
   ///
-  /// - Default implementation: [VariableElimination].
-  Analyser get analyser {
+  /// - Default implementation: [BayesAnalyserVariableElimination].
+  BayesAnalyser get analyser {
     freeze();
-    return _analyser ??= VariableElimination(this);
+    return _analyser ??= BayesAnalyserVariableElimination(this);
   }
 
-  /// Adds a [Variable] node, with [values] and [parents] and [probabilities].
-  Variable addNode(String name, List<String> values, List<String> parents,
-      List<String> probabilities,
+  /// Adds a [BayesVariable] node, with [values] and [parents] and [probabilities].
+  BayesVariable addVariable(String name, List<String> values,
+      List<String> parents, List<String> probabilities,
       {double? unseenMinimalProbability}) {
-    _checkNotFrozen();
+    checkNotFrozen();
 
-    unseenMinimalProbability ??= this.unseenMinimalProbability;
-
-    var node = Variable(name, this,
-        values: values, parents: parents, probabilities: probabilities);
+    var node = BayesVariable(name, this,
+        values: values,
+        parents: parents,
+        probabilities: probabilities,
+        unseenMinimalProbability:
+            unseenMinimalProbability ?? this.unseenMinimalProbability);
 
     for (var n in node.parents) {
       n._addChild(node);
@@ -177,6 +196,29 @@ class BayesianNetwork extends Iterable<String>
     _disposeInternalCaches();
 
     return node;
+  }
+
+  /// Adds a dependency between [BayesVariable]s with respective [probabilities].
+  ///
+  /// - Note: Dependencies should be added after all variables.
+  BayesDependency addDependency(
+      List<String> variablesNames, List<String> probabilities,
+      {double? unseenMinimalProbability}) {
+    checkNotFrozen();
+
+    var variables =
+        _nodes.values.where((e) => variablesNames.contains(e.name)).toList();
+
+    var dependency = BayesDependency(this, variables,
+        probabilities: probabilities,
+        unseenMinimalProbability:
+            unseenMinimalProbability ?? this.unseenMinimalProbability);
+
+    dependency.checkValid();
+
+    _disposeInternalCaches();
+
+    return dependency;
   }
 
   @override
@@ -201,31 +243,23 @@ class BayesianNetwork extends Iterable<String>
     }
   }
 
-  void _checkNotFrozen() {
-    if (isFrozen) {
-      throw ValidationError("Network already frozen!");
-    }
-  }
-
-  bool _frozen = false;
-
-  bool get isFrozen => _frozen;
-
   /// Freezes the network turning it immutable.
-  void freeze() {
-    if (_frozen) return;
-    _frozen = true;
+  @override
+  bool freeze() {
+    if (!super.freeze()) return false;
 
     for (var n in _nodes.values) {
       n.freeze();
     }
+
+    return true;
   }
 
   /// Returns `true` if contains a node with [name].
   bool hasNodeWithName(String name) => _nodes.containsKey(name);
 
-  /// Returns a [Variable] node with [name].
-  Variable getNodeByName(String name) {
+  /// Returns a [BayesVariable] node with [name].
+  BayesVariable getNodeByName(String name) {
     var node = _nodes[name];
     if (node == null) {
       throw ValidationError("No `Variable` node with name: $name");
@@ -233,34 +267,39 @@ class BayesianNetwork extends Iterable<String>
     return node;
   }
 
-  /// Returns a [List] of [Variable]s nodes with matching [names].
-  List<Variable> getNodesByNames(Iterable<String> names) =>
+  /// Returns a [List] of [BayesVariable]s nodes with matching [names].
+  List<BayesVariable> getNodesByNames(Iterable<String> names) =>
       _nodes.values.where((e) => names.contains(e.name)).toList();
 
-  Condition _parseCondition(String line) {
+  BayesCondition _parseCondition(String line) {
     line = line.replaceAll(_regexpSpace, '');
     var cond = line.split(
         ","); // where cond (conditions) is like ["a=true", "weather=sunny"]
 
-    var conditionList = <Event>[];
+    var conditionList = <BayesEvent>[];
     for (var event in cond) {
       if (event.isNotEmpty) {
         conditionList.add(parseEvent(event));
       }
     }
-    return Condition(conditionList);
+    return BayesCondition(conditionList);
   }
 
-  Event parseEvent(String line) {
+  BayesEvent parseEvent(String line) {
     line = line.replaceAll(_regexpSpace, '');
+
     var e = line.split("=");
+    if (e.length != 2) {
+      throw ValidationError("Expected \"variable=value\", received " + line);
+    }
+
     var name = e[0];
     var node = _nodes[name];
     if (node == null) {
       throw StateError('No such variable <' + e[0] + ">.");
     }
 
-    return node.parseEvent(line);
+    return BayesEvent.byOutcomeName(node, e[1]);
   }
 
   @override
@@ -273,36 +312,39 @@ class BayesianNetwork extends Iterable<String>
           runtimeType == other.runtimeType &&
           _listEqualityVariable.equals(_nodes.values, other._nodes.values);
 
-  static final _listEqualityVariable = IterableEquality<Variable>();
+  static final _listEqualityVariable = IterableEquality<BayesVariable>();
 
   @override
   int get hashCode => _listEqualityVariable.hash(_nodes.values);
 
   @override
   String toString() {
-    return 'BayesianNetwork[$name]{ variables: ${_nodes.length} }<\n${_nodes.values.join('\n')}\n>';
+    return 'BayesianNetwork[$name]{ variables: ${_nodes.length} }<\n'
+        '${_nodes.values.join('\n')}\n'
+        '${_dependencies.values.join('\n')}\n'
+        '>';
   }
 }
 
-/// A [Value] signal.
-enum ValueSignal {
+/// A [BayesValue] signal.
+enum BayesValueSignal {
   positive,
   negative,
   unknown,
 }
 
 /// A value in a [BayesianNetwork].
-class Value extends Validatable implements Comparable<Value> {
+class BayesValue extends Validatable implements Comparable<BayesValue> {
   /// Name of the value.
   final String name;
 
   /// Variable of this value.
-  final Variable variable;
+  final BayesVariable variable;
 
   /// Signal of this value.
-  final ValueSignal signal;
+  final BayesValueSignal signal;
 
-  Value(String name, this.variable, {ValueSignal? signal})
+  BayesValue(String name, this.variable, {BayesValueSignal? signal})
       : name = resolveName(name, networkCache: variable.network),
         signal = resolveSignal(signal: signal, name: name);
 
@@ -324,16 +366,19 @@ class Value extends Validatable implements Comparable<Value> {
     return resolved;
   }
 
-  static ValueSignal resolveSignal({ValueSignal? signal, String? name}) {
+  static BayesValueSignal resolveSignal(
+      {BayesValueSignal? signal, String? name}) {
     if (signal != null) return signal;
 
-    if (name == null) return ValueSignal.unknown;
+    if (name == null) return BayesValueSignal.unknown;
 
     name = name.trimLeft();
 
     return name.startsWith('-')
-        ? ValueSignal.negative
-        : (name.startsWith('+') ? ValueSignal.positive : ValueSignal.unknown);
+        ? BayesValueSignal.negative
+        : (name.startsWith('+')
+            ? BayesValueSignal.positive
+            : BayesValueSignal.unknown);
   }
 
   @override
@@ -342,7 +387,7 @@ class Value extends Validatable implements Comparable<Value> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Value &&
+      other is BayesValue &&
           runtimeType == other.runtimeType &&
           name == other.name &&
           variable == other.variable;
@@ -351,7 +396,7 @@ class Value extends Validatable implements Comparable<Value> {
   int get hashCode => name.hashCode ^ variable.hashCode;
 
   @override
-  int compareTo(Value other) {
+  int compareTo(BayesValue other) {
     if (identical(this, other)) return 0;
 
     var cmp = variable.name.compareTo(other.variable.name);
@@ -371,23 +416,23 @@ class Value extends Validatable implements Comparable<Value> {
 }
 
 /// A network event: [Variable] [node] + [value].
-class Event implements Comparable<Event> {
-  final Variable node;
-  late final Value value;
+class BayesEvent implements Comparable<BayesEvent> {
+  final BayesVariable node;
+  late final BayesValue value;
 
-  Event(this.node, this.value) {
-    if (!node.domain.containsValue(value)) {
+  BayesEvent(this.node, this.value) {
+    if (!node.values.contains(value)) {
       throw ValidationError(
-          'Variable <${node.name}> does not contain the value "$value".');
+          'Variable <${node.variablesAsString}> does not contain the value "$value".');
     }
   }
 
-  Event.byOutcomeName(this.node, String outcomeName) {
-    var value = node.domain[outcomeName];
+  BayesEvent.byOutcomeName(this.node, String outcomeName) {
+    var value = node.values.firstWhereOrNull((v) => v.name == outcomeName);
 
     if (value == null) {
       throw ValidationError(
-          'Variable <${node.name}> does not contain the value "$outcomeName".');
+          'Variable <${node.variablesAsString}> does not contain the value "$outcomeName".');
     }
 
     this.value = value;
@@ -396,7 +441,7 @@ class Event implements Comparable<Event> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Event &&
+      other is BayesEvent &&
           runtimeType == other.runtimeType &&
           node == other.node &&
           value == other.value;
@@ -405,41 +450,252 @@ class Event implements Comparable<Event> {
   int get hashCode => node.hashCode ^ value.hashCode;
 
   @override
-  int compareTo(Event other) {
+  int compareTo(BayesEvent other) {
     if (identical(this, other)) return 0;
 
     if (node == other.node) {
       return value.compareTo(other.value);
     } else {
-      return node.name.compareTo(other.node.name);
+      return node.variablesAsString.compareTo(other.node.variablesAsString);
     }
   }
 
   @override
   String toString() {
-    return "${node.name} = ${value.name}";
+    return "${node.variablesAsString} = ${value.name}";
+  }
+}
+
+abstract class BayesNode extends Validatable with Freezeable {
+  /// The network of this element.
+  final BayesianNetwork network;
+
+  BayesNode(this.network);
+
+  Iterable<BayesVariable> get variables;
+
+  String get variablesAsString;
+
+  Iterable<BayesValue> get values;
+
+  Iterable<BayesVariable> get parents;
+
+  bool get isRoot;
+
+  List<BayesVariable> get rootChain;
+
+  Set<BayesVariable> get ancestors;
+
+  Iterable<BayesVariable>? _conditionVariables;
+
+  Iterable<BayesVariable> get conditionVariables => _conditionVariables ??=
+      UnmodifiableSetView(<BayesVariable>{...variables, ...parents});
+
+  BayesEvent parseEvent(String line) => network.parseEvent(line);
+
+  final Map<BayesCondition, double> _probabilities = <BayesCondition, double>{};
+
+  /// The probability table of this node.
+  Map<BayesCondition, double> get probabilities =>
+      UnmodifiableMapView<BayesCondition, double>(_probabilities);
+
+  @override
+  Object? validate() {
+    if (_probabilities.values.any((n) => n.isNaN || n.isInfinite || n < 0)) {
+      return this;
+    }
+    return null;
+  }
+
+  /// Returns a probability for [condition] in the [probabilities] table.
+  double? getProbability(String condition) =>
+      _probabilities[_parseCondition(condition)];
+
+  void _setProbabilities(
+      double? unseenMinimalProbability, List<String>? probabilities) {
+    {
+      unseenMinimalProbability ??= network.unseenMinimalProbability;
+
+      var conditions =
+          BayesCondition.allConditions(conditionVariables.toList());
+      for (var c in conditions) {
+        _probabilities[c] = unseenMinimalProbability;
+      }
+    }
+
+    if (probabilities != null) {
+      for (var p in probabilities) {
+        _addProbability(p);
+      }
+    }
+  }
+
+  void _addProbability(String line) {
+    checkNotFrozen();
+
+    line = line.replaceAll(_regexpSpace, '');
+
+    var idx = line.indexOf(':');
+    if (idx < 1) {
+      throw ValidationError("Invalid entry: $line");
+    }
+
+    var condition = _parseCondition(line.substring(0, idx));
+
+    var probability = double.parse(line.substring(idx + 1).trim());
+
+    if (_probabilities.containsKey(condition)) {
+      _probabilities[condition] = probability;
+    } else {
+      throw ValidationError('Provided condition mismatch: $condition\n'
+          '  -- Available conditions for: $this');
+    }
+  }
+
+  String toStringProbabilities(String mainVariable) {
+    if (_probabilities.isEmpty) return '';
+
+    var s = '\n  ';
+
+    var entries = _probabilities.entries.toList();
+
+    entries.sort((a, b) {
+      var c1 = a.key;
+      var c2 = b.key;
+      return c1.compareTo(c2);
+    });
+
+    s += entries
+        .map((e) => '${e.key.toString(mainVariable: mainVariable)}: ${e.value}')
+        .join('\n  ');
+
+    return s;
+  }
+
+  BayesCondition _parseCondition(String line);
+}
+
+class BayesDependency extends BayesNode implements Comparable<BayesDependency> {
+  final Set<BayesVariable> _variables;
+
+  @override
+  late final String variablesAsString;
+
+  BayesDependency(BayesianNetwork network, Iterable<BayesVariable> variables,
+      {List<String>? probabilities, double? unseenMinimalProbability})
+      : _variables = (variables.toList()..sort()).toSet(),
+        super(network) {
+    if (_variables.length < 2) {
+      throw ValidationError(
+          'A dependency should have at least 2 different variables');
+    }
+
+    variablesAsString =
+        (_variables.map((e) => e.name).toList()..sort()).join('+');
+
+    if (network._dependencies.containsKey(variablesAsString)) {
+      throw ValidationError(
+          'Nodes dependency already exists: $variablesAsString');
+    }
+
+    network._dependencies[variablesAsString] = this;
+
+    _setProbabilities(double.nan, probabilities);
+    _probabilities.removeWhere((key, value) => value.isNaN);
+  }
+
+  @override
+  Set<BayesVariable> get variables => UnmodifiableSetView(_variables);
+
+  @override
+  Iterable<BayesValue> get values => _variables.expand((e) => e.values);
+
+  @override
+  Iterable<BayesVariable> get parents =>
+      _variables.expand((e) => e.parents).toSet();
+
+  @override
+  bool get isRoot => _variables.any((e) => e.isRoot);
+
+  @override
+  List<BayesVariable> get rootChain {
+    var chains = _variables.map((e) => e.rootChain).toList();
+    chains.sort((a, b) => a.length.compareTo(b.length));
+    return chains.first;
+  }
+
+  Set<BayesVariable>? _ancestors;
+
+  @override
+  Set<BayesVariable> get ancestors =>
+      _ancestors ??= _variables.expand((e) => e.ancestors).toSet();
+
+  @override
+  BayesCondition _parseCondition(String line) {
+    line = line.replaceAll(_regexpSpace, '');
+
+    var eventsStr = line.split(",");
+    if (eventsStr.length != conditionVariables.length) {
+      throw ValidationError(
+          "Number of events (${eventsStr.length}) mismatches required number (${conditionVariables.length}): $line");
+    }
+
+    var events = eventsStr.map(parseEvent).toList();
+    return BayesCondition(events);
+  }
+
+  static final _setEquality = SetEquality<BayesVariable>();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BayesDependency &&
+          runtimeType == other.runtimeType &&
+          _setEquality.equals(_variables, other._variables);
+
+  @override
+  int get hashCode => _setEquality.hash(_variables);
+
+  @override
+  String toString() {
+    var s = '${variables.nodesNames.join(' <-> ')}:';
+    s += toStringProbabilities(variables.first.name);
+    return s;
+  }
+
+  @override
+  int compareTo(BayesDependency other) {
+    var cmp = _variables.length.compareTo(other._variables.length);
+    if (cmp == 0) {
+      cmp = _variables.compareWith(other._variables);
+    }
+    return cmp;
   }
 }
 
 /// A variable in the [BayesianNetwork] graph.
-class Variable extends Validatable implements Comparable<Variable> {
+class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
   /// The name of the variable.
   final String name;
 
-  /// The network of this variable.
-  final BayesianNetwork network;
+  @override
+  late final List<BayesVariable> variables = UnmodifiableListView([this]);
 
-  final List<Variable> _parents = <Variable>[];
-  final List<Variable> _children = <Variable>[];
-  final Map<String, Value> _domain = <String, Value>{};
+  final List<BayesVariable> _parents = <BayesVariable>[];
+  final List<BayesVariable> _children = <BayesVariable>[];
+  final Map<String, BayesValue> _domain = <String, BayesValue>{};
 
-  final Map<Condition, double> _probabilities = <Condition, double>{};
-
-  Variable(String name, this.network,
+  BayesVariable(String name, BayesianNetwork network,
       {List<String>? values,
       List<String>? parents,
-      List<String>? probabilities})
-      : name = resolveName(name, networkCache: network) {
+      List<String>? probabilities,
+      double? unseenMinimalProbability})
+      : name = resolveName(name, networkCache: network),
+        super(network) {
+    if (network._nodes.containsKey(name)) {
+      throw ValidationError('Variable node already exists: $name');
+    }
+
     network._nodes[name] = this;
 
     if (values != null) {
@@ -454,23 +710,7 @@ class Variable extends Validatable implements Comparable<Variable> {
       }
     }
 
-    {
-      var unseenMinimalProbability = network.unseenMinimalProbability;
-
-      var nodes = _parents.toList();
-      nodes.add(this);
-
-      var conditions = Condition.allConditions(nodes);
-      for (var c in conditions) {
-        _probabilities[c] = unseenMinimalProbability;
-      }
-    }
-
-    if (probabilities != null) {
-      for (var p in probabilities) {
-        _addProbability(p);
-      }
-    }
+    _setProbabilities(unseenMinimalProbability, probabilities);
   }
 
   static String resolveName(String name,
@@ -488,9 +728,8 @@ class Variable extends Validatable implements Comparable<Variable> {
 
   @override
   Object? validate() {
-    if (_probabilities.values.any((n) => n.isNaN || n.isInfinite || n < 0)) {
-      return this;
-    }
+    var valid = super.validate();
+    if (valid != null) return valid;
 
     if (_children.isNotEmpty) {
       var invalidChild =
@@ -504,13 +743,22 @@ class Variable extends Validatable implements Comparable<Variable> {
     return null;
   }
 
+  @override
   bool get isRoot => _parents.isEmpty;
 
   int get parentsLength => _parents.length;
 
-  List<Variable> get parents => UnmodifiableListView<Variable>(_parents);
+  @override
+  List<BayesVariable> get parents =>
+      UnmodifiableListView<BayesVariable>(_parents);
 
-  bool containsNode(Variable node) {
+  @override
+  String get variablesAsString => name;
+
+  @override
+  Iterable<BayesValue> get values => _domain.values;
+
+  bool containsNode(BayesVariable node) {
     for (var c in _children) {
       if (c == node) return true;
     }
@@ -522,11 +770,11 @@ class Variable extends Validatable implements Comparable<Variable> {
     return false;
   }
 
-  List<Variable> nodeChain(Variable node) {
-    if (_children.isEmpty) return <Variable>[];
+  List<BayesVariable> nodeChain(BayesVariable node) {
+    if (_children.isEmpty) return <BayesVariable>[];
 
     for (var c in _children) {
-      if (c == node) return <Variable>[this, c];
+      if (c == node) return <BayesVariable>[this, c];
     }
 
     var chains = _children
@@ -538,8 +786,8 @@ class Variable extends Validatable implements Comparable<Variable> {
     return _shortestChain(chains);
   }
 
-  List<Variable> _shortestChain(List<List<Variable>> chains) {
-    if (chains.isEmpty) return <Variable>[];
+  List<BayesVariable> _shortestChain(List<List<BayesVariable>> chains) {
+    if (chains.isEmpty) return <BayesVariable>[];
     if (chains.length == 1) return chains.first;
 
     chains.sort((a, b) {
@@ -553,38 +801,41 @@ class Variable extends Validatable implements Comparable<Variable> {
     return chains.first;
   }
 
-  List<Variable>? _rootNodes;
+  List<BayesVariable>? _rootNodes;
 
   /// Returns the root nodes of this node.
-  List<Variable> get rootNodes => (_rootNodes ??= _rootNodesImpl()).toList();
+  List<BayesVariable> get rootNodes =>
+      (_rootNodes ??= _rootNodesImpl()).toList();
 
-  List<Variable> _rootNodesImpl() =>
+  List<BayesVariable> _rootNodesImpl() =>
       network.rootNodes.where((e) => e.containsNode(this)).toList();
 
-  List<Variable>? _rootChain;
+  List<BayesVariable>? _rootChain;
 
   /// Returns the smallest chain until the root.
-  List<Variable> get rootChain => (_rootChain ??= _rootChainImpl()).toList();
+  @override
+  List<BayesVariable> get rootChain =>
+      (_rootChain ??= _rootChainImpl()).toList();
 
-  List<Variable> _rootChainImpl() {
+  List<BayesVariable> _rootChainImpl() {
     var rootNodes = this.rootNodes;
-    if (rootNodes.isEmpty) return <Variable>[this];
+    if (rootNodes.isEmpty) return <BayesVariable>[this];
 
     var chains = rootNodes.map((r) => r.nodeChain(this)).toList();
     return _shortestChain(chains);
   }
 
-  List<List<Variable>>? _rootChains;
+  List<List<BayesVariable>>? _rootChains;
 
   /// Returns all the chains until the root.
-  List<List<Variable>> get rootChains =>
+  List<List<BayesVariable>> get rootChains =>
       (_rootChains ??= _rootChainsImpl()).map((e) => e.toList()).toList();
 
-  List<List<Variable>> _rootChainsImpl() {
+  List<List<BayesVariable>> _rootChainsImpl() {
     var rootNodes = this.rootNodes;
     if (rootNodes.isEmpty) {
-      return <List<Variable>>[
-        <Variable>[this]
+      return <List<BayesVariable>>[
+        <BayesVariable>[this]
       ];
     }
 
@@ -592,78 +843,45 @@ class Variable extends Validatable implements Comparable<Variable> {
     return chains;
   }
 
-  Set<Variable>? _ancestors;
+  Set<BayesVariable>? _ancestors;
 
-  /// Returns the ancestors [Variable] nodes of this node.
-  Set<Variable> get ancestors => (_ancestors ??= _ancestorsImpl()).toSet();
+  /// Returns the ancestors [BayesVariable] nodes of this node.
+  @override
+  Set<BayesVariable> get ancestors => (_ancestors ??= _ancestorsImpl()).toSet();
 
-  Set<Variable> _ancestorsImpl() {
-    if (_parents.isEmpty) return <Variable>{};
+  Set<BayesVariable> _ancestorsImpl() {
+    if (_parents.isEmpty) return <BayesVariable>{};
     var list = _parents.expand((p) => [p, ...p.ancestors]).toSet();
     return list;
   }
 
   /// The domain values of this node.
-  Map<String, Value> get domain => UnmodifiableMapView<String, Value>(_domain);
+  Map<String, BayesValue> get domain =>
+      UnmodifiableMapView<String, BayesValue>(_domain);
 
-  /// The probability table of this node.
-  Map<Condition, double> get probabilities =>
-      UnmodifiableMapView<Condition, double>(_probabilities);
-
-  void _addChild(Variable node) {
-    _checkNotFrozen();
+  void _addChild(BayesVariable node) {
+    checkNotFrozen();
 
     _children.add(node);
     _disposeCaches();
   }
 
-  void _checkNotFrozen() {
-    if (isFrozen) {
-      throw StateError("Network already frozen!");
-    }
-  }
-
-  bool _frozen = false;
-
-  bool get isFrozen => _frozen;
-
-  void freeze() {
-    if (_frozen) return;
-    _frozen = true;
-  }
-
-  Event parseEvent(String line) {
-    line = line.replaceAll(_regexpSpace, '');
-    var e = line.split("=");
-    if (e.length != 2) {
-      throw ValidationError("Expected \"variable=value\", received " + line);
-    }
-
-    var name = e[0];
-    var node = network.getNodeByName(name);
-
-    return Event.byOutcomeName(node, e[1]);
-  }
-
-  Condition _parseCondition(String line) {
+  @override
+  BayesCondition _parseCondition(String line) {
     line = line.replaceAll(_regexpSpace, '');
 
     var eventsStr = line.split(",");
-    if (eventsStr.length != _parents.length + 1) {
+    if (eventsStr.length != conditionVariables.length) {
       throw ValidationError(
-          "Number of events (${eventsStr.length}) mismatches required number (${_parents.length + 1}): $line");
+          "Number of events (${eventsStr.length}) mismatches required number (${conditionVariables.length}): $line");
     }
 
     var events = eventsStr.map(parseEvent).toList();
-    return Condition(events);
+    return BayesCondition(events);
   }
 
-  /// Returns a probability for [condition] in the [probabilities] table.
-  double? getProbability(String condition) =>
-      _probabilities[_parseCondition(condition)];
-
   void _addParentByName(String name) {
-    _checkNotFrozen();
+    checkNotFrozen();
 
     try {
       _addParent(network.getNodeByName(name));
@@ -673,59 +891,38 @@ class Variable extends Validatable implements Comparable<Variable> {
     }
   }
 
-  void _addParent(Variable parent) {
-    _checkNotFrozen();
+  void _addParent(BayesVariable parent) {
+    checkNotFrozen();
     _parents.add(parent);
     _disposeCaches();
   }
 
   void _addValue(String name) {
-    _checkNotFrozen();
+    checkNotFrozen();
 
     if (_domain.containsKey(name)) {
       throw ValidationError('Value with name "$name" already exists.');
     }
 
-    var value = Value(name, this);
+    var value = BayesValue(name, this);
     _domain[value.name] = value;
 
     _disposeCaches();
   }
 
-  void _addProbability(String line) {
-    _checkNotFrozen();
-
-    line = line.replaceAll(_regexpSpace, '');
-
-    var idx = line.indexOf(':');
-    if (idx < 1) {
-      throw ValidationError("Invalid entry: $line");
-    }
-
-    var condition = _parseCondition(line.substring(0, idx));
-
-    var probability = double.parse(line.substring(idx + 1).trim());
-
-    if (_probabilities.containsKey(condition)) {
-      _probabilities[condition] = probability;
-    } else {
-      throw ValidationError("Provided condition mismatch.");
-    }
-  }
-
   /// Returns a value with [name] in this node.
-  Value? getValue(String name) => _domain[name];
+  BayesValue? getValue(String name) => _domain[name];
 
   /// Returns the name of a value in this node with [name] or [signal].
-  String? getValueName({String? name, ValueSignal? signal}) {
+  String? getValueName({String? name, BayesValueSignal? signal}) {
     if (name != null) {
-      name = Value.resolveName(name, networkCache: network);
+      name = BayesValue.resolveName(name, networkCache: network);
       if (_domain.containsKey(name)) {
         return name;
       }
     }
 
-    if (signal != null && signal != ValueSignal.unknown) {
+    if (signal != null && signal != BayesValueSignal.unknown) {
       var values = _domain.values.where((e) => e.signal == signal).toList();
       if (values.isNotEmpty) {
         return values.first.name;
@@ -737,21 +934,21 @@ class Variable extends Validatable implements Comparable<Variable> {
       valuesNames.sort();
 
       if (valuesNames.equals(['F', 'T'])) {
-        return signal == ValueSignal.negative ? 'F' : 'T';
+        return signal == BayesValueSignal.negative ? 'F' : 'T';
       } else if (valuesNames.equals(['0', '1'])) {
-        return signal == ValueSignal.negative ? '0' : '1';
+        return signal == BayesValueSignal.negative ? '0' : '1';
       } else if (valuesNames.equals(['N', 'P'])) {
-        return signal == ValueSignal.negative ? 'N' : 'P';
+        return signal == BayesValueSignal.negative ? 'N' : 'P';
       } else if (valuesNames.equals(['N', 'Y'])) {
-        return signal == ValueSignal.negative ? 'N' : 'Y';
+        return signal == BayesValueSignal.negative ? 'N' : 'Y';
       } else if (valuesNames.equals(['N', 'S'])) {
-        return signal == ValueSignal.negative ? 'N' : 'S';
+        return signal == BayesValueSignal.negative ? 'N' : 'S';
       } else if (valuesNames.equals(['NO', 'YES'])) {
-        return signal == ValueSignal.negative ? 'NO' : 'YES';
+        return signal == BayesValueSignal.negative ? 'NO' : 'YES';
       } else if (valuesNames.equals(['FALSE', 'TRUE'])) {
-        return signal == ValueSignal.negative ? 'FALSE' : 'TRUE';
+        return signal == BayesValueSignal.negative ? 'FALSE' : 'TRUE';
       } else if (valuesNames.equals(['NEGATIVE', 'POSITIVE'])) {
-        return signal == ValueSignal.negative ? 'NEGATIVE' : 'POSITIVE';
+        return signal == BayesValueSignal.negative ? 'NEGATIVE' : 'POSITIVE';
       }
     }
 
@@ -763,7 +960,7 @@ class Variable extends Validatable implements Comparable<Variable> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Variable &&
+      other is BayesVariable &&
           runtimeType == other.runtimeType &&
           name == other.name &&
           (identical(network, other.network) ||
@@ -778,29 +975,12 @@ class Variable extends Validatable implements Comparable<Variable> {
   @override
   String toString() {
     var s = '$name: [' + _parents.map((v) => v.name).join(', ') + ']';
-
-    if (_probabilities.isNotEmpty) {
-      s += '\n  ';
-
-      var entries = _probabilities.entries.toList();
-
-      entries.sort((a, b) {
-        var c1 = a.key;
-        var c2 = b.key;
-        //return c1.compareTo(c2, mainVariable: name);
-        return c1.compareTo(c2);
-      });
-
-      s += entries
-          .map((e) => '${e.key.toString(mainVariable: name)}: ${e.value}')
-          .join('\n  ');
-    }
-
+    s += toStringProbabilities(name);
     return s;
   }
 
   @override
-  int compareTo(Variable other) {
+  int compareTo(BayesVariable other) {
     if (identical(this, other)) return 0;
 
     var cmp = _children.compareWith(other._children);
@@ -818,13 +998,15 @@ class Variable extends Validatable implements Comparable<Variable> {
   }
 }
 
-extension ListVariableExtension on List<Variable> {
-  /// Returns this [Variable] [List] in a topological order.
-  List<Variable> get nodesInTopologicalOrder {
-    var nodes = this;
+extension ListBayesNodeExtension<T extends BayesNode> on Iterable<T> {
+  List<String> get nodesNames => map((e) => e.variablesAsString).toList();
 
-    var nodesRootChains = Map<Variable, List<Variable>>.fromEntries(
-      nodes.map((e) => MapEntry<Variable, List<Variable>>(e, e.rootChain)),
+  /// Returns this [Variable] [List] in a topological order.
+  List<T> get nodesInTopologicalOrder {
+    var nodes = toList();
+
+    var nodesRootChains = Map<T, List<BayesVariable>>.fromEntries(
+      nodes.map((e) => MapEntry<T, List<BayesVariable>>(e, e.rootChain)),
     );
 
     nodes.sort((a, b) {
@@ -832,7 +1014,7 @@ extension ListVariableExtension on List<Variable> {
       var root2 = b.isRoot;
 
       if (root1 && root2) {
-        return a.name.compareTo(b.name);
+        return a.variablesAsString.compareTo(b.variablesAsString);
       } else if (root1) {
         return -1;
       } else if (root2) {
@@ -854,57 +1036,82 @@ extension ListVariableExtension on List<Variable> {
 }
 
 /// A condition in the [BayesianNetwork] graph.
-class Condition extends Iterable<Event> implements Comparable<Condition> {
-  static List<Condition> allConditions(List<Variable> nodes) {
-    var ret = <Condition>[];
-    _fill(nodes, ret, <Event>[]);
-    return ret;
+class BayesCondition extends Iterable<BayesEvent>
+    implements Comparable<BayesCondition> {
+  static List<BayesCondition> allConditions(List<BayesVariable> nodes) {
+    var nodesLength = nodes.length;
+
+    var combinations = nodes.combinations<BayesEvent>(nodesLength, nodesLength,
+        allowRepetition: false,
+        mapper: (node) => node.values.map((v) => BayesEvent(node, v)));
+
+    var conditions =
+        combinations.map((events) => BayesCondition(events)).toList();
+    return conditions;
   }
 
-  static void _fill(
-      List<Variable> src, List<Condition> dest, List<Event> walked) {
-    if (src.length == walked.length) {
-      dest.add(Condition(walked));
-      return;
-    }
+  final List<BayesEvent> _events;
 
-    var current = src[walked.length];
-    for (var v in current.domain.values) {
-      var w = walked.toList();
-      w.add(Event(current, v));
-      _fill(src, dest, w);
-    }
-  }
-
-  final List<Event> _events;
-
-  Condition(List<Event> l) : _events = List.from(l)..sort();
+  BayesCondition(List<BayesEvent> l) : _events = List.from(l)..sort();
 
   BayesianNetwork get network => _events.first.node.network;
 
-  List<Event> get events => UnmodifiableListView(_events);
+  List<BayesEvent> get events => UnmodifiableListView(_events);
 
-  bool containsEvent(Event event) => _events.contains(event);
+  List<BayesValue>? _eventsValues;
 
-  bool containsCondition(Condition condition) =>
-      condition.events.any((e) => containsEvent(e));
+  List<BayesValue> get eventsValues => _eventsValues ??=
+      UnmodifiableListView(_events.map((e) => e.value).toList());
 
-  bool mention(Variable node) {
+  List<BayesVariable>? _eventsVariables;
+
+  List<BayesVariable> get eventsVariables => _eventsVariables ??=
+      UnmodifiableListView(_events.map((e) => e.node).toList());
+
+  bool containsVariable(BayesVariable node) => eventsVariables.contains(node);
+
+  bool containsAllVariables(Iterable<BayesVariable> variables) =>
+      eventsVariables.containsAll(variables);
+
+  bool containsEvent(BayesEvent event) => _events.contains(event);
+
+  bool containsAllEvents(Iterable<BayesEvent> events) =>
+      _events.containsAll(events);
+
+  bool containsCondition(BayesCondition condition) =>
+      condition.events.all((e) => containsEvent(e));
+
+  bool containsAllConditions(Iterable<BayesCondition> conditions) {
+    if (conditions.isEmpty) return false;
+    for (var c in conditions) {
+      if (!containsCondition(c)) return false;
+    }
+    return true;
+  }
+
+  bool mentionAny(Iterable<BayesVariable> variables) {
+    for (var v in variables) {
+      if (mention(v)) return true;
+    }
+    return false;
+  }
+
+  bool mention(BayesVariable variable) {
     for (var e in _events) {
-      if (e.node == node) return true;
+      if (e.node == variable) return true;
     }
     return false;
   }
 
   @override
-  Iterator<Event> get iterator => _events.iterator;
+  Iterator<BayesEvent> get iterator => _events.iterator;
 
-  static final _listEqualityEvent = ListEquality<Event>();
+  static final _listEqualityEvent = ListEquality<BayesEvent>();
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Condition &&
+      other is BayesCondition &&
           runtimeType == other.runtimeType &&
           _listEqualityEvent.equals(_events, other._events);
 
@@ -914,11 +1121,15 @@ class Condition extends Iterable<Event> implements Comparable<Condition> {
   @override
   String toString({String? mainVariable}) {
     if (mainVariable != null) {
-      mainVariable = Variable.resolveName(mainVariable, networkCache: network);
-      var mainEvents =
-          _events.where((e) => e.node.name == mainVariable).toList();
-      var otherEvents =
-          _events.where((e) => e.node.name != mainVariable).toList();
+      mainVariable =
+          BayesVariable.resolveName(mainVariable, networkCache: network);
+      var mainEvents = _events
+          .where((e) => e.node.variablesAsString == mainVariable)
+          .toList();
+
+      var otherEvents = _events
+          .where((e) => e.node.variablesAsString != mainVariable)
+          .toList();
 
       if (mainEvents.isNotEmpty && otherEvents.isNotEmpty) {
         return mainEvents.join(', ') + ', ' + otherEvents.join(', ');
@@ -929,23 +1140,28 @@ class Condition extends Iterable<Event> implements Comparable<Condition> {
   }
 
   @override
-  int compareTo(Condition other, {String? mainVariable}) {
+  int compareTo(BayesCondition other, {String? mainVariable}) {
     if (identical(this, other)) return 0;
 
     if (mainVariable != null) {
-      mainVariable = Variable.resolveName(mainVariable, networkCache: network);
+      mainVariable =
+          BayesVariable.resolveName(mainVariable, networkCache: network);
 
-      var mainEvents1 =
-          _events.where((e) => e.node.name == mainVariable).toList();
-      var mainEvents2 =
-          other._events.where((e) => e.node.name == mainVariable).toList();
+      var mainEvents1 = _events
+          .where((e) => e.node.variablesAsString == mainVariable)
+          .toList();
+      var mainEvents2 = other._events
+          .where((e) => e.node.variablesAsString == mainVariable)
+          .toList();
 
       var cmp = mainEvents1.compareWith(mainEvents2);
       if (cmp == 0) {
-        var otherEvents1 =
-            _events.where((e) => e.node.name != mainVariable).toList();
-        var otherEvents2 =
-            other._events.where((e) => e.node.name != mainVariable).toList();
+        var otherEvents1 = _events
+            .where((e) => e.node.variablesAsString != mainVariable)
+            .toList();
+        var otherEvents2 = other._events
+            .where((e) => e.node.variablesAsString != mainVariable)
+            .toList();
 
         cmp = otherEvents1.compareWith(otherEvents2);
       }
@@ -957,33 +1173,100 @@ class Condition extends Iterable<Event> implements Comparable<Condition> {
   }
 }
 
-/// Helper class for the [VariableElimination] analyser.
+extension ConditionProbabilitiesExtension on Map<BayesCondition, num> {
+  void show({String linePrefix = '-- ', String title = ''}) {
+    if (title.isNotEmpty) {
+      print(title);
+    }
+    for (var e in entries) {
+      print('$linePrefix${e.key} = ${e.value}');
+    }
+  }
+}
+
+/// Helper class for the [BayesAnalyserVariableElimination] analyser.
 class _Factor {
-  final List<Variable> _variables;
-  Map<Condition, double> _probabilities;
+  final List<BayesNode> _nodes;
+  late final List<BayesVariable> _variables;
 
-  _Factor._(this._variables, this._probabilities);
+  Map<BayesCondition, double> _probabilities;
 
-  _Factor(Variable v, Condition evidence)
-      : _variables = v.parents.toList(),
-        _probabilities = Map<Condition, double>.from(v.probabilities) {
-    _variables.add(v);
+  _Factor._(this._nodes, this._probabilities) {
+    _defineVariables();
+  }
 
-    for (var e in evidence) {
-      if (_variables.contains(e.node)) {
-        var newP = <Condition, double>{};
+  void _defineVariables() {
+    _variables = _nodes.expand((e) => e.variables).toSet().toList();
+  }
+
+  _Factor(BayesNode node, BayesCondition evidence, {bool verbose = false})
+      : _nodes = node.parents.cast<BayesNode>().toList(),
+        _probabilities = Map<BayesCondition, double>.from(node.probabilities) {
+    _nodes.add(node);
+    _defineVariables();
+
+    if (verbose) {
+      print('-- Computing Factor(${_variables.nodesNames})...');
+      _probabilities.show(linePrefix: '  --> ');
+    }
+
+    var evidenceVariables = evidence.eventsVariables;
+
+    for (var event in evidence) {
+      var node = _getNodeWithEvent(event);
+
+      if (node != null) {
+        var selVariables =
+            node.variables.where((e) => evidenceVariables.contains(e)).toList();
+
+        var selEvents = evidence.events
+            .where((e) => selVariables.contains(e.node))
+            .toList();
+
+        if (verbose) {
+          print('  -- Node: ${node.variablesAsString}');
+          print('  -- Select: ${selVariables.nodesNames}');
+          print('  -- Events: $selEvents');
+        }
+
+        var newP = <BayesCondition, double>{};
         for (var c in _probabilities.keys) {
-          if (c.containsEvent(e)) {
+          if (c.containsAllEvents(selEvents)) {
             newP[c] = _probabilities[c]!;
           }
         }
+
         _probabilities = newP;
-        marginalize(e.node);
+
+        if (verbose) {
+          _probabilities.show(linePrefix: '  --SEL[$event]> ');
+        }
+
+        marginalize(event.node.variables.toList());
+
+        if (verbose) {
+          _probabilities.show(
+              linePrefix: '  --RM[${event.node.variablesAsString}]> ');
+        }
       }
     }
   }
 
-  double get(Condition cond) {
+  BayesNode? _getNodeWithEvent(BayesEvent event) {
+    var eventNodeVariables = event.node.variables;
+
+    for (var node in _nodes) {
+      if (node == event.node) return node;
+
+      if (node.variables.containsAll(eventNodeVariables)) {
+        return node;
+      }
+    }
+
+    return null;
+  }
+
+  double get(BayesCondition cond) {
     var p = _probabilities[cond];
     if (p == null) {
       throw StateError("Can't find probability for: $cond");
@@ -991,18 +1274,22 @@ class _Factor {
     return p;
   }
 
-  void marginalize(Variable eliminateNode) {
-    if (!_variables.remove(eliminateNode)) {
+  void marginalize(List<BayesVariable> eliminateVariables) {
+    var rmNode = _removeNode(eliminateVariables);
+
+    if (rmNode == null) {
       throw StateError(
-          "This factor does not contain the variable <${eliminateNode.name}> to eliminate.");
+          "This factor does not contain a node with variables $eliminateVariables to eliminate. "
+          "Nodes: ${_nodes.nodesNames}");
     }
 
-    var newP = <Condition, double>{};
-    var allConditions = Condition.allConditions(_variables);
+    eliminateVariables = rmNode.variables.toList();
+    _variables.removeWhere((e) => eliminateVariables.contains(e));
 
-    for (var cond in allConditions) {
-      newP[cond] = 0.0;
-    }
+    var allConditions = BayesCondition.allConditions(_variables);
+
+    var newP = Map<BayesCondition, double>.fromEntries(
+        allConditions.map((c) => MapEntry(c, 0.0)));
 
     for (var c in newP.keys) {
       for (var oldC in _probabilities.keys) {
@@ -1015,15 +1302,35 @@ class _Factor {
     _probabilities = newP;
   }
 
-  _Factor product(_Factor other) {
-    var newVars = _variables.toList();
-    newVars.addAll(other._variables);
-    newVars = newVars.toSet().toList();
+  BayesNode? _removeNode(List<BayesVariable> eliminateVariables) {
+    for (var i = 0; i < _nodes.length; ++i) {
+      var node = _nodes[i];
 
-    var allConditions = Condition.allConditions(newVars);
+      if (node.variables.containsAll(eliminateVariables)) {
+        _nodes.removeAt(i);
+        return node;
+      }
+    }
+
+    for (var i = 0; i < _nodes.length; ++i) {
+      var node = _nodes[i];
+
+      if (node.variables.containsAny(eliminateVariables)) {
+        _nodes.removeAt(i);
+        return node;
+      }
+    }
+
+    return null;
+  }
+
+  _Factor product(_Factor other) {
+    var newVars = <BayesVariable>{..._variables, ...other._variables}.toList();
+
+    var allConditions = BayesCondition.allConditions(newVars);
 
     // compute the joined probability table;
-    var newP = <Condition, double>{};
+    var newP = <BayesCondition, double>{};
     for (var cond in allConditions) {
       var prob = 1.0;
 
@@ -1053,7 +1360,7 @@ class _Factor {
       sumP += d;
     }
 
-    var newP = <Condition, double>{};
+    var newP = <BayesCondition, double>{};
 
     if (sumP == 0.0) {
       for (var e in _probabilities.entries) {
@@ -1065,25 +1372,27 @@ class _Factor {
       }
     }
 
-    return _Factor._(_variables.toList(), newP);
+    return _Factor._(_nodes.toList(), newP);
   }
 
   @override
   String toString() {
-    return _probabilities.entries.map((e) => '${e.key}: ${e.value}').join('\n');
+    var s = '_Factor(${_variables.nodesNames}):\n';
+    s += _probabilities.entries.map((e) => '  ${e.key}: ${e.value}').join('\n');
+    return s;
   }
 }
 
-/// [Analyser] answer. See [Analyser.ask].
+/// [BayesAnalyser] answer. See [BayesAnalyser.ask].
 class Answer implements Comparable<Answer> {
   /// The query for this answer.
   final String query;
 
   /// The [query] target value.
-  final Value targetValue;
+  final BayesValue targetValue;
 
   /// The selected values in the [query].
-  final List<Value> selectedValues;
+  final List<BayesValue> selectedValues;
 
   /// The [targetValue] probability.
   final double probability;
@@ -1113,6 +1422,24 @@ class Answer implements Comparable<Answer> {
     }
   }
 
+  double? _targetProbability;
+
+  double? get targetProbability => _targetProbability;
+
+  double? _performance;
+
+  double get performance => _performance ??= _performanceImpl();
+
+  double _performanceImpl() {
+    var targetProbability = _targetProbability;
+    if (targetProbability == null) {
+      return probability;
+    }
+
+    var performance = probability / targetProbability;
+    return performance;
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1130,10 +1457,13 @@ class Answer implements Comparable<Answer> {
         ? ' ($probabilityUnnormalized)'
         : '';
 
+    var performanceStr =
+        _targetProbability != null ? ' >> ' + performance.toPercentage() : '';
+
     if (originalQuery != query) {
-      return '$originalQuery -> $query -> $probability$pUnnormalized';
+      return '$originalQuery -> $query -> $probability$pUnnormalized$performanceStr';
     } else {
-      return '$query -> $probability$pUnnormalized';
+      return '$query -> $probability$pUnnormalized$performanceStr';
     }
   }
 
@@ -1165,6 +1495,10 @@ extension ListAnswerExtension on List<Answer> {
 
   /// Sorts the [Answer] [List] by [Answer.fitness].
   void sortByFitness() => sort((a, b) => a.fitness.compareTo(b.fitness));
+
+  /// Sorts the [Answer] [List] by [Answer.performance].
+  void sortByPerformance() =>
+      sort((a, b) => a.performance.compareTo(b.performance));
 
   /// Sorts the [Answer] [List] by [Answer.selectedValues].
   void sortBySelectedValues() {
@@ -1204,27 +1538,70 @@ extension ListAnswerExtension on List<Answer> {
   /// Sorts the [Answer] [List] by [Answer.targetValue].
   void sortByQuery() => sort((a, b) => a.query.compareTo(b.query));
 
-  /// Groups [Answer]s by [Answer.selectedValues] [Variable].
-  Map<Variable, List<Answer>> groupBySelectedVariable() =>
+  /// Selects the best variables using the [size] and [sizeRatio] criteria.
+  ///
+  /// - Note: it assumes that this [list] is ordered by some criteria and
+  ///   the best values are in the end of it.
+  List<String> selectBestVariablesNames(
+      {int? size, double? sizeRatio, int? minimumSize, int? maximumSize}) {
+    if (isEmpty) return <String>[];
+
+    var nodesLength = first.targetValue.variable.network.nodesLength;
+
+    if (size == null) {
+      var ratio = sizeRatio ?? 0.20;
+      size = (nodesLength * ratio).toInt();
+    }
+
+    if (minimumSize != null && minimumSize >= 0) {
+      if (minimumSize > nodesLength) minimumSize = nodesLength;
+      if (size < minimumSize) size = minimumSize;
+    }
+
+    if (maximumSize != null && maximumSize >= 0) {
+      if (maximumSize > nodesLength) maximumSize = nodesLength;
+      if (size > maximumSize) size = maximumSize;
+    }
+
+    var length = this.length;
+
+    var bestVariables = <String>[];
+    var bestVariablesSet = <String>{};
+
+    for (var i = length - 1; i >= 0 && bestVariablesSet.length < size; --i) {
+      var e = this[i];
+
+      for (var name in e.selectedValues.map((e) => e.variable.name)) {
+        if (bestVariablesSet.add(name)) {
+          bestVariables.add(name);
+        }
+      }
+    }
+
+    return bestVariables;
+  }
+
+  /// Groups [Answer]s by [Answer.selectedValues] [BayesVariable].
+  Map<BayesVariable, List<Answer>> groupBySelectedVariable() =>
       this.groupBy((e) => e.selectedValues.first.variable);
 
-  /// Groups [Answer]s by [Answer.targetValue] [Variable].
-  Map<Variable, List<Answer>> groupByTargetVariable() =>
+  /// Groups [Answer]s by [Answer.targetValue] [BayesVariable].
+  Map<BayesVariable, List<Answer>> groupByTargetVariable() =>
       this.groupBy((e) => e.targetValue.variable);
 
   /// Filters [Answer]s with [Answer.selectedValues] matching [signal].
-  List<Answer> withSelectedValueSignal(ValueSignal signal) =>
+  List<Answer> withSelectedValueSignal(BayesValueSignal signal) =>
       where((e) => e.selectedValues.any((e) => e.signal == signal)).toList();
 
   /// Filters [Answer]s with [Answer.name] matching [valueName].
   List<Answer> withSelectedValueName(String valueName) =>
       where((e) => e.selectedValues.any((e) => e.name == valueName)).toList();
 
-  /// Returns the [Value] matching [valueName] [Answer.probability] mean.
+  /// Returns the [BayesValue] matching [valueName] [Answer.probability] mean.
   double valueProbabilityMean(String valueName) =>
       withSelectedValueName(valueName).map((e) => e.probability).mean;
 
-  /// Returns the [Value] matching [valueName] [Answer.probabilityUnnormalized] mean.
+  /// Returns the [BayesValue] matching [valueName] [Answer.probabilityUnnormalized] mean.
   double valueProbabilityUnnormalizedMean(String valueName) =>
       withSelectedValueName(valueName)
           .map((e) => e.probabilityUnnormalized)
@@ -1281,10 +1658,18 @@ extension ListOfListAnswerExtension on List<List<Answer>> {
 }
 
 /// Base class to analyse a [BayesianNetwork].
-abstract class Analyser {
+abstract class BayesAnalyser {
   final BayesianNetwork network;
 
-  Analyser(this.network);
+  BayesAnalyser(this.network);
+
+  final CombinationCache<String, String> _combinationCache =
+      CombinationCache<String, String>(
+          allowRepetition: false,
+          allowSharedCombinations: true,
+          mapper: _combinationMapper);
+
+  static List<String> _combinationMapper(String name) => [name, '-$name'];
 
   /// Generates questions to infer [inferVariable].
   ///
@@ -1294,27 +1679,32 @@ abstract class Analyser {
   /// - [ignoreVariables] is a list of variables to ignore.
   /// - [ignoreVariablesFilter] filters the variables to ignore (ignores when returns `true`).
   List<String> generateQuestions(String inferVariable,
-      {int combinationsLevel = 1,
+      {bool addPriorQuestions = false,
+      int combinationsLevel = 1,
       Iterable<String>? variables,
       bool Function(String name)? variablesFilter,
       Iterable<String>? ignoreVariables,
-      bool Function(String name)? ignoreVariablesFilter}) {
-    inferVariable = Variable.resolveName(inferVariable, networkCache: network);
+      bool Function(String name)? ignoreVariablesFilter,
+      bool allowEmptySelection = true}) {
+    inferVariable =
+        BayesVariable.resolveName(inferVariable, networkCache: network);
 
     var selectedVariables =
         network.variablesNames.where((v) => v != inferVariable).toList();
 
     if (selectedVariables.isEmpty) {
+      if (allowEmptySelection) return <String>[];
       throw StateError("BayesianNetwork empty!");
     }
 
     if (variables != null) {
       var select = variables
-          .map((v) => Variable.resolveName(v, networkCache: network))
+          .map((v) => BayesVariable.resolveName(v, networkCache: network))
           .toSet();
       selectedVariables.retainWhere((e) => select.contains(e));
 
       if (selectedVariables.isEmpty) {
+        if (allowEmptySelection) return <String>[];
         throw StateError("No valid variable in parameter `variables`!");
       }
     }
@@ -1323,17 +1713,19 @@ abstract class Analyser {
       selectedVariables.retainWhere(variablesFilter);
 
       if (selectedVariables.isEmpty) {
+        if (allowEmptySelection) return <String>[];
         throw StateError("No variables selected by `variablesFilter`!");
       }
     }
 
     if (ignoreVariables != null) {
       var ignore = ignoreVariables
-          .map((v) => Variable.resolveName(v, networkCache: network))
+          .map((v) => BayesVariable.resolveName(v, networkCache: network))
           .toSet();
       selectedVariables.removeWhere((e) => ignore.contains(e));
 
       if (selectedVariables.isEmpty) {
+        if (allowEmptySelection) return <String>[];
         throw StateError(
             "Ignored all variables! ignoreVariables: $ignoreVariables");
       }
@@ -1343,6 +1735,7 @@ abstract class Analyser {
       selectedVariables.removeWhere(ignoreVariablesFilter);
 
       if (selectedVariables.isEmpty) {
+        if (allowEmptySelection) return <String>[];
         throw StateError("Ignored all variables by `ignoreVariablesFilter`!");
       }
     }
@@ -1353,61 +1746,15 @@ abstract class Analyser {
       combinationsLevel = selectedVariables.length;
     }
 
-    var questions = <String>[];
+    var combinations = _combinationCache.getCombinationsShared(
+        selectedVariables.toSet(), 1, combinationsLevel);
 
-    if (combinationsLevel >= 1) {
-      for (var v1 in selectedVariables) {
-        questions.add('P($inferVariable|$v1)');
-        questions.add('P($inferVariable|-$v1)');
-      }
-    }
+    var questions =
+        combinations.map((v) => 'P($inferVariable|${v.join(',')})').toList();
 
-    if (combinationsLevel >= 2) {
-      var length = selectedVariables.length;
-
-      for (var i = 0; i < length; ++i) {
-        var v1 = selectedVariables[i];
-        for (var j = i + 1; j < length; ++j) {
-          var v2 = selectedVariables[j];
-
-          questions.add('P($inferVariable|$v1,$v2)');
-          questions.add('P($inferVariable|$v1,-$v2)');
-          questions.add('P($inferVariable|-$v1,$v2)');
-          questions.add('P($inferVariable|-$v1,-$v2)');
-        }
-      }
-    }
-
-    if (combinationsLevel >= 3) {
-      var length = selectedVariables.length;
-
-      for (var i = 0; i < length; ++i) {
-        var v1 = selectedVariables[i];
-        for (var j = i + 1; j < length; ++j) {
-          var v2 = selectedVariables[j];
-
-          for (var k = j + 1; k < length; ++k) {
-            var v3 = selectedVariables[k];
-
-            questions.add('P($inferVariable|$v1,$v2,$v3)');
-            questions.add('P($inferVariable|$v1,$v2,-$v3)');
-
-            questions.add('P($inferVariable|$v1,-$v2,$v3)');
-            questions.add('P($inferVariable|$v1,-$v2,-$v3)');
-
-            questions.add('P($inferVariable|-$v1,$v2,$v3)');
-            questions.add('P($inferVariable|-$v1,$v2,-$v3)');
-
-            questions.add('P($inferVariable|-$v1,-$v2,$v3)');
-            questions.add('P($inferVariable|-$v1,-$v2,-$v3)');
-          }
-        }
-      }
-    }
-
-    if (combinationsLevel >= 4) {
-      throw UnsupportedError(
-          "Can't generate combinationsLevel: $combinationsLevel");
+    if (addPriorQuestions) {
+      questions.add('P($inferVariable)');
+      questions.add('P(-$inferVariable)');
     }
 
     return questions;
@@ -1419,17 +1766,48 @@ abstract class Analyser {
       {String positive = 'T', String negative = 'F'}) {
     var answers = questions.map((q) => ask(q)).toList();
     answers.sort();
+    _definePerformance(answers, positive, negative);
     return answers;
   }
 
   Answer showAnswer(String query,
-      {String positive = 'T', String negative = 'F'}) {
-    var result = ask(query, positive: positive, negative: negative);
+      {String positive = 'T', String negative = 'F', bool verbose = false}) {
+    var result =
+        ask(query, positive: positive, negative: negative, verbose: verbose);
     print(result);
     return result;
   }
 
-  Answer ask(String query, {String positive = 'T', String negative = 'F'}) {
+  Answer ask(String query,
+      {String positive = 'T', String negative = 'F', bool verbose = false}) {
+    var answer = _askImpl(query, positive, negative, verbose);
+    _definePerformance([answer], positive, negative);
+    return answer;
+  }
+
+  void _definePerformance(
+      List<Answer> answers, String positive, String negative) {
+    var groups = answers.groupBy((e) => e.targetValue);
+
+    for (var e in groups.entries) {
+      var targetValue = e.key;
+      var group = e.value;
+
+      var targetAnswer = _askImpl(
+          '${targetValue.variable.name} = ${targetValue.name}',
+          positive,
+          negative,
+          false);
+      var targetProbability = targetAnswer.probability;
+
+      for (var answer in group) {
+        answer._targetProbability = targetProbability;
+      }
+    }
+  }
+
+  Answer _askImpl(
+      String query, String positive, String negative, bool verbose) {
     query = query.trimLeft();
     var originalQuery = query;
 
@@ -1449,13 +1827,13 @@ abstract class Analyser {
       selectedVariables = '';
     }
 
-    var answer =
-        infer(targetVariable, selectedVariables, originalQuery: originalQuery);
+    var answer = infer(targetVariable, selectedVariables,
+        originalQuery: originalQuery, verbose: verbose);
     return answer;
   }
 
   Answer infer(String targetVariable, String selectedVariables,
-      {String? originalQuery});
+      {String? originalQuery, bool verbose = false});
 
   String parseQuery(String query,
       {String positive = 'T', String negative = 'F'}) {
@@ -1480,18 +1858,20 @@ abstract class Analyser {
   String _convert(String s, {String positive = 'T', String negative = 'F'}) {
     s = s.trim();
 
-    var name = Value.resolveName(s, networkCache: network);
-    var signal = Value.resolveSignal(name: s);
+    var name = BayesValue.resolveName(s, networkCache: network);
+    var signal = BayesValue.resolveSignal(name: s);
 
     var node = network.getNodeByName(name);
 
     var valueName = node.getValueName(signal: signal);
 
     if (valueName == null) {
-      if (signal == ValueSignal.negative) {
-        valueName = node.getValueName(signal: ValueSignal.negative) ?? positive;
+      if (signal == BayesValueSignal.negative) {
+        valueName =
+            node.getValueName(signal: BayesValueSignal.negative) ?? positive;
       } else {
-        valueName = node.getValueName(signal: ValueSignal.positive) ?? negative;
+        valueName =
+            node.getValueName(signal: BayesValueSignal.positive) ?? negative;
       }
     }
 
@@ -1500,42 +1880,87 @@ abstract class Analyser {
 
   @override
   String toString() {
-    return '$runtimeType{network: ${network.name}';
+    return '$runtimeType{network: ${network.name}}';
   }
 }
 
 /// A [BayesianNetwork] analyser using the "Variable Elimination" method.
-class VariableElimination extends Analyser {
-  VariableElimination(BayesianNetwork network) : super(network);
+class BayesAnalyserVariableElimination extends BayesAnalyser {
+  BayesAnalyserVariableElimination(BayesianNetwork network) : super(network);
 
   @override
   Answer infer(String targetVariable, String selectedVariables,
-      {String? originalQuery}) {
+      {String? originalQuery, bool verbose = false}) {
     // Get target event and evidence objects.
     var target = network.parseEvent(targetVariable);
+
     var evidence = network._parseCondition(selectedVariables);
+    var evidenceVariables = evidence.events.map((e) => e.node).toList();
 
     // All nodes of the query:
-    var selectedNodes = [target.node, ...evidence.events.map((e) => e.node)];
+    var selectedNodes = <BayesNode>[target.node, ...evidenceVariables];
 
     // All nodes in chain to answer the query:
     var nodesInChain =
         selectedNodes.expand((n) => [n, ...n.ancestors]).toSet().toList();
 
+    var dependencies = _selectDependencies(evidenceVariables);
+
+    if (verbose) {
+      print('** INFER: $target | $evidence');
+      print('-- selectedNodes: ${selectedNodes.nodesNames}');
+      print('-- nodesInChain: ${nodesInChain.nodesNames}');
+
+      if (dependencies.isNotEmpty) {
+        print('-- dependencies: ${dependencies.nodesNames}');
+      }
+    }
+
     // To eliminate in reverse topological ordering.
     var order = nodesInChain.nodesInTopologicalOrder.reversed.toList();
 
+    if (dependencies.isNotEmpty) {
+      if (verbose) {
+        print('-- Order (no dependencies): ${order.nodesNames}');
+      }
+
+      var newOrder = <BayesNode>[];
+
+      for (var node in order) {
+        var nodeVariables = node.variables;
+
+        var dependency = dependencies
+            .firstWhereOrNull((d) => d.variables.containsAll(nodeVariables));
+
+        if (dependency != null) {
+          var alreadyInOrder =
+              newOrder.any((e) => e.variables.containsAny(nodeVariables));
+          if (!alreadyInOrder) {
+            newOrder.add(dependency);
+          }
+        } else {
+          newOrder.add(node);
+        }
+      }
+
+      order = newOrder;
+    }
+
+    if (verbose) {
+      print('-- Order: ${order.nodesNames}');
+    }
+
     // For each variable, make it into a factor.
     var factors = <_Factor>[];
-    for (Variable v in order) {
-      var f = _Factor(v, evidence);
+    for (var node in order) {
+      var f = _Factor(node, evidence, verbose: verbose);
       factors.add(f);
 
       // if the variable is a hidden variable, then perform sum out
-      if (target.node != v && !evidence.mention(v)) {
+      if (target.node != node && !evidence.mentionAny(node.variables)) {
         var joinedFactors =
             factors.reduce((value, element) => value.product(element));
-        joinedFactors.marginalize(v);
+        joinedFactors.marginalize(node.variables.toList());
         factors.clear();
         factors.add(joinedFactors);
       }
@@ -1547,8 +1972,8 @@ class VariableElimination extends Analyser {
     // Normalize the result factor
     var resultNormalized = result.normalise();
 
-    var probabilityUnnormalized = result.get(Condition([target]));
-    var probability = resultNormalized.get(Condition([target]));
+    var probabilityUnnormalized = result.get(BayesCondition([target]));
+    var probability = resultNormalized.get(BayesCondition([target]));
 
     var answer = Answer('$target | $evidence', target.value,
         evidence.events.map((e) => e.value).toList(), probability,
@@ -1557,13 +1982,47 @@ class VariableElimination extends Analyser {
 
     return answer;
   }
+
+  List<BayesDependency> _selectDependencies(List<BayesNode> evidenceVariables) {
+    if (network._dependencies.isEmpty || evidenceVariables.isEmpty) {
+      return <BayesDependency>[];
+    }
+
+    var dependenciesMatching = network._dependencies.values
+        .where((d) =>
+            d.variables.length <= evidenceVariables.length &&
+            evidenceVariables.containsAll(d.variables))
+        .toList();
+
+    dependenciesMatching.sort();
+
+    var dependencies = dependenciesMatching
+        .where((e) => e.variables.length == evidenceVariables.length)
+        .toList();
+
+    dependenciesMatching.removeWhere((e) => dependencies.contains(e));
+
+    while (dependenciesMatching.isNotEmpty) {
+      var d = dependenciesMatching[0];
+
+      var mentioned =
+          dependenciesMatching.any((e) => e.variables.containsAny(d.variables));
+      if (!mentioned) {
+        dependenciesMatching.add(d);
+      }
+
+      dependenciesMatching.removeAt(0);
+    }
+
+    return dependencies;
+  }
 }
 
 /// A [BayesianNetwork] event monitor.
-class EventMonitor implements NetworkCache {
+class BayesEventMonitor implements NetworkCache {
   final String name;
 
-  EventMonitor(this.name);
+  BayesEventMonitor(this.name);
 
   @override
   final Map<String, String> _resolvedVariablesNamesCache = <String, String>{};
@@ -1576,8 +2035,9 @@ class EventMonitor implements NetworkCache {
   int get eventsLength => _eventsCount.length;
 
   /// Notifies an event.
-  void notifyEvent(Iterable eventValues) {
-    var event = ObservedEvent(eventValues, networkCache: this);
+  void notifyEvent(Iterable eventValues, {bool dependency = false}) {
+    var event =
+        ObservedEvent(eventValues, networkCache: this, dependency: dependency);
     _eventsCount.update(event, (count) => count + 1, ifAbsent: () => 1);
   }
 
@@ -1605,15 +2065,62 @@ class EventMonitor implements NetworkCache {
 
   /// Instantiates a [BayesianNetwork], calls [populateNodes] and returns it.
   BayesianNetwork buildBayesianNetwork(
-      {double unseenMinimalProbability = 0.0000001}) {
+      {double unseenMinimalProbability = 0.0000001,
+      bool populateDependencies = true}) {
     var network = BayesianNetwork(name,
         unseenMinimalProbability: unseenMinimalProbability);
-    populateNodes(network);
+    populateNodes(network, populateDependencies: populateDependencies);
     return network;
   }
 
   /// Populates [network] with all recorded events.
-  void populateNodes(BayesianNetwork network) {
+  void populateNodes(BayesianNetwork network,
+      {bool populateDependencies = true}) {
+    var variablesEvents =
+        Map.fromEntries(_eventsCount.entries.where((e) => !e.key.dependency));
+
+    var variablesProbabilities =
+        _computeProbabilities(network, variablesEvents);
+
+    for (var e in variablesProbabilities.values) {
+      network.addVariable(e.name, e.values, e.parents, e.probabilities);
+    }
+
+    if (populateDependencies) {
+      var dependencyEvents =
+          Map.fromEntries(_eventsCount.entries.where((e) => e.key.dependency));
+
+      var dependenciesProbabilities =
+          _computeProbabilities(network, dependencyEvents);
+
+      for (var e in dependenciesProbabilities.values) {
+        var names = [e.name, ...e.parents];
+        var nodes = network
+            .getNodesByNames(names)
+            .nodesInTopologicalOrder
+            .reversed
+            .toList();
+
+        var variablesNames = <String>[];
+        var parentsNames = <String>[];
+
+        for (var node in nodes) {
+          var nodeName = node.name;
+          if (!parentsNames.contains(nodeName)) {
+            variablesNames.add(nodeName);
+            parentsNames.addAll(node.parents.map((e) => e.name));
+          }
+        }
+
+        network.addDependency(variablesNames, e.probabilities);
+      }
+    }
+
+    network.freeze();
+  }
+
+  LinkedHashMap<String, ObservedEventProbabilities> _computeProbabilities(
+      BayesianNetwork network, Map<ObservedEvent, int> _eventsCount) {
     var groups = <String, List<ObservedEvent>>{};
     var totals = <String, int>{};
 
@@ -1641,25 +2148,26 @@ class EventMonitor implements NetworkCache {
       var groupKey = event.groupKey;
       var group = groups[groupKey]!;
 
-      var name = event.values.first.variableName;
+      var nodeName = event.values.first.variableName;
+      var nodeVariablesNames = event.variablesNamesString;
 
-      if (!variablesProbabilities.containsKey(name)) {
-        var observations = groups.values
+      if (!variablesProbabilities.containsKey(nodeVariablesNames)) {
+        var observationsValues = groups.values
             .expand((e) => e.expand((e) => e.values))
-            .where((v) => v.variableName == name)
+            .where((v) => v.variableName == nodeName)
             .toSet()
             .toList();
 
-        var valuesSignals = <String, ValueSignal>{};
+        var valuesSignals = <String, BayesValueSignal>{};
 
-        for (var e in observations) {
+        for (var e in observationsValues) {
           valuesSignals.update(e.valueName, (signal) {
             var valueSignal = e.valueSignal;
-            if (valueSignal == ValueSignal.unknown) {
+            if (valueSignal == BayesValueSignal.unknown) {
               return signal;
             }
 
-            if (signal == ValueSignal.unknown) {
+            if (signal == BayesValueSignal.unknown) {
               return valueSignal;
             } else {
               return signal;
@@ -1667,10 +2175,10 @@ class EventMonitor implements NetworkCache {
           }, ifAbsent: () => e.valueSignal);
         }
 
-        var valuesNames = observations.map((v) {
+        var valuesNames = observationsValues.map((v) {
           var valueName = v.valueName;
           var valueSignal = valuesSignals[valueName];
-          return valueSignal == ValueSignal.negative
+          return valueSignal == BayesValueSignal.negative
               ? '-$valueName'
               : valueName;
         }).toList();
@@ -1680,8 +2188,8 @@ class EventMonitor implements NetworkCache {
             .toSet()
             .toList();
 
-        variablesProbabilities[name] =
-            ObservedEventProbabilities(name, valuesNames, parents);
+        variablesProbabilities[nodeVariablesNames] =
+            ObservedEventProbabilities(nodeName, valuesNames, parents);
       }
     }
 
@@ -1693,19 +2201,15 @@ class EventMonitor implements NetworkCache {
       var total = totals[groupKey]!;
       var ratio = count / total;
 
-      var variableName = event.values.first.variableName;
-      var variablesProbability = variablesProbabilities[variableName]!;
+      var nodeVariablesNames = event.variablesNamesString;
+      var variablesProbability = variablesProbabilities[nodeVariablesNames]!;
 
       var p = '$event: $ratio';
 
       variablesProbability.probabilities.add(p);
     }
 
-    for (var e in variablesProbabilities.values) {
-      network.addNode(e.name, e.values, e.parents, e.probabilities);
-    }
-
-    network.freeze();
+    return variablesProbabilities;
   }
 
   void _sortEventsByTopology(List<MapEntry<ObservedEvent, int>> entries) {
@@ -1747,14 +2251,23 @@ class ObservedEventProbabilities {
 }
 
 class ObservedEvent {
+  final bool dependency;
   final Set<ObservedEventValue> _values;
 
-  ObservedEvent(Iterable values, {required NetworkCache? networkCache})
+  ObservedEvent(Iterable values,
+      {required NetworkCache? networkCache, this.dependency = false})
       : _values = values
             .map((pair) => ObservedEventValue(pair, networkCache: networkCache))
             .toSet();
 
   Set<ObservedEventValue> get values => UnmodifiableSetView(_values);
+
+  List<String> get variablesNames => values.map((v) => v.variableName).toList();
+
+  String? _variablesNamesString;
+
+  String get variablesNamesString =>
+      _variablesNamesString ??= variablesNames.join(',');
 
   static final _setEquality = SetEquality<ObservedEventValue>();
 
@@ -1763,10 +2276,11 @@ class ObservedEvent {
       identical(this, other) ||
       other is ObservedEvent &&
           runtimeType == other.runtimeType &&
+          dependency == other.dependency &&
           _setEquality.equals(_values, other._values);
 
   @override
-  int get hashCode => _setEquality.hash(_values);
+  int get hashCode => _setEquality.hash(_values) ^ dependency.hashCode;
 
   String? _groupKey;
 
@@ -1785,7 +2299,7 @@ class ObservedEvent {
 
     var rest = s.substring(idx);
 
-    var k = '$main$rest';
+    var k = '$main$rest${dependency ? ' <->' : ''}';
     return k;
   }
 
@@ -1798,31 +2312,75 @@ class ObservedEvent {
 class ObservedEventValue implements Comparable<ObservedEventValue> {
   final String variableName;
   final String valueName;
-  final ValueSignal valueSignal;
+  final BayesValueSignal valueSignal;
 
   ObservedEventValue._(String variable, String value,
       {required NetworkCache? networkCache})
       : variableName =
-            Variable.resolveName(variable, networkCache: networkCache),
-        valueName = Value.resolveName(value, networkCache: networkCache),
-        valueSignal = Value.resolveSignal();
+            BayesVariable.resolveName(variable, networkCache: networkCache),
+        valueName = BayesValue.resolveName(value, networkCache: networkCache),
+        valueSignal = BayesValue.resolveSignal();
 
   factory ObservedEventValue(Object o, {required NetworkCache? networkCache}) {
     if (o is ObservedEventValue) return o;
+
+    if (o is MapEntry) {
+      return ObservedEventValue._(
+          o.key.toString(), _resolveValueToString(o.value),
+          networkCache: networkCache);
+    }
+
+    if (o is Pair) {
+      return ObservedEventValue._(o.a.toString(), _resolveValueToString(o.b),
+          networkCache: networkCache);
+    }
 
     if (o is Iterable<String>) {
       return ObservedEventValue._(o.elementAt(0), o.elementAt(1),
           networkCache: networkCache);
     }
 
+    if (o is Iterable) {
+      var variable = o.elementAt(0).toString();
+      var value = o.elementAt(1);
+      var valueStr = _resolveValueToString(value);
+
+      return ObservedEventValue._(variable, valueStr,
+          networkCache: networkCache);
+    }
+
     if (o is String) {
       var idx = o.indexOf('=');
-      var variable = o.substring(0, idx);
-      var value = o.substring(idx + 1);
+
+      String variable, value;
+
+      if (idx >= 0) {
+        variable = o.substring(0, idx);
+        value = o.substring(idx + 1);
+      } else {
+        o = o.trimLeft();
+
+        if (o.startsWith('-')) {
+          variable = o.substring(1);
+          value = 'F';
+        } else {
+          variable = o;
+          value = 'T';
+        }
+      }
+
       return ObservedEventValue._(variable, value, networkCache: networkCache);
     }
 
     throw StateError("Can't parse: $o");
+  }
+
+  static String _resolveValueToString(Object value) {
+    if (value is bool) {
+      return value ? 'T' : 'F';
+    } else {
+      return value.toString();
+    }
   }
 
   @override

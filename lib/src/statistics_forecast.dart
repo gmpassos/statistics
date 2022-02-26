@@ -1,12 +1,29 @@
 import 'package:collection/collection.dart';
 
-typedef ForecastConclusionListener<T, V> = void Function(
-    T source, ForecastObservation<T, V>? observation, V conclusion);
+import 'statistics_bayesnet.dart';
+import 'statistics_combination.dart';
 
-/// A Forecast producer base class.
-abstract class Forecaster<T, V, F> {
+typedef ForecastConclusionListener<T, V> = void Function(T source,
+    List<ForecastObservation<T, V>>? observations, String event, V conclusion);
+
+/// A Probabilistic Forecast producer base class.
+abstract class EventForecaster<T, V, F> {
+  final BayesEventMonitor eventMonitor;
+
+  EventForecaster.withEventMonitor(this.eventMonitor);
+
+  EventForecaster(String name) : eventMonitor = BayesEventMonitor(name);
+
+  final Map<String, List<ObservationOperation<T, V>>> _operations =
+      <String, List<ObservationOperation<T, V>>>{};
+
+  /// The [ObservationOperation] [List] for [phase].
+  List<ObservationOperation<T, V>> getPhaseOperations(String phase) =>
+      _operations.putIfAbsent(
+          phase, () => generatePhaseOperations(phase).toList());
+
   /// Generates the operations for [phase].
-  Iterable<ForecastOperation<T, V>> generateOperations(String phase);
+  Iterable<ObservationOperation<T, V>> generatePhaseOperations(String phase);
 
   final Map<String, List<ForecastObservation<T, V>>> _phasesObservations =
       <String, List<ForecastObservation<T, V>>>{};
@@ -18,10 +35,10 @@ abstract class Forecaster<T, V, F> {
     _phasesObservations.clear();
   }
 
-  /// Observe [source] for [phase]. Calls [generateOperations] to generated
+  /// Observe [source] for [phase]. Calls [getPhaseOperations] to generated
   /// the observations.
   List<ForecastObservation<T, V>> observe(source, {String phase = ''}) {
-    var operations = generateOperations(phase);
+    var operations = getPhaseOperations(phase);
 
     var observations = operations.map((op) {
       var value = op.compute(source);
@@ -87,23 +104,47 @@ abstract class Forecaster<T, V, F> {
     }
   }
 
+  final CombinationCache<String, String> _combinationCache =
+      CombinationCache<String, String>(
+          allowRepetition: false, allowSharedCombinations: true);
+
   /// Concludes observations for [source] with [value].
   ///
   /// - If [phases] is provided, concludes only for observations in [phases].
-  List<ForecastObservation<T, V>> concludeObservations(T source, V value,
+  List<ForecastObservation<T, V>> concludeObservations(
+      T source, Map<String, V> conclusions,
       {List<String>? phases}) {
-    var selectedObservation =
-        selectedObservations(phases: phases, source: source);
+    var selectedObservations =
+        this.selectedObservations(phases: phases, source: source);
 
-    for (var o in selectedObservation) {
-      notifyConclusion(source, o, value);
+    var opsIDs = selectedObservations.map((e) => e.opID).toSet();
+
+    var dependencies = opsIDs.isEmpty
+        ? <List<String>>[]
+        : _combinationCache.getCombinationsShared(opsIDs, 2, opsIDs.length);
+
+    for (var e in conclusions.entries) {
+      var event = e.key;
+      var value = e.value;
+
+      for (var o in selectedObservations) {
+        _notifyConclusion(source, [o], event, value);
+      }
+
+      for (var combination in dependencies) {
+        var dependentObservations = selectedObservations
+            .where((e) => combination.contains(e.opID))
+            .toList();
+        _notifyConclusion(source, dependentObservations, event, value,
+            dependency: true);
+      }
+
+      _notifyConclusion(source, null, event, value);
     }
 
-    notifyConclusion(source, null, value);
+    removeObservations(selectedObservations);
 
-    removeObservations(selectedObservation);
-
-    return selectedObservation;
+    return selectedObservations;
   }
 
   /// Performes a forecast over [source]. Calls [computeForecast] with the selected
@@ -132,19 +173,28 @@ abstract class Forecaster<T, V, F> {
 
   ForecastConclusionListener<T, V>? conclusionListener;
 
-  void notifyConclusion(
-      T source, ForecastObservation<T, V>? observation, V conclusion) {
+  void _notifyConclusion(T source,
+      List<ForecastObservation<T, V>>? observations, String event, V conclusion,
+      {bool dependency = false}) {
+    var eventValues = [
+      if (observations != null && observations.isNotEmpty)
+        ...observations.map((o) => MapEntry(o.opID, o.value)),
+      MapEntry(event, conclusion),
+    ];
+
+    eventMonitor.notifyEvent(eventValues, dependency: dependency);
+
     var conclusionListener = this.conclusionListener;
     if (conclusionListener != null) {
-      conclusionListener(source, observation, conclusion);
+      conclusionListener(source, observations, event, conclusion);
     }
   }
 }
 
 typedef OperationComputer<T, V> = V Function(T source);
 
-/// A Forecast operation over source [T] that produces value [V].
-class ForecastOperation<T, V> {
+/// A Forecast observation operation over source [T] that produces value [V].
+class ObservationOperation<T, V> {
   static final RegExp _regExpNonWord = RegExp(r'\W+');
 
   /// Normalizes the [id].
@@ -157,13 +207,16 @@ class ForecastOperation<T, V> {
     return id;
   }
 
+  /// Operation ID.
   final String id;
 
+  /// Operation description.
   final String description;
 
+  /// The [Function] that computes the operation.
   final OperationComputer<T, V>? computer;
 
-  ForecastOperation(String id, {this.computer, this.description = ''})
+  ObservationOperation(String id, {this.computer, this.description = ''})
       : id = normalizeID(id);
 
   V compute(T source) => computer!(source);
@@ -185,7 +238,7 @@ class ForecastObservation<T, V> {
   final T source;
 
   /// The operation performed over [source] to produce the observed [value].
-  final ForecastOperation<T, V> operation;
+  final ObservationOperation<T, V> operation;
 
   /// The value observed during a forecast performed over [source].
   final V value;
@@ -210,7 +263,7 @@ extension ListForecastObservationExtension<T, V>
   ForecastObservation<T, V>? getByOpID(String opID,
       {bool opIdAlreadyNormalized = false}) {
     if (!opIdAlreadyNormalized) {
-      opID = ForecastOperation.normalizeID(opID);
+      opID = ObservationOperation.normalizeID(opID);
     }
     return firstWhereOrNull((e) => e.opID == opID);
   }

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
 import 'package:intl/intl.dart';
+import 'package:statistics/src/statistics_combination.dart';
 
 import 'statistics_base.dart';
 import 'statistics_extension_num.dart';
@@ -113,19 +114,33 @@ extension ListExtension<T> on List<T> {
       this is List<int> ? this as List<int> : map((v) => parseInt(v)!).toList();
 
   /// Returns the [length] multiplied by [ratio].
-  int lengthRatio(double ratio) => (length * ratio).toInt();
+  int lengthRatio(double ratio, {int? minimumSize}) {
+    var length = this.length;
+    var size = (length * ratio).toInt();
+
+    if (minimumSize != null && minimumSize >= 0) {
+      if (minimumSize > length) minimumSize = length;
+      if (size < minimumSize) size = minimumSize;
+    }
+
+    return size;
+  }
 
   /// Head of this [List] with [size].
   List<T> head(int size) => sublist(0, size);
 
   /// Head of this [List] with `size` based the in [sizeRatio] of [length].
-  List<T> headByRatio(double sizeRatio) => head(lengthRatio(sizeRatio));
+  /// See [lengthRatio].
+  List<T> headByRatio(double sizeRatio, {int? minimumSize}) =>
+      head(lengthRatio(sizeRatio, minimumSize: minimumSize));
 
   /// Tail of this [List] with [size].
   List<T> tail(int size) => sublist(length - size);
 
   /// Tail of this [List] with `size` based the in [sizeRatio] of [length].
-  List<T> tailByRatio(double sizeRatio) => tail(lengthRatio(sizeRatio));
+  /// See [lengthRatio].
+  List<T> tailByRatio(double sizeRatio, {int? minimumSize}) =>
+      tail(lengthRatio(sizeRatio, minimumSize: minimumSize));
 
   /// Sames as [sublist], but with reversed parameters indexes [endReversed] and [startReversed].
   List<T> sublistReversed(int endReversed, [int? startReversed]) {
@@ -482,6 +497,46 @@ extension IterableExtension<T> on Iterable<T> {
       }
     }
   }
+
+  /// Returns `true` if `this` contains all elements of [other].
+  bool containsAll(Iterable<T> other) {
+    for (var e in other) {
+      if (!contains(e)) return false;
+    }
+    return true;
+  }
+
+  /// Returns `true` if `this` contains at least 1 elements of [other].
+  bool containsAny(Iterable<T> other) {
+    for (var e in other) {
+      if (contains(e)) return true;
+    }
+    return false;
+  }
+
+  /// Checks whether ALL element of this iterable satisfies [test].
+  /// Returns `false` if [isEmpty].
+  bool all(bool Function(T element) test) {
+    var hasElements = false;
+    var anyFails = any((e) {
+      hasElements = true;
+      return !test(e);
+    });
+    return hasElements && !anyFails;
+  }
+
+  /// Generate combinations using this [Iterable] elements as an alphabet.
+  ///
+  /// - Note that an alphabet can't have duplicated elements.
+  /// - See [generateCombinations].
+  List<List<E>> combinations<E>(int minimumSize, int maximumSize,
+          {bool allowRepetition = true,
+          bool checkAlphabet = true,
+          Iterable<E> Function(T e)? mapper}) =>
+      generateCombinations<T, E>(this, minimumSize, maximumSize,
+          allowRepetition: allowRepetition,
+          checkAlphabet: checkAlphabet,
+          mapper: mapper);
 }
 
 /// extension for `Map<K, Iterable<num>>`.

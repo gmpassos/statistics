@@ -8,7 +8,7 @@ void main() {
 
       var bayesNet = BayesianNetwork('basic');
 
-      bayesNet.addNode("M", [
+      bayesNet.addVariable("M", [
         'T',
         'F'
       ], [], [
@@ -16,7 +16,7 @@ void main() {
         "M = F: 0.8",
       ]);
 
-      bayesNet.addNode("I", [
+      bayesNet.addVariable("I", [
         'T',
         'F'
       ], [
@@ -28,7 +28,7 @@ void main() {
         "I = F, M = F: 0.8",
       ]);
 
-      bayesNet.addNode("B", [
+      bayesNet.addVariable("B", [
         'T',
         'F'
       ], [
@@ -40,7 +40,7 @@ void main() {
         "B = F, M = F: 0.95",
       ]);
 
-      bayesNet.addNode("C", [
+      bayesNet.addVariable("C", [
         'T',
         'F'
       ], [
@@ -57,7 +57,7 @@ void main() {
         "C = F, I = F, B = F: 0.95",
       ]);
 
-      bayesNet.addNode("S", [
+      bayesNet.addVariable("S", [
         'T',
         'F'
       ], [
@@ -74,22 +74,22 @@ void main() {
       var analyser = bayesNet.analyser;
 
       var result1 = analyser.showAnswer('P(c|m,b)');
-      expect(result1.probability, _isNear(0.600000));
+      expect(result1.probability, _isNear(0.80));
 
       var result2 = analyser.showAnswer('P(-c|m,b)');
-      expect(result2.probability, _isNear(0.399999));
+      expect(result2.probability, _isNear(0.20));
 
       var result3 = analyser.showAnswer('P(c|m,-b)');
-      expect(result3.probability, _isNear(0.400000));
+      expect(result3.probability, _isNear(0.65));
 
       var result4 = analyser.showAnswer('P(-c|m,-b)');
-      expect(result4.probability, _isNear(0.600000));
+      expect(result4.probability, _isNear(0.35));
 
       var result5 = analyser.showAnswer('P(s|m,b)');
-      expect(result5.probability, _isNear(0.800000));
+      expect(result5.probability, _isNear(0.80));
 
       var result6 = analyser.showAnswer('P(s|m,-b)');
-      expect(result6.probability, _isNear(0.600000));
+      expect(result6.probability, _isNear(0.60));
     });
 
     test('sprinkler', () {
@@ -97,7 +97,7 @@ void main() {
 
       var bayesNet = BayesianNetwork('sprinkler');
 
-      bayesNet.addNode("C", [
+      bayesNet.addVariable("C", [
         'F',
         'T',
       ], [], [
@@ -105,7 +105,7 @@ void main() {
         "C = T: 0.5",
       ]);
 
-      bayesNet.addNode("S", [
+      bayesNet.addVariable("S", [
         'F',
         'T',
       ], [
@@ -117,7 +117,7 @@ void main() {
         "S = T, C = T: 0.1",
       ]);
 
-      bayesNet.addNode("R", [
+      bayesNet.addVariable("R", [
         'F',
         'T',
       ], [
@@ -129,7 +129,7 @@ void main() {
         "R = T, C = T: 0.8",
       ]);
 
-      bayesNet.addNode("W", [
+      bayesNet.addVariable("W", [
         'F',
         'T',
       ], [
@@ -150,6 +150,8 @@ void main() {
 
       var analyser = bayesNet.analyser;
 
+      analyser.showAnswer('P(w|-s,-r)', verbose: true);
+
       var result1 = analyser.showAnswer('P(c|s,r)');
       expect(result1.probability, _isNear(0.307692));
 
@@ -160,19 +162,90 @@ void main() {
       expect(result3.probability, _isNear(0.2000000));
 
       var result4 = analyser.showAnswer('P(w|-s,-r)');
-      expect(result4.probability, _isNear(0.4805194));
+      expect(result4.probability, _isNear(0.0909090));
 
       var result5 = analyser.showAnswer('P(w|s,r)');
-      expect(result5.probability, _isNear(0.596153));
+      expect(result5.probability, _isNear(0.5238095));
 
       var result6 = analyser.showAnswer('P(c|w,r)');
-      expect(result6.probability, _isNear(0.556521));
+      expect(result6.probability, _isNear(0.6208651));
 
       var result7 = analyser.showAnswer('P(c|w,s)');
-      expect(result7.probability, _isNear(0.074468));
+      expect(result7.probability, _isNear(0.2998489));
 
       var result8 = analyser.showAnswer('P(c|-w)');
-      expect(result8.probability, _isNear(0.417977));
+      expect(result8.probability, _isNear(0.2153465));
+    });
+
+    test('xor', () {
+      print('--------------------------------------------------------');
+
+      var bayesNet = BayesianNetwork('XOR');
+
+      bayesNet.addVariable("XOR", [
+        'F',
+        'T',
+      ], [], [
+        "XOR = F: 0.5",
+        "XOR = T: 0.5",
+      ]);
+
+      bayesNet.addVariable("A", [
+        'F',
+        'T',
+      ], [
+        "XOR"
+      ], [
+        "A = F, XOR = F: 0.50",
+        "A = F, XOR = T: 0.50",
+        "A = T, XOR = F: 0.50",
+        "A = T, XOR = T: 0.50",
+      ]);
+
+      bayesNet.addVariable("B", [
+        'F',
+        'T',
+      ], [
+        "XOR"
+      ], [
+        "B = F, XOR = F: 0.50",
+        "B = F, XOR = T: 0.50",
+        "B = T, XOR = F: 0.50",
+        "B = T, XOR = T: 0.50",
+      ]);
+
+      bayesNet.addDependency([
+        'A',
+        'B'
+      ], [
+        "A = F, B = F, XOR = F: 0.0",
+        "A = F, B = T, XOR = T: 1.0",
+        "A = T, B = F, XOR = T: 1.0",
+        "A = T, B = T, XOR = F: 0.0",
+      ]);
+
+      print(bayesNet);
+
+      var analyser = bayesNet.analyser;
+
+      expect(analyser.showAnswer('P(xor|a,b)', verbose: true).probability,
+          _isNear(0.0));
+
+      expect(analyser.showAnswer('P(xor|-a,b)', verbose: true).probability,
+          _isNear(1.0));
+
+      expect(analyser.showAnswer('P(xor)').probability, _isNear(0.50));
+
+      expect(analyser.showAnswer('P(xor|a)').probability, _isNear(0.50));
+      expect(analyser.showAnswer('P(xor|-a)').probability, _isNear(0.50));
+
+      expect(analyser.showAnswer('P(xor|b)').probability, _isNear(0.50));
+      expect(analyser.showAnswer('P(xor|-b)').probability, _isNear(0.50));
+
+      expect(analyser.showAnswer('P(xor|a,-b)').probability, _isNear(1.0));
+      expect(analyser.showAnswer('P(xor|a,b)').probability, _isNear(0.0));
+      expect(analyser.showAnswer('P(xor|-a,b)').probability, _isNear(1.0));
+      expect(analyser.showAnswer('P(xor|a,b)').probability, _isNear(0.0));
     });
 
     test('cancer', () {
@@ -180,7 +253,7 @@ void main() {
 
       var bayesNet = BayesianNetwork('cancer');
 
-      bayesNet.addNode("C", [
+      bayesNet.addVariable("C", [
         'F',
         'T',
       ], [], [
@@ -188,7 +261,7 @@ void main() {
         "C = T: 0.01",
       ]);
 
-      bayesNet.addNode("X", [
+      bayesNet.addVariable("X", [
         '+P',
         '-N',
       ], [
@@ -202,12 +275,14 @@ void main() {
 
       print(bayesNet);
 
+      bayesNet.analyser.showAnswer('P(C|X)', verbose: true);
+
       _testBayesNetCancer(bayesNet);
 
       {
         var bayesNet2 = BayesianNetwork('cancer');
 
-        bayesNet2.addNode("C", [
+        bayesNet2.addVariable("C", [
           'F',
           'T',
         ], [], [
@@ -215,7 +290,7 @@ void main() {
           "C = T: 0.01",
         ]);
 
-        bayesNet2.addNode("X", [
+        bayesNet2.addVariable("X", [
           '+P',
           '-N',
         ], [
@@ -269,7 +344,7 @@ void main() {
       var bayesNet = BayesianNetwork('invalid');
 
       expect(() {
-        bayesNet.addNode("C", [
+        bayesNet.addVariable("C", [
           'F',
           'T',
         ], [], [
@@ -282,7 +357,7 @@ void main() {
     test('invalid 3', () {
       var bayesNet = BayesianNetwork('invalid');
 
-      bayesNet.addNode("C", [
+      bayesNet.addVariable("C", [
         'F',
         'T',
       ], [], [
@@ -297,7 +372,7 @@ void main() {
       expect(bayesNet.isFrozen, isTrue);
 
       expect(() {
-        bayesNet.addNode("X", [
+        bayesNet.addVariable("X", [
           'F',
           'T',
         ], [], [
@@ -309,8 +384,8 @@ void main() {
   });
 }
 
-EventMonitor _generateCancerEvents(int multiplier) {
-  var eventMonitor = EventMonitor('cancer');
+BayesEventMonitor _generateCancerEvents(int multiplier) {
+  var eventMonitor = BayesEventMonitor('cancer');
 
   var limit = 990 * multiplier;
   for (var i = 0; i < limit; ++i) {

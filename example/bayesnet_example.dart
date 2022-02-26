@@ -3,7 +3,7 @@ import 'package:statistics/statistics.dart';
 void main() {
   // Monitor events to then build a Bayesian Network:
   // ** Note that this example is NOT USING REAL probabilities for Cancer!
-  var eventMonitor = EventMonitor('cancer');
+  var eventMonitor = BayesEventMonitor('cancer');
 
   // The prevalence of Cancer in the population:
   // - 1% (10:990):
@@ -86,22 +86,23 @@ void main() {
 //   EXAM = POSITIVE, CANCER = FALSE: 0.0898989898989899
 //   EXAM = NEGATIVE, CANCER = TRUE: 0.1
 //   EXAM = POSITIVE, CANCER = TRUE: 0.9
+//
 // >
 //
-// - Analyser: VariableElimination{network: cancer
+// - Analyser: BayesAnalyserVariableElimination{network: cancer}
 //
 // - Cancer probability without an Exam:
-//   P(cancer) -> CANCER = TRUE |  -> 0.01
+//   P(cancer) -> CANCER = TRUE |  -> 0.01 >> 100.00%
 // - Not having Cancer probability without an Exam:
-//   P(-cancer) -> CANCER = FALSE |  -> 0.99
+//   P(-cancer) -> CANCER = FALSE |  -> 0.99 >> 100.00%
 // - Cancer probability with a positive Exam:
-//   P(cancer|exam) -> CANCER = TRUE | EXAM = POSITIVE -> 0.09183673469387756 (0.009000000000000001)
+//   P(cancer|exam) -> CANCER = TRUE | EXAM = POSITIVE -> 0.09183673469387756 (0.009000000000000001) >> 918.37%
 // - Cancer probability with a negative Exam:
-//   P(cancer|-exam) -> CANCER = TRUE | EXAM = NEGATIVE -> 0.0011086474501108647 (0.001)
+//   P(cancer|-exam) -> CANCER = TRUE | EXAM = NEGATIVE -> 0.0011086474501108647 (0.001) >> 11.09%
 // - Not having Cancer probability with a positive Exam:
-//   P(-cancer|exam) -> CANCER = FALSE | EXAM = POSITIVE -> 0.9081632653061223 (0.089)
+//   P(-cancer|exam) -> CANCER = FALSE | EXAM = POSITIVE -> 0.9081632653061223 (0.089) >> 91.73%
 // - Not having Cancer probability with a negative Exam:
-//   P(-cancer|-exam) -> CANCER = FALSE | EXAM = NEGATIVE -> 0.9988913525498891 (0.901)
+//   P(-cancer|-exam) -> CANCER = FALSE | EXAM = NEGATIVE -> 0.9988913525498891 (0.901) >> 100.90%
 //
 // ** NOTE: This example is NOT USING REAL probabilities for Cancer!
 //

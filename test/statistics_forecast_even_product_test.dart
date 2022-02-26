@@ -6,33 +6,20 @@ import 'package:test/test.dart';
 void main() {
   group('Forecast', () {
     test('forecast: EvenProduct{no phases}', () {
-      var eventMonitor = EventMonitor('EvenProduct');
       var evenForecaster = EvenProductForecaster();
 
       expect(
-          evenForecaster.generateOperations('').map((o) => '$o'),
+          evenForecaster.getPhaseOperations('').map((o) => '$o'),
           equals([
             'ForecastOperation{id: last_bit_A}',
             'ForecastOperation{id: last_bit_B}'
           ]));
 
-      expect(evenForecaster.generateOperations('A').map((o) => '$o'),
+      expect(evenForecaster.getPhaseOperations('A').map((o) => '$o'),
           equals(['ForecastOperation{id: last_bit_A}']));
 
-      expect(evenForecaster.generateOperations('B').map((o) => '$o'),
+      expect(evenForecaster.getPhaseOperations('B').map((o) => '$o'),
           equals(['ForecastOperation{id: last_bit_B}']));
-
-      var conclusionListenerVerbose = true;
-
-      evenForecaster.conclusionListener = (s, o, v) {
-        if (o != null) {
-          if (conclusionListenerVerbose) print('-- $s > $o -> $v');
-          eventMonitor.notifyEvent(['${o.opID} = ${o.value}', 'EVEN = $v']);
-        } else {
-          if (conclusionListenerVerbose) print('-- $s > $v');
-          eventMonitor.notifyEvent(['EVEN = $v']);
-        }
-      };
 
       var p1 = Pair(10, 2);
       var p2 = Pair(10, 3);
@@ -47,13 +34,13 @@ void main() {
 
       expect(evenForecaster.allObservations.length, equals(6));
 
-      evenForecaster.concludeObservations(p1, p1.productIsEven);
+      evenForecaster.concludeObservations(p1, {'EVEN': p1.productIsEven});
       expect(evenForecaster.allObservations.length, equals(4));
 
-      evenForecaster.concludeObservations(p2, p2.productIsEven);
+      evenForecaster.concludeObservations(p2, {'EVEN': p2.productIsEven});
       expect(evenForecaster.allObservations.length, equals(2));
 
-      evenForecaster.concludeObservations(p3, p3.productIsEven);
+      evenForecaster.concludeObservations(p3, {'EVEN': p3.productIsEven});
       expect(evenForecaster.allObservations.length, equals(0));
 
       expect(evenForecaster.forecast(p4), isFalse);
@@ -62,16 +49,14 @@ void main() {
 
       expect(evenForecaster.allObservations.length, equals(6));
 
-      evenForecaster.concludeObservations(p4, p4.productIsEven);
+      evenForecaster.concludeObservations(p4, {'EVEN': p4.productIsEven});
       expect(evenForecaster.allObservations.length, equals(4));
 
-      evenForecaster.concludeObservations(p5, p5.productIsEven);
+      evenForecaster.concludeObservations(p5, {'EVEN': p5.productIsEven});
       expect(evenForecaster.allObservations.length, equals(2));
 
-      evenForecaster.concludeObservations(p6, p6.productIsEven);
+      evenForecaster.concludeObservations(p6, {'EVEN': p6.productIsEven});
       expect(evenForecaster.allObservations.length, equals(0));
-
-      conclusionListenerVerbose = false;
 
       var random = Random(123);
 
@@ -79,7 +64,7 @@ void main() {
         var p = Pair(random.nextInt(100), random.nextInt(100));
 
         expect(evenForecaster.forecast(p), equals(p.productIsEven));
-        evenForecaster.concludeObservations(p, p.productIsEven);
+        evenForecaster.concludeObservations(p, {'EVEN': p.productIsEven});
       }
 
       expect(evenForecaster.allObservations.length, equals(0));
@@ -94,20 +79,14 @@ void main() {
       evenForecaster.disposeObservations();
       expect(evenForecaster.allObservations.length, equals(0));
 
-      _testEvenProductProbabilities(eventMonitor);
+      _testEvenProductProbabilities(evenForecaster.eventMonitor,
+          populateDependencies: false);
+      _testEvenProductProbabilities(evenForecaster.eventMonitor,
+          populateDependencies: true);
     });
 
     test('forecast: EvenProduct{phases: [A, B]}', () {
-      var eventMonitor = EventMonitor('EvenProduct');
       var evenForecaster = EvenProductForecaster();
-
-      evenForecaster.conclusionListener = (s, o, v) {
-        if (o != null) {
-          eventMonitor.notifyEvent(['${o.opID} = ${o.value}', 'EVEN = $v']);
-        } else {
-          eventMonitor.notifyEvent(['EVEN = $v']);
-        }
-      };
 
       var p1 = Pair(10, 2);
       var p2 = Pair(10, 3);
@@ -138,12 +117,12 @@ void main() {
       expect(evenForecaster.forecast(p6, phase: 'B', previousPhases: {'A'}),
           isTrue);
 
-      evenForecaster.concludeObservations(p1, p1.productIsEven);
-      evenForecaster.concludeObservations(p2, p2.productIsEven);
-      evenForecaster.concludeObservations(p3, p3.productIsEven);
-      evenForecaster.concludeObservations(p4, p4.productIsEven);
-      evenForecaster.concludeObservations(p5, p5.productIsEven);
-      evenForecaster.concludeObservations(p6, p6.productIsEven);
+      evenForecaster.concludeObservations(p1, {'EVEN': p1.productIsEven});
+      evenForecaster.concludeObservations(p2, {'EVEN': p2.productIsEven});
+      evenForecaster.concludeObservations(p3, {'EVEN': p3.productIsEven});
+      evenForecaster.concludeObservations(p4, {'EVEN': p4.productIsEven});
+      evenForecaster.concludeObservations(p5, {'EVEN': p5.productIsEven});
+      evenForecaster.concludeObservations(p6, {'EVEN': p6.productIsEven});
 
       var random = Random(123);
 
@@ -152,19 +131,25 @@ void main() {
 
         evenForecaster.forecast(p, phase: 'A');
         evenForecaster.forecast(p, phase: 'B', previousPhases: {'A'});
-        evenForecaster.concludeObservations(p, p.productIsEven);
+        evenForecaster.concludeObservations(p, {'EVEN': p.productIsEven});
       }
 
-      _testEvenProductProbabilities(eventMonitor);
+      _testEvenProductProbabilities(evenForecaster.eventMonitor,
+          populateDependencies: false);
+      _testEvenProductProbabilities(evenForecaster.eventMonitor,
+          populateDependencies: true);
     });
   });
 }
 
-void _testEvenProductProbabilities(EventMonitor eventMonitor) {
+void _testEvenProductProbabilities(BayesEventMonitor eventMonitor,
+    {required bool populateDependencies}) {
+  print('----------------');
   print(eventMonitor);
 
-  var bayesNet =
-      eventMonitor.buildBayesianNetwork(unseenMinimalProbability: 0.0);
+  var bayesNet = eventMonitor.buildBayesianNetwork(
+      unseenMinimalProbability: 0.0,
+      populateDependencies: populateDependencies);
   print(bayesNet);
 
   var analyser = bayesNet.analyser;
@@ -179,16 +164,21 @@ void _testEvenProductProbabilities(EventMonitor eventMonitor) {
   expect(analyser.showAnswer('P(EVEN|LAST_BIT_B)').probability,
       _isNear(0.50, 0.01));
   expect(analyser.showAnswer('P(EVEN|-LAST_BIT_B)').probability, _isNear(1.0));
+
+  expect(analyser.showAnswer('P(EVEN|-LAST_BIT_A,-LAST_BIT_B)').probability,
+      _isNear(1.0));
 }
 
-class EvenProductForecaster extends Forecaster<Pair<int>, bool, bool> {
+class EvenProductForecaster extends EventForecaster<Pair<int>, bool, bool> {
+  EvenProductForecaster() : super('EvenProduct');
+
   @override
-  Iterable<ForecastOperation<Pair<int>, bool>> generateOperations(
+  List<ObservationOperation<Pair<int>, bool>> generatePhaseOperations(
       String phase) {
-    var opA = ForecastOperation<Pair<int>, bool>('last_bit(A)',
+    var opA = ObservationOperation<Pair<int>, bool>('last_bit(A)',
         computer: _extractLastBitA);
 
-    var opB = ForecastOperation<Pair<int>, bool>('last_bit(B)',
+    var opB = ObservationOperation<Pair<int>, bool>('last_bit(B)',
         computer: _extractLastBitB);
 
     switch (phase) {

@@ -1,9 +1,15 @@
 ## 1.0.17
 
 - New type `Pair`.
-- New `Forecaster` framework.
-- `EventMonitor`:
+- New `EventForecaster` framework.
+- `BayesianNetwork`:
+  - New method `addDependency`.
+  - Now allows probability dependency between variables.
+  - Added test with `XOR`.
+- `BayesEventMonitor`:
   - Now allows out-of-order events from the Bayesian Network topology.
+- New `CombinationCache` and function `generateCombinations`.
+- coverage: ^1.0.4
 
 ## 1.0.16
 
