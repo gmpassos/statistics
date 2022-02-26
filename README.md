@@ -235,6 +235,9 @@ void main() {
   print(answer6); // P(c|-d,-x) -> C = T | D = N, X = N -> 0.0006932697373894235 (0.00025) >> 6.93%
 }
 ```
+See a full [example for Bayes Net with Variable Dependency at GitHub][bayes_dependency_example]:
+
+[bayes_dependency_example]: https://github.com/gmpassos/statistics/blob/master/example/bayesnet_dependency_example.dart
 
 #### Event Monitoring
 
