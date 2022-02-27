@@ -1,5 +1,6 @@
 ## 1.0.18
 
+- New `CountTable`.
 - Improved `Chronometer`:
   - New field `totalOperation` and method `timeToComplete`.
   - Added time marks.

@@ -330,5 +330,88 @@ void main() {
       expect(chronometer.isFinished, isFalse);
       expect(chronometer.operations, equals(0));
     });
+
+    test('CountTable', () {
+      var counter = CountTable<String>();
+
+      expect(counter.isEmpty, isTrue);
+      expect(counter.isNotEmpty, isFalse);
+      expect(counter.length, equals(0));
+      expect(counter.keys, isEmpty);
+      expect(counter.keysSorted, isEmpty);
+
+      expect(counter.keysSorted, isEmpty);
+
+      expect(counter.get('x'), isNull);
+
+      counter.increment('x');
+      expect(counter.get('x'), equals(1));
+      expect(counter.isEmpty, isFalse);
+      expect(counter.isNotEmpty, isTrue);
+      expect(counter.length, equals(1));
+
+      counter.increment('x');
+      expect(counter.get('x'), equals(2));
+
+      counter.incrementBy('x', 3);
+      expect(counter.get('x'), equals(5));
+
+      counter.incrementBy('y', 2);
+      expect(counter.get('y'), equals(2));
+
+      expect(counter.get('x'), equals(5));
+
+      counter.increment('x');
+      expect(counter.get('x'), equals(6));
+
+      expect(counter.length, equals(2));
+      expect(counter.keys, equals(['x', 'y']));
+      expect(counter.keysSorted, equals(['y', 'x']));
+
+      expect(counter.isEmpty, isFalse);
+
+      expect(
+          counter.entries.toList().map((e) => '${e.key}=${e.value}').toList(),
+          equals(['x=6', 'y=2']));
+      expect(counter.toMap(), equals({'x': 6, 'y': 2}));
+
+      expect(counter.highest, equals('x'));
+      expect(counter.lowest, equals('y'));
+
+      counter.decrement('x');
+      expect(counter.toMap(), equals({'x': 5, 'y': 2}));
+
+      counter.incrementBy('x', 10);
+      expect(counter.toMap(), equals({'x': 15, 'y': 2}));
+
+      counter.decrementBy('x', 5);
+      expect(counter.toMap(), equals({'x': 10, 'y': 2}));
+
+      counter.decrementBy('x', 5);
+      expect(counter.toMap(), equals({'x': 5, 'y': 2}));
+
+      expect(counter.highest, equals('x'));
+      expect(counter.lowest, equals('y'));
+
+      counter.set('y', 10);
+      expect(counter.toMap(), equals({'x': 5, 'y': 10}));
+
+      expect(counter.toString(), equals('CountTable{ length: 2 }'));
+
+      expect(counter.highest, equals('y'));
+      expect(counter.lowest, equals('x'));
+
+      expect(counter.remove('x'), equals(5));
+
+      expect(counter.highest, equals('y'));
+      expect(counter.lowest, equals('y'));
+
+      counter.clear();
+      expect(counter.toMap(), equals({}));
+      expect(counter.isEmpty, isTrue);
+      expect(counter.length, equals(0));
+
+      expect(counter.toString(), equals('CountTable{ length: 0 }'));
+    });
   });
 }

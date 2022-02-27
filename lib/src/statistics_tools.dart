@@ -135,29 +135,45 @@ class Chronometer implements Comparable<Chronometer> {
   void clearMarks() => _marks.clear();
 
   /// Gets a previous set time mark.
-  DateTime? getMarkTime(String key) => _marks[key];
+  DateTime? getMarkTime(String markKey) => _marks[markKey];
 
-  Duration? getMarkElapsedTime(String key) {
-    var markTime = getMarkTime(key);
-    if (markTime == null) return null;
+  /// Returns the elapsed time of the time mark [markKey].
+  /// If the mark is not set returns a `zero` [Duration].
+  Duration getMarkElapsedTime(String markKey) {
+    var markTime = getMarkTime(markKey);
+    if (markTime == null) return Duration.zero;
     return markTime.elapsedTime;
   }
 
   /// Removes a previous set time mark.
-  DateTime? removeMarkTime(String key) => _marks.remove(key);
+  DateTime? removeMarkTime(String markKey) => _marks.remove(markKey);
 
   /// Sets a time mark in this chronometer with the current [DateTime].
   ///
   /// - If [overwrite] is `false` won't save a new [DateTime] for a mark already set.
-  DateTime markTime(String key, {bool overwrite = true}) {
+  DateTime markTime(String markKey, {bool overwrite = true}) {
     if (!overwrite) {
-      var prev = _marks[key];
+      var prev = _marks[markKey];
       if (prev != null) return prev;
     }
 
     var now = DateTime.now();
-    _marks[key] = now;
+    _marks[markKey] = now;
     return now;
+  }
+
+  /// Executes [operations] when [markKey] elapsed time passes [period] at the moment
+  /// that this method is called.
+  bool executeOnMarkPeriod(
+      String markKey, Duration period, void Function() operation) {
+    var markTime = getMarkTime(markKey);
+    if (markTime == null || markTime.elapsedTime >= period) {
+      this.markTime(markKey);
+      operation();
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /// Resets this chronometer for a future [start] and [stop].
@@ -221,4 +237,90 @@ class Chronometer implements Comparable<Chronometer> {
 
   @override
   int compareTo(Chronometer other) => hertz.compareTo(other.hertz);
+}
+
+/// A count table for [K] elements.
+class CountTable<K> {
+  final Map<K, _Counter<K>> _table = <K, _Counter<K>>{};
+
+  /// The number of entries in the counting table.
+  int get length => _table.length;
+
+  /// Returns `true` if the counting table is empty.
+  bool get isEmpty => length == 0;
+
+  /// Same as ![isEmpty].
+  bool get isNotEmpty => !isEmpty;
+
+  _Counter<K> _get(K key) => _table.putIfAbsent(key, () => _Counter<K>(key));
+
+  /// Returns the keys [K] in the counting table.
+  Iterable<K> get keys => _table.keys;
+
+  /// Returns the entries in the counting table.
+  Iterable<MapEntry<K, int>> get entries =>
+      _table.values.map((e) => e.asMapEntry);
+
+  /// Returns the keys [K] in the counting table sorted by count value.
+  Iterable<K> get keysSorted {
+    var counters = _table.values.toList();
+    counters.sort();
+    return counters.map((e) => e.key);
+  }
+
+  /// Increments the counter of [key].
+  void increment(K key) => _get(key).count++;
+
+  /// Increments the counter of [key] by [amount].
+  void incrementBy(K key, int amount) => _get(key).count += amount;
+
+  /// Decrements the counter of [key].
+  void decrement(K key) => _get(key).count--;
+
+  /// Decrements the counter of [key] by [amount].
+  void decrementBy(K key, int amount) => _get(key).count -= amount;
+
+  /// Sets the counter of [key] with [count].
+  void set(K key, int count) => _get(key).count = count;
+
+  /// Returns the counting value of [key].
+  int? get(K key) => _table[key]?.count;
+
+  /// Removes the counter of [key].
+  int? remove(K key) => _table.remove(key)?.count;
+
+  /// Clears the counting table.
+  void clear() => _table.clear();
+
+  /// Converts this counting table to a [Map].
+  Map<K, int> toMap() =>
+      Map<K, int>.fromEntries(_table.values.map((e) => e.asMapEntry));
+
+  /// Returns the [K] element with highest counting value.
+  K get highest => _table.values
+      .reduce((value, element) => element.count > value.count ? element : value)
+      .key;
+
+  /// Returns the [K] element with lowest counting value.
+  K get lowest => _table.values
+      .reduce((value, element) => element.count < value.count ? element : value)
+      .key;
+
+  @override
+  String toString() => 'CountTable{ length: $length }';
+}
+
+class _Counter<K> implements Comparable<_Counter<K>> {
+  final K key;
+  int count = 0;
+
+  _Counter(this.key);
+
+  MapEntry<K, int> get asMapEntry => MapEntry(key, count);
+
+  @override
+  String toString() => '$key: $count';
+
+  @override
+  int compareTo(_Counter<K> other) => count.compareTo(other.count);
 }
