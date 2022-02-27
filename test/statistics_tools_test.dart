@@ -253,15 +253,35 @@ void main() {
       expect(chronometer.operationsAsString, equals('10'));
       expect(chronometer.failedOperationsAsString, equals('0'));
 
+      print(chronometer);
+      print(chronometer.toString(withStartTime: false));
+
       expect(
           chronometer.toString(),
           matches(RegExp(
-              r'^test\{ elapsedTime: \d+ ms, hertz: [\d.]+ Hz, ops: \d+, startTime: [\d-]+ [\d:.-]+ \.\. \+\d+ sec \}$')));
+              r'^test\{ [\d.]+ \w+ · hertz: [\d.]+ Hz · ops: \d+ · start: [\d-]+ [\d:.-]+ \.\. \d+\.\d+ \}$')));
+
+      expect(
+          chronometer.toString(withStartTime: false),
+          matches(
+              RegExp(r'^test\{ [\d.]+ \w+ · hertz: [\d.]+ Hz · ops: \d+ \}$')));
+
+      chronometer.totalOperation = 100;
+
+      print(chronometer);
+      print(chronometer.toString(withStartTime: false));
+
+      expect(
+          chronometer.toString(),
+          matches(RegExp(
+              r'^test\{ [\d.]+ \w+ · hertz: [\d.]+ Hz · ops: [\d,]+ » [\d.]+\% · ETOC: [\d.]+ \w+ · start: [\d-]+ [\d:.-]+ \.\. \d+\.\d+ \}$')));
 
       var chronometer2 = Chronometer('test2');
 
-      expect(chronometer2.toString(),
-          matches(RegExp(r'^test2\{ elapsedTime: .*')));
+      print(chronometer2);
+      print(chronometer2.toString(withStartTime: true));
+
+      expect(chronometer2.toString(), matches(RegExp(r'^test2\{ 0 .*')));
 
       chronometer2.start();
       await Future.delayed(Duration(milliseconds: 100));

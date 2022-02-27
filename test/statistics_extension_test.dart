@@ -691,6 +691,80 @@ void main() {
       expect(lines[3].splitColumns(), equals(['100', '20 0', '300']));
       expect(lines[3].splitColumns(acceptsQuotedValues: false),
           equals(['100', '"20 0"', '300']));
+
+      expect('abc'.headEqualsLength('abd'), equals(2));
+      expect('abc'.headEqualsLength('ab'), equals(2));
+      expect('abc'.headEqualsLength('xyz'), equals(0));
+      expect('abcx'.headEqualsLength('abc'), equals(3));
+
+      expect('abc'.tailEqualsLength('abc'), equals(3));
+      expect('abc'.tailEqualsLength('xabc'), equals(3));
+      expect('abc'.tailEqualsLength('abc x'), equals(0));
+      expect('abc'.tailEqualsLength('ab'), equals(0));
+      expect('abc'.tailEqualsLength('bc'), equals(2));
+      expect('abc'.tailEqualsLength('xbc'), equals(2));
+      expect('abc'.tailEqualsLength('xybc'), equals(2));
+      expect('abc'.tailEqualsLength('xbc'), equals(2));
+      expect('abc'.tailEqualsLength('x'), equals(0));
+
+      expect('abc'.headEquals('abd'), equals('ab'));
+      expect('abc'.headEquals('a'), equals('a'));
+      expect('abc'.headEquals('xyz'), equals(''));
+      expect('abc'.headEquals('x'), equals(''));
+      expect('abc'.headEquals('abc'), equals('abc'));
+
+      expect('abc def ghi'.headEquals('x', splitIndexes: [3, 7]), equals(''));
+      expect('abc def ghi'.headEquals('', splitIndexes: [3, 7]), equals(''));
+      expect('abc def ghi'.headEquals('ab', splitIndexes: [3, 7]), equals(''));
+      expect('abc def ghi'.headEquals('ab ', splitIndexes: [3, 7]), equals(''));
+      expect('abc def ghi'.headEquals('abd', splitIndexes: [3, 7]), equals(''));
+      expect(
+          'abc def ghi'.headEquals('abd ', splitIndexes: [3, 7]), equals(''));
+      expect('abc def ghi'.headEquals('abc ', splitIndexes: [3, 7]),
+          equals('abc'));
+      expect('abc def ghi'.headEquals('abc de', splitIndexes: [3, 7]),
+          equals('abc'));
+      expect('abc def ghi'.headEquals('abc dex', splitIndexes: [3, 7]),
+          equals('abc'));
+      expect('abc def ghi'.headEquals('abc def', splitIndexes: [3, 7]),
+          equals('abc def'));
+      expect('abc def ghi'.headEquals('abc def ', splitIndexes: [3, 7]),
+          equals('abc def'));
+      expect('abc def ghi'.headEquals('abc def x', splitIndexes: [3, 7]),
+          equals('abc def'));
+      expect('abc def ghi'.headEquals('abc def g', splitIndexes: [3, 7]),
+          equals('abc def'));
+      expect('abc def ghi'.headEquals('abc def ghi', splitIndexes: [3, 7]),
+          equals('abc def ghi'));
+      expect('abc def ghi jkl'.headEquals('abc def ghi', splitIndexes: [3, 7]),
+          equals('abc def'));
+
+      expect('abc'.tailDifferent('abd'), equals('c'));
+      expect('abc'.tailDifferent('a'), equals('bc'));
+      expect('abc'.tailDifferent('xyz'), equals('abc'));
+      expect('abc'.tailDifferent('x'), equals('abc'));
+      expect('abc'.tailDifferent('abc'), equals(''));
+
+      expect('abc def ghi'.tailDifferent('x', splitIndexes: [4, 8]),
+          equals('abc def ghi'));
+      expect('abc def ghi'.tailDifferent('ab', splitIndexes: [4, 8]),
+          equals('abc def ghi'));
+      expect('abc def ghi'.tailDifferent('ab ', splitIndexes: [4, 8]),
+          equals('abc def ghi'));
+      expect('abc def ghi'.tailDifferent('abd', splitIndexes: [4, 8]),
+          equals('abc def ghi'));
+      expect('abc def ghi'.tailDifferent('abd ', splitIndexes: [4, 8]),
+          equals('abc def ghi'));
+      expect('abc def ghi'.tailDifferent('abc de', splitIndexes: [4, 8]),
+          equals('def ghi'));
+      expect('abc def ghi'.tailDifferent('abc def', splitIndexes: [4, 8]),
+          equals('def ghi'));
+      expect('abc def ghi'.tailDifferent('abc def ', splitIndexes: [4, 8]),
+          equals('ghi'));
+      expect('abc def ghi'.tailDifferent('abc def g', splitIndexes: [4, 8]),
+          equals('ghi'));
+      expect('abc def ghi'.tailDifferent('abc def ghi', splitIndexes: [4, 8]),
+          equals(''));
     });
 
     test('StringExtension.splitColumns()', () {
@@ -899,6 +973,25 @@ void main() {
       var now = DateTime.now();
       await Future.delayed(Duration(milliseconds: 100));
       expect(now.elapsedTime.inMilliseconds, greaterThanOrEqualTo(100));
+
+      {
+        var d0 = DateTime.utc(2020, 10, 11, 12, 13, 14, 500, 600);
+        var d1 = DateTime.utc(2020, 10, 11, 12, 13, 14, 500, 600);
+        var d2 = DateTime.utc(2020, 10, 11, 12, 13, 15, 500, 600);
+        var d3 = DateTime.utc(2020, 10, 11, 12, 14, 15, 500, 600);
+        var d4 = DateTime.utc(2020, 10, 11, 13, 14, 15, 500, 600);
+        var d5 = DateTime.utc(2020, 11, 11, 12, 14, 15, 500, 600);
+        var d6 = DateTime.utc(2021, 10, 11, 20, 14, 15, 500, 600);
+
+        expect(d1.toStringDifference(d0), equals(''));
+        expect(d2.toStringDifference(d0), equals('15.500600Z'));
+        expect(d3.toStringDifference(d0), equals('14:15.500600Z'));
+        expect(d4.toStringDifference(d0), equals('13:14:15.500600Z'));
+        expect(
+            d5.toStringDifference(d0), equals('2020-11-11 12:14:15.500600Z'));
+        expect(
+            d6.toStringDifference(d0), equals('2021-10-11 20:14:15.500600Z'));
+      }
     });
   });
 }

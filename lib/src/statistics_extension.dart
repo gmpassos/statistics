@@ -563,6 +563,7 @@ extension DurationExtension on Duration {
   /// - [seconds] if `true` allows `sec` unit.
   /// - [milliseconds] if `true` allows `ms` unit.
   /// - [microseconds] if `true` allows `μs` unit.
+  /// - [decimal] if `true` allows 2 `fractionDigits` when converting the time value to [String].
   String toStringUnit({
     bool days = true,
     bool hours = true,
@@ -570,19 +571,30 @@ extension DurationExtension on Duration {
     bool seconds = true,
     bool milliseconds = true,
     bool microseconds = true,
+    bool decimal = false,
   }) {
     if (days && inDays > 0) {
-      return '$inDays d';
+      return decimal ? '${(inHours / 24).toStringAsFixed(2)} d' : '$inDays d';
     } else if (hours && inHours > 0) {
-      return '$inHours h';
+      return decimal
+          ? '${(inMinutes / 60).toStringAsFixed(2)} h'
+          : '$inHours h';
     } else if (minutes && inMinutes > 0) {
-      return '$inMinutes min';
+      return decimal
+          ? '${(inSeconds / 60).toStringAsFixed(2)} min'
+          : '$inMinutes min';
     } else if (seconds && inSeconds > 0) {
-      return '$inSeconds sec';
+      return decimal
+          ? '${(inMilliseconds / 1000).toStringAsFixed(2)} sec'
+          : '$inSeconds sec';
     } else if (milliseconds && inMilliseconds > 0) {
-      return '$inMilliseconds ms';
+      return decimal
+          ? '${(inMicroseconds / 1000).toStringAsFixed(2)} ms'
+          : '$inMilliseconds ms';
     } else if (microseconds && inMicroseconds > 0) {
       return '$inMicroseconds μs';
+    } else if (inMicroseconds == 0) {
+      return '0';
     } else {
       return toString();
     }
@@ -620,7 +632,23 @@ extension DateTimeExtension on DateTime {
               locale)
           .format(this);
 
+  /// Returns the elapsed time of `this` [DateTime] until now ([DateTime.now]).
   Duration get elapsedTime => DateTime.now().difference(this);
+
+  /// Returns `this` [DateTime.toString] removing the part that is equals to [other].
+  ///
+  /// - If [asUTC] is `true` forces an UTC [String].
+  String toStringDifference(DateTime other, {bool asUTC = false}) {
+    var d1 = asUTC ? toUtc() : this;
+    var d2 = asUTC ? other.toUtc() : other;
+
+    var s1 = d1.toString();
+    var s2 = d2.toString();
+
+    var sDiff = s1.tailDifferent(s2,
+        splitIndexes: [11, 14, 17, 20], splitIndexesAlreadySorted: true);
+    return sDiff;
+  }
 }
 
 /// Extension for `Map<K, V>`.
@@ -1046,6 +1074,130 @@ extension StringExtension on String {
       }
     }
     return false;
+  }
+
+  /// Returns the length of the head that is equals to the head of [other].
+  int headEqualsLength(String other) {
+    var length = math.min(this.length, other.length);
+
+    for (var i = 0; i < length; ++i) {
+      var c1 = this[i];
+      var c2 = other[i];
+
+      if (c1 != c2) {
+        return i;
+      }
+    }
+
+    return length;
+  }
+
+  /// Returns the length of the tail that is equals to the tail of [other].
+  int tailEqualsLength(String other) {
+    var l1 = this.length;
+    var l2 = other.length;
+
+    var length = math.min(l1, l2);
+
+    --l1;
+    --l2;
+
+    for (var i = 0; i < length; ++i) {
+      var c1 = this[l1 - i];
+      var c2 = other[l2 - i];
+
+      if (c1 != c2) {
+        return i;
+      }
+    }
+
+    return length;
+  }
+
+  /// Returns `this` [String] head part that is equals to [other].
+  ///
+  /// - If [splitIndexes] is provided the head [String] can only be split at this indexes.
+  String headEquals(String other,
+      {List<int>? splitIndexes, bool splitIndexesAlreadySorted = false}) {
+    var head = headEqualsLength(other);
+
+    if (head == 0) return '';
+    if (head == length) return this;
+
+    if (splitIndexes != null && splitIndexes.isNotEmpty) {
+      if (!splitIndexesAlreadySorted) {
+        splitIndexes = splitIndexes.toList();
+        splitIndexes.sort();
+      }
+
+      var idx = splitIndexes.searchInsertSortedIndex(head);
+      if (idx >= splitIndexes.length) idx = splitIndexes.lastIndex;
+      var split = splitIndexes[idx];
+
+      if (idx == 0) {
+        if (head < split) {
+          return '';
+        } else {
+          head = split;
+        }
+      } else if (idx == splitIndexes.lastIndex) {
+        if (head < split) {
+          head = splitIndexes[idx - 1];
+        } else {
+          head = split;
+        }
+      } else {
+        if (head != split) {
+          head = splitIndexes[idx - 1];
+        }
+      }
+    }
+
+    var s = substring(0, head);
+    return s;
+  }
+
+  /// Returns `this` [String] tail removing the head part that is equals to [other].
+  ///
+  /// - If [splitIndexes] is provided the head [String] can only be split at this indexes.
+  String tailDifferent(String other,
+      {List<int>? splitIndexes, bool splitIndexesAlreadySorted = false}) {
+    var head = headEqualsLength(other);
+
+    if (head == 0) return this;
+    if (head == length) return '';
+
+    if (splitIndexes != null && splitIndexes.isNotEmpty) {
+      if (!splitIndexesAlreadySorted) {
+        splitIndexes = splitIndexes.toList();
+        splitIndexes.sort();
+      }
+
+      var idx = splitIndexes.searchInsertSortedIndex(head);
+      if (idx >= splitIndexes.length) idx = splitIndexes.lastIndex;
+      var split = splitIndexes[idx];
+
+      if (idx == 0) {
+        if (head < split) {
+          return this;
+        } else {
+          head = split;
+        }
+      } else if (idx == splitIndexes.lastIndex) {
+        if (head < split) {
+          head = splitIndexes[idx - 1];
+        } else {
+          head = split;
+        }
+      } else {
+        if (head != split) {
+          head = splitIndexes[idx - 1];
+        }
+      }
+    }
+
+    var sDiff = substring(head);
+    return sDiff;
   }
 }
 

@@ -1,3 +1,18 @@
+## 1.0.18
+
+- Improved `Chronometer`:
+  - New field `totalOperation` and method `timeToComplete`.
+  - Added time marks.
+  - Better `toString`:
+    - Changed parameter `withTime` to `withStartTime`.
+- `Duration` extension:
+  - `toStringUnit`:
+    - New parameter `decimal`.
+    - Better output for `zero` `Duration`.
+  - Added `toStringDifference`
+- `String` extension
+  - Added `headEqualsLength`, `tailEqualsLength`, `headEquals`, `tailDifferent`.
+
 ## 1.0.17
 
 - New type `Pair`.

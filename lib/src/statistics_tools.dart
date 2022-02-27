@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 import 'statistics_extension.dart';
+import 'statistics_extension_num.dart';
 
 /// A Chronometer useful for benchmarks.
 class Chronometer implements Comparable<Chronometer> {
@@ -82,6 +83,33 @@ class Chronometer implements Comparable<Chronometer> {
 
   String get hertzAsString => '${_formatNumber(hertz)} Hz';
 
+  int? _totalOperation;
+
+  /// The total number of [operations] to complete this chronometer.
+  int? get totalOperation => _totalOperation;
+
+  set totalOperation(int? total) {
+    if (total == null) {
+      _totalOperation = null;
+    } else {
+      if (total < 0) throw ArgumentError("totalOperation` must be >= 0");
+      _totalOperation = total;
+    }
+  }
+
+  /// Returns the time to complete [totalOperation] with the current [hertz].
+  Duration timeToComplete({int? totalOperation}) {
+    if (totalOperation == null) {
+      totalOperation = this.totalOperation;
+      if (totalOperation == null) {
+        throw ArgumentError(
+            'Parameter or field `totalOperation` should be provided');
+      }
+    }
+
+    return Duration(seconds: totalOperation ~/ hertz);
+  }
+
   String get operationsAsString => _formatNumber(operations);
 
   String get failedOperationsAsString => _formatNumber(failedOperations);
@@ -101,6 +129,37 @@ class Chronometer implements Comparable<Chronometer> {
     return operations / elapsedTimeSec;
   }
 
+  final Map<String, DateTime> _marks = <String, DateTime>{};
+
+  /// Clears all previous set time marks.
+  void clearMarks() => _marks.clear();
+
+  /// Gets a previous set time mark.
+  DateTime? getMarkTime(String key) => _marks[key];
+
+  Duration? getMarkElapsedTime(String key) {
+    var markTime = getMarkTime(key);
+    if (markTime == null) return null;
+    return markTime.elapsedTime;
+  }
+
+  /// Removes a previous set time mark.
+  DateTime? removeMarkTime(String key) => _marks.remove(key);
+
+  /// Sets a time mark in this chronometer with the current [DateTime].
+  ///
+  /// - If [overwrite] is `false` won't save a new [DateTime] for a mark already set.
+  DateTime markTime(String key, {bool overwrite = true}) {
+    if (!overwrite) {
+      var prev = _marks[key];
+      if (prev != null) return prev;
+    }
+
+    var now = DateTime.now();
+    _marks[key] = now;
+    return now;
+  }
+
   /// Resets this chronometer for a future [start] and [stop].
   void reset() {
     _startTime = null;
@@ -117,14 +176,32 @@ class Chronometer implements Comparable<Chronometer> {
   ///   Backpropagation{elapsedTime: 2955 ms, hertz: 2030456.8527918782 Hz, ops: 6000000, startTime: 2021-04-30 22:16:54.437147, stopTime: 2021-04-30 22:16:57.392758}
   /// ```
   @override
-  String toString({bool withTime = true}) {
-    var timeStr = withTime
-        ? ', startTime: $_startTime .. +${elapsedTime.toStringUnit()}'
+  String toString({bool withStartTime = true}) {
+    var timeStr = '';
+
+    if (withStartTime && _startTime != null) {
+      var start = _startTime.toString();
+      var now = DateTime.now().toStringDifference(_startTime!);
+      timeStr = ' · start: $start .. $now';
+    }
+
+    var totalOperation = this.totalOperation;
+
+    var timeToCompleteStr = totalOperation != null
+        ? ' · ETOC: ' + timeToComplete().toStringUnit(decimal: true)
         : '';
 
-    return '$name{ elapsedTime: $elapsedTimeMs ms'
-        ', hertz: $hertzAsString'
-        ', ops: $operationsAsString${failedOperations != 0 ? ' (fails: $failedOperationsAsString)' : ''}'
+    var opsRatio = totalOperation != null
+        ? ' » ${(operations / totalOperation).toPercentage()}'
+        : '';
+
+    var opsFails =
+        failedOperations != 0 ? ' (fails: $failedOperationsAsString)' : '';
+
+    return '$name{ ${elapsedTime.toStringUnit(decimal: true)}'
+            ' · hertz: $hertzAsString'
+            ' · ops: $operationsAsString$opsRatio$opsFails' +
+        timeToCompleteStr +
         '$timeStr }';
   }
 
