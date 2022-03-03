@@ -690,11 +690,17 @@ class Pair<T> implements Comparable<Pair<T>> {
     }
   }
 
-  /// HashCode.
+  int? _hashCode;
+
+  /// Pair Hash Code.
   ///
   /// - If [T] is [Iterable] uses [IterableEquality.hash].
+  /// - NOTE: the Hash Code is computed only once,
+  ///   even if an internal value has changed.
   @override
-  int get hashCode {
+  int get hashCode => _hashCode ??= _hashCodeImpl();
+
+  int _hashCodeImpl() {
     var a = this.a;
 
     if (a is Iterable) {

@@ -60,6 +60,9 @@ extension ListExtension<T> on List<T> {
   /// Creates a new [List]<[String]>, mapping each element to a [String].
   List<String> toStringElements() => map((e) => '$e').toList();
 
+  /// Returns `true` if all the elements are equals to [other] elements.
+  bool equalsElements(List<T> other) => ListEquality<T>().equals(this, other);
+
   /// Computes the `hashcode` of this [List], using [ListEquality] defaults.
   int computeHashcode() {
     return ListEquality<T>().hash(this);
@@ -101,6 +104,12 @@ extension ListExtension<T> on List<T> {
     removeRange(length - amount, length);
     return amount;
   }
+
+  /// Remove from `this` [List] all the elements contained in [other].
+  void removeAll(Iterable other) => removeWhere((e) => other.contains(e));
+
+  /// Retain in `this` [List] all the elements contained in [other].
+  void retainAll(Iterable other) => retainWhere((e) => other.contains(e));
 
   /// Returns this instance as a [List]<double>.
   /// If needed creates a new instance, calling [parseDouble] for each element.
@@ -256,6 +265,92 @@ extension ListExtension<T> on List<T> {
     }
 
     return list;
+  }
+
+  /// Converts to a list of distinct elements.
+  /// Same as `toSet().toList()` but in a optimized way for small sets.
+  List<T> toDistinctList() {
+    var length = this.length;
+
+    switch (length) {
+      case 0:
+        return <T>[];
+      case 1:
+        return <T>[first];
+      case 2:
+        {
+          var a = this[0];
+          var b = this[1];
+          return a == b ? <T>[a] : <T>[a, b];
+        }
+      case 3:
+        {
+          var a = this[0];
+          var b = this[1];
+          var c = this[2];
+
+          if (a == b) {
+            return a == c ? <T>[a] : <T>[a, c];
+          } else if (a == c) {
+            return <T>[a, b];
+          } else if (b == c) {
+            return <T>[a, b];
+          } else {
+            return <T>[a, b, c];
+          }
+        }
+      case 4:
+        {
+          var a = this[0];
+          var b = this[1];
+          var c = this[2];
+          var d = this[3];
+
+          if (a == d) {
+            if (a == b) {
+              return a == c ? <T>[a] : <T>[a, c];
+            } else if (a == c) {
+              return <T>[a, b];
+            } else if (b == c) {
+              return <T>[a, b];
+            } else {
+              return <T>[a, b, c];
+            }
+          } else if (b == d) {
+            if (a == b) {
+              return a == c ? <T>[a] : <T>[a, c];
+            } else if (a == c) {
+              return <T>[a, b];
+            } else if (b == c) {
+              return <T>[a, b];
+            } else {
+              return <T>[a, b, c];
+            }
+          } else if (c == d) {
+            if (a == b) {
+              return a == c ? <T>[a] : <T>[a, c];
+            } else if (a == c) {
+              return <T>[a, b];
+            } else if (b == c) {
+              return <T>[a, b];
+            } else {
+              return <T>[a, b, c];
+            }
+          } else {
+            if (a == b) {
+              return a == c ? <T>[a, d] : <T>[a, c, d];
+            } else if (a == c) {
+              return <T>[a, b, d];
+            } else if (b == c) {
+              return <T>[a, b, d];
+            } else {
+              return <T>[a, b, c, d];
+            }
+          }
+        }
+      default:
+        return toSet().toList();
+    }
   }
 }
 
@@ -419,6 +514,9 @@ class RangeSelectionByValue<T> implements RangeSelection<T> {
 
 /// extension for `Set<T>`.
 extension SetExtension<T> on Set<T> {
+  /// Copies this [Set].
+  Set<T> copy() => toSet();
+
   bool allEquals(T element) {
     if (length != 1) return false;
     return first == element;
@@ -427,6 +525,10 @@ extension SetExtension<T> on Set<T> {
   /// Creates a new [List]<[String]>, mapping each element to a [String].
   List<String> toStringElements() => map((e) => '$e').toList();
 
+  /// Returns `true` if all the elements are equals to [other] elements.
+  bool equalsElements(Set<T> other) => SetEquality<T>().equals(this, other);
+
+  /// Computes the `hashcode` of this [Set], using [SetEquality] defaults.
   int computeHashcode() {
     return SetEquality<T>().hash(this);
   }
@@ -434,6 +536,29 @@ extension SetExtension<T> on Set<T> {
 
 /// extension for `Iterable<T>`.
 extension IterableExtension<T> on Iterable<T> {
+  /// Copies this [Iterable] preserving the original type if possible or
+  /// returns a copy as [List].
+  Iterable<T> copy() {
+    var self = this;
+    if (self is Set<T>) {
+      return self.toSet();
+    } else {
+      return self.toList();
+    }
+  }
+
+  /// Returns this instance as [List]. Creates a copy if necessary.
+  List<T> get asList {
+    var self = this;
+    return self is List<T> ? self : toList();
+  }
+
+  /// Returns this instance as [Set]. Creates a copy if necessary.
+  Set<T> get asSet {
+    var self = this;
+    return self is Set<T> ? self : toSet();
+  }
+
   /// The last index of this [List].
   int get lastIndex => length - 1;
 
@@ -525,6 +650,24 @@ extension IterableExtension<T> on Iterable<T> {
     return hasElements && !anyFails;
   }
 
+  /// Returns a new lazy [Iterable] with all elements contained in [other].
+  Iterable<T> whereIn(Iterable other, {Object? Function(T e)? view}) {
+    if (view != null) {
+      return where((e) => other.contains(view(e)));
+    } else {
+      return where((e) => other.contains(e));
+    }
+  }
+
+  /// Returns a new lazy [Iterable] with all elements NOT contained in [other].
+  Iterable<T> whereNotIn(Iterable other, {Object? Function(T e)? view}) {
+    if (view != null) {
+      return where((e) => !other.contains(view(e)));
+    } else {
+      return where((e) => !other.contains(e));
+    }
+  }
+
   /// Generate combinations using this [Iterable] elements as an alphabet.
   ///
   /// - Note that an alphabet can't have duplicated elements.
@@ -532,11 +675,26 @@ extension IterableExtension<T> on Iterable<T> {
   List<List<E>> combinations<E>(int minimumSize, int maximumSize,
           {bool allowRepetition = true,
           bool checkAlphabet = true,
-          Iterable<E> Function(T e)? mapper}) =>
-      generateCombinations<T, E>(this, minimumSize, maximumSize,
-          allowRepetition: allowRepetition,
-          checkAlphabet: checkAlphabet,
-          mapper: mapper);
+          Iterable<E> Function(T e)? mapper,
+          bool Function(List<E> combination)? validator}) =>
+      generateCombinations<T, E>(
+        this,
+        minimumSize,
+        maximumSize,
+        allowRepetition: allowRepetition,
+        checkAlphabet: checkAlphabet,
+        mapper: mapper,
+        validator: validator,
+      );
+
+  /// Returns `true` if all the elements are equals to [other] elements.
+  bool equalsElements(Iterable<T> other) =>
+      IterableEquality<T>().equals(this, other);
+
+  /// Computes the `hashcode` of this [Iterable], using [IterableEquality] defaults.
+  int computeHashcode() {
+    return IterableEquality<T>().hash(this);
+  }
 }
 
 /// extension for `Map<K, Iterable<num>>`.
@@ -651,8 +809,33 @@ extension DateTimeExtension on DateTime {
   }
 }
 
+/// Extension for `MapEntry<K, V>`.
+extension MapEntryExtension<K, V> on MapEntry<K, V> {
+  /// Copies this [MapEntry].
+  MapEntry<K, V> copy() => MapEntry(key, value);
+
+  /// Returns `true` if equals to [other].
+  bool equals(MapEntry other) => key == other.key && value == other.value;
+
+  /// Creates a [Pair] from this [key] and [value] entry.
+  Pair<T> toPair<T>() => Pair(key as T, value as T);
+}
+
+extension IterableMapEntryExtension<K, V> on Iterable<MapEntry<K, V>> {
+  /// Converts this [Iterable] of [MapEntry] to a [Map].
+  Map<K, V> toMapFromEntries() => Map<K, V>.fromEntries(this);
+}
+
+extension IterablePairExtension<T> on Iterable<Pair<T>> {
+  /// Converts this [Iterable] of [Pair] to a [Map].
+  Map<T, T> toMapFromPairs() => Map<T, T>.fromEntries(map((e) => e.asMapEntry));
+}
+
 /// Extension for `Map<K, V>`.
 extension MapExtension<K, V> on Map<K, V> {
+  /// Copies this [Map].
+  Map<K, V> copy() => Map<K, V>.from(this);
+
   /// Removes [keys] and return a [Map] with them.
   Map<K, V> removeKeysAndReturnValues(Iterable<K> keys) {
     var rms = <K, V>{};

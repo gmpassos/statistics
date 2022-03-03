@@ -393,10 +393,21 @@ void main() {
       expect(counter.highest, equals('x'));
       expect(counter.lowest, equals('y'));
 
-      counter.set('y', 10);
+      expect(counter['x'], equals(5));
+      expect(counter['y'], equals(2));
+
+      counter.set('y', 100);
+      expect(counter.toMap(), equals({'x': 5, 'y': 100}));
+
+      counter['y'] = 10;
       expect(counter.toMap(), equals({'x': 5, 'y': 10}));
 
       expect(counter.toString(), equals('CountTable{ length: 2 }'));
+
+      expect(counter.copy().toMap(), equals({'x': 5, 'y': 10}));
+
+      expect(
+          counter.copy(filter: (k, v) => v >= 10).toMap(), equals({'y': 10}));
 
       expect(counter.highest, equals('y'));
       expect(counter.lowest, equals('x'));

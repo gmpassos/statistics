@@ -243,6 +243,27 @@ class Chronometer implements Comparable<Chronometer> {
 class CountTable<K> {
   final Map<K, _Counter<K>> _table = <K, _Counter<K>>{};
 
+  CountTable<K> copy({bool Function(K key, int count)? filter}) {
+    var copy = CountTable<K>();
+
+    if (filter != null) {
+      for (var e in _table.entries) {
+        var key = e.key;
+        var value = e.value;
+
+        if (filter(key, value.count)) {
+          copy._table[key] = value.copy();
+        }
+      }
+    } else {
+      for (var e in _table.entries) {
+        copy._table[e.key] = e.value.copy();
+      }
+    }
+
+    return copy;
+  }
+
   /// The number of entries in the counting table.
   int get length => _table.length;
 
@@ -286,6 +307,12 @@ class CountTable<K> {
   /// Returns the counting value of [key].
   int? get(K key) => _table[key]?.count;
 
+  /// Operator alias to [get].
+  operator [](K key) => get(key);
+
+  /// Operator alias to [set].
+  operator []=(K key, int count) => set(key, count);
+
   /// Removes the counter of [key].
   int? remove(K key) => _table.remove(key)?.count;
 
@@ -315,6 +342,8 @@ class _Counter<K> implements Comparable<_Counter<K>> {
   int count = 0;
 
   _Counter(this.key);
+
+  _Counter<K> copy() => _Counter<K>(key)..count = count;
 
   MapEntry<K, int> get asMapEntry => MapEntry(key, count);
 

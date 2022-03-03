@@ -1,6 +1,12 @@
 ## 1.0.18
 
 - New `CountTable`.
+- `BayesianNetwork` and `BayesEventMonitor`:
+  - Significant performance improvement for high number of variables and dependencies.
+- `Pair`:
+  - Added `hashCode` cache.
+- `generateCombinations`:
+  - Added parameter `validator`.
 - Improved `Chronometer`:
   - New field `totalOperation` and method `timeToComplete`.
   - Added time marks.
@@ -13,6 +19,16 @@
   - Added `toStringDifference`
 - `String` extension
   - Added `headEqualsLength`, `tailEqualsLength`, `headEquals`, `tailDifferent`.
+- `ListExtension`:
+  - Added `equalsElements`, `removeAll`, `retainAll`, `toDistinctList`.
+- `SetExtension`:
+  - Added `copy`, `equalsElements`.
+- `IterableExtension`:
+  - Added `copy`, `asList`, `asSet`, `whereIn`, `whereNotIn`, `equalsElements`, `computeHashcode`.
+- `MapEntryExtension`:
+  - Added `copy`, `equals`, `toPair`.
+- `MapExtension`:
+  - Added `copy`.
 
 ## 1.0.17
 

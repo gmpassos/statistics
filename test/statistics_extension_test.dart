@@ -8,6 +8,52 @@ void main() {
     test('ListExtension<String>', () {
       var l = <String>['10', '20', '30'];
 
+      expect(l.copy(), equals(['10', '20', '30']));
+
+      expect(l.asList, allOf(isA<List<String>>(), equals(['10', '20', '30'])));
+      expect(l.asSet, allOf(isA<Set<String>>(), equals({'10', '20', '30'})));
+
+      expect(['10', '20', '20'].asSet,
+          allOf(isA<Set<String>>(), equals({'10', '20'})));
+
+      expect(['10', '20', '20', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20', '30'])));
+
+      expect(['10', '20', '30', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20', '30'])));
+
+      expect(['10', '20', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20', '30'])));
+
+      expect(['10', '10', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '30'])));
+
+      expect(['10', '20', '10'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20'])));
+
+      expect(['10', '20', '20'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20'])));
+
+      expect(['10', '10', '10'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10'])));
+
+      expect(['10', '20'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20'])));
+
+      expect(['10', '10'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10'])));
+
+      expect(
+          ['10'].toDistinctList(), allOf(isA<List<String>>(), equals(['10'])));
+
+      expect(
+          <String>[].toDistinctList(), allOf(isA<List<String>>(), equals([])));
+
+      expect(l.equalsElements(['10', '20', '30']), isTrue);
+      expect(l.equalsElements(['10', '2', '30']), isFalse);
+
+      expect(l.computeHashcode(), greaterThan(0));
+
       expect(l.toMap((e) => e, (e) => int.parse(e)),
           equals({'10': 10, '20': 20, '30': 30}));
 
@@ -82,8 +128,17 @@ void main() {
       expect(l2.sublistReversed(3), equals([10, 11, 12, 20, 21, 22]));
       expect(l2.sublistReversed(3, 5), equals([21, 22]));
 
+      expect(l2.lengthRatio(0.50), equals(4));
+      expect(l2.lengthRatio(0.50, minimumSize: 6), equals(6));
+      expect(l2.lengthRatio(0.50, minimumSize: 600), equals(9));
+
       expect(l2.head(3), equals([10, 11, 12]));
+      expect(l2.headByRatio(0.25), equals([10, 11]));
+      expect(l2.headByRatio(0.25, minimumSize: 3), equals([10, 11, 12]));
+
       expect(l2.tail(3), equals([30, 31, 32]));
+      expect(l2.tailByRatio(0.25), equals([31, 32]));
+      expect(l2.tailByRatio(0.25, minimumSize: 3), equals([30, 31, 32]));
 
       {
         var resample1 = l2.resampleByIndex<double>((l, previous, cursor) {
@@ -289,6 +344,20 @@ void main() {
       var itr = {'a': 1, 'b': 2, 'c': 3}.values;
       expect(itr.lastIndex, equals(2));
 
+      expect(itr.copy(), allOf(isA<List<int>>(), equals([1, 2, 3])));
+
+      // ignore: unnecessary_cast
+      expect((itr.asSet as Iterable<int>).copy(),
+          allOf(isA<Set<int>>(), equals({1, 2, 3})));
+
+      expect(itr.asList, allOf(isA<List<int>>(), equals([1, 2, 3])));
+      expect(itr.asSet, allOf(isA<Set<int>>(), equals({1, 2, 3})));
+
+      expect(itr.equalsElements([1, 2, 3]), isTrue);
+      expect(itr.equalsElements([1, 2, 4]), isFalse);
+
+      expect(itr.computeHashcode(), greaterThan(0));
+
       expect(
           itr.groupBy((n) => n % 2 == 0 ? 'even' : 'odd'),
           equals({
@@ -319,6 +388,9 @@ void main() {
         'f': 6,
         'g': 7
       };
+
+      expect(m.copy(),
+          equals({'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7}));
 
       expect(
           m.equalsKeysValues([
@@ -439,6 +511,14 @@ void main() {
       var l2 = <String>{'101'};
       expect(l2, equals({'101'}));
       expect(l2.allEquals('101'), isTrue);
+
+      expect(l.copy(), equals({'10', '20', '30'}));
+
+      expect(l.asSet, equals({'10', '20', '30'}));
+      expect(l.asList, equals(['10', '20', '30']));
+
+      expect(l.equalsElements({'10', '20', '30'}), isTrue);
+      expect(l.equalsElements({'10', '20'}), isFalse);
     });
 
     test('SetExtension<int>', () {
@@ -466,6 +546,41 @@ void main() {
 
       expect(groups['odd'], equals([11, 13, 15]));
       expect(groups['even'], equals([12, 14]));
+
+      expect(groups.keys.copy(), equals(['odd', 'even']));
+
+      expect(groups.keys.asList,
+          allOf(isA<List<String>>(), equals(['odd', 'even'])));
+      expect(groups.keys.asSet,
+          allOf(isA<Set<String>>(), equals({'odd', 'even'})));
+
+      expect(groups.keys.equalsElements(['odd', 'even']), isTrue);
+      expect(groups.keys.equalsElements(['odd', 'x']), isFalse);
+      expect(groups.keys.equalsElements(['odd', 'even', 'x']), isFalse);
+    });
+
+    test('MapEntryExtension<String,int>', () {
+      var e = MapEntry('a', 11);
+
+      expect(e.copy().key, equals('a'));
+      expect(e.copy().value, equals(11));
+
+      expect(e.equals(MapEntry('a', 11)), isTrue);
+      expect(e.equals(MapEntry('a', 1)), isFalse);
+      expect(e.equals(MapEntry('X', 11)), isFalse);
+
+      expect(e.toPair().a, equals('a'));
+      expect(e.toPair().b, equals(11));
+    });
+
+    test('IterableMapEntryExtension<String,int>', () {
+      var e = [MapEntry('a', 11), MapEntry('b', 22)];
+      expect(e.toMapFromEntries(), equals({'a': 11, 'b': 22}));
+    });
+
+    test('IterablePairExtension<int>', () {
+      var e = [Pair(10, 100), Pair(20, 200)];
+      expect(e.toMapFromPairs(), equals({10: 100, 20: 200}));
     });
 
     test('IterableMapExtension<String,int>', () {

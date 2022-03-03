@@ -5,10 +5,12 @@ class CombinationCache<T, E> {
   final bool allowRepetition;
   final bool allowSharedCombinations;
   final Iterable<E> Function(T e)? mapper;
+  final bool Function(List<E> combination)? validator;
 
   CombinationCache(
       {required this.allowRepetition,
       this.mapper,
+      this.validator,
       this.allowSharedCombinations = false});
 
   final Map<_CombinationCacheKey<T>, List<List<E>>> _cache =
@@ -61,7 +63,10 @@ class CombinationCache<T, E> {
       Set<T> alphabet, int minimumSize, int maximumSize) {
     ++_computedCombinations;
     return generateCombinations(alphabet, minimumSize, maximumSize,
-        allowRepetition: allowRepetition, checkAlphabet: false, mapper: mapper);
+        allowRepetition: allowRepetition,
+        checkAlphabet: false,
+        mapper: mapper,
+        validator: validator);
   }
 
   @override
@@ -104,12 +109,14 @@ class _CombinationCacheKey<T> {
 /// - If [allowRepetition] is `true` will allow the repetition of elements for each combination.
 /// - If [checkAlphabet] is `true` it will check if the [alphabet] has duplicated elements.
 /// - An optional [mapper] can be used to expand or map each [alphabet] element.
+/// - An optional combination [validator].
 /// - Note that an alphabet can't have duplicated elements.
 List<List<E>> generateCombinations<T, E>(
     Iterable<T> alphabet, int minimumSize, int maximumSize,
     {bool allowRepetition = true,
     bool checkAlphabet = true,
-    Iterable<E> Function(T e)? mapper}) {
+    Iterable<E> Function(T e)? mapper,
+    bool Function(List<E> combination)? validator}) {
   if (minimumSize < 1) minimumSize = 1;
 
   var combinations = <List<E>>[];
@@ -127,10 +134,12 @@ List<List<E>> generateCombinations<T, E>(
   }
 
   mapper ??= (e) => <E>[e as E];
+  validator ??= (c) => true;
 
   if (allowRepetition) {
     for (var size = minimumSize; size <= maximumSize; ++size) {
-      _fillWithRepetition<T, E>(alphabet, <E>[], size, combinations, mapper);
+      _fillWithRepetition<T, E>(
+          alphabet, <E>[], size, combinations, mapper, validator);
     }
   } else {
     if (maximumSize > alphabet.length) {
@@ -138,15 +147,22 @@ List<List<E>> generateCombinations<T, E>(
     }
 
     for (var size = minimumSize; size <= maximumSize; ++size) {
-      _fillNoRepetition<T, E>(alphabet, <E>[], 0, size, combinations, mapper);
+      _fillNoRepetition<T, E>(
+          alphabet, <E>[], 0, size, combinations, mapper, validator);
     }
   }
 
   return combinations;
 }
 
-void _fillNoRepetition<T, E>(Iterable<T> alphabet, List<E> dst, int offset,
-    int limit, List<List<E>> output, Iterable<E> Function(T e) mapper) {
+void _fillNoRepetition<T, E>(
+    Iterable<T> alphabet,
+    List<E> dst,
+    int offset,
+    int limit,
+    List<List<E>> output,
+    Iterable<E> Function(T e) mapper,
+    bool Function(List<E> combination) validator) {
   var length = alphabet.length;
 
   for (var i = offset; i < length; ++i) {
@@ -157,16 +173,22 @@ void _fillNoRepetition<T, E>(Iterable<T> alphabet, List<E> dst, int offset,
     for (var v in values) {
       var dst2 = <E>[...dst, v];
       if (dst2.length < limit) {
-        _fillNoRepetition(alphabet, dst2, i + 1, limit, output, mapper);
-      } else {
+        _fillNoRepetition(
+            alphabet, dst2, i + 1, limit, output, mapper, validator);
+      } else if (validator(dst2)) {
         output.add(dst2);
       }
     }
   }
 }
 
-void _fillWithRepetition<T, E>(Iterable<T> alphabet, List<E> dst, int limit,
-    List<List<E>> output, Iterable<E> Function(T e) mapper) {
+void _fillWithRepetition<T, E>(
+    Iterable<T> alphabet,
+    List<E> dst,
+    int limit,
+    List<List<E>> output,
+    Iterable<E> Function(T e) mapper,
+    bool Function(List<E> combination) validator) {
   var length = alphabet.length;
 
   for (var i = 0; i < length; ++i) {
@@ -177,8 +199,8 @@ void _fillWithRepetition<T, E>(Iterable<T> alphabet, List<E> dst, int limit,
     for (var v in values) {
       var dst2 = <E>[...dst, v];
       if (dst2.length < limit) {
-        _fillWithRepetition(alphabet, dst2, limit, output, mapper);
-      } else {
+        _fillWithRepetition(alphabet, dst2, limit, output, mapper, validator);
+      } else if (validator(dst2)) {
         output.add(dst2);
       }
     }
