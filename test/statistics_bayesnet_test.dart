@@ -1,8 +1,117 @@
+import 'dart:convert' as dart_convert;
+
 import 'package:statistics/statistics.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('BayesValueSignal', () {
+    test('parseBayesValueSignal', () {
+      expect(parseBayesValueSignal(('+')), equals(BayesValueSignal.positive));
+      expect(parseBayesValueSignal(('-')), equals(BayesValueSignal.negative));
+
+      expect(parseBayesValueSignal(('')), equals(BayesValueSignal.unknown));
+      expect(parseBayesValueSignal(('?')), equals(BayesValueSignal.unknown));
+      expect(parseBayesValueSignal(('.')), equals(BayesValueSignal.unknown));
+
+      expect(parseBayesValueSignal(('p')), equals(BayesValueSignal.positive));
+      expect(parseBayesValueSignal(('n')), equals(BayesValueSignal.negative));
+
+      expect(parseBayesValueSignal(('t')), equals(BayesValueSignal.positive));
+      expect(parseBayesValueSignal(('f')), equals(BayesValueSignal.negative));
+
+      expect(BayesValueSignal.positive.name, equals('positive'));
+      expect(BayesValueSignal.negative.name, equals('negative'));
+
+      expect(parseBayesValueSignal(('positive')),
+          equals(BayesValueSignal.positive));
+      expect(parseBayesValueSignal(('negative')),
+          equals(BayesValueSignal.negative));
+      expect(
+          parseBayesValueSignal(('unknown')), equals(BayesValueSignal.unknown));
+
+      expect(parseBayesValueSignal(('POSITIVE')),
+          equals(BayesValueSignal.positive));
+      expect(parseBayesValueSignal(('NEGATIVE')),
+          equals(BayesValueSignal.negative));
+    });
+  });
+
+  group('BayesEventMonitor', () {
+    test('basic', () {
+      var eventMonitor = BayesEventMonitor('Foo');
+
+      eventMonitor.notifyObservation([
+        ['A', 'T']
+      ]);
+      eventMonitor.notifyObservation([
+        ['B', 'T']
+      ]);
+      eventMonitor.notifyObservationsConclusion(['X', 'T']);
+      eventMonitor.notifyEvent([
+        ['X', 'T']
+      ]);
+
+      eventMonitor.notifyObservation([
+        ['A', 'F']
+      ]);
+      eventMonitor.notifyObservation([
+        ['B', 'F']
+      ]);
+      eventMonitor.notifyObservationsConclusion(['X', 'F']);
+      eventMonitor.notifyEvent([
+        ['X', 'F']
+      ]);
+
+      eventMonitor.notifyDependency([
+        'A',
+        'B'
+      ], [
+        ['A', 'T'],
+        ['B', 'F'],
+        ['X', 'T']
+      ]);
+      eventMonitor.notifyDependency([
+        'A',
+        'B'
+      ], [
+        ['A', 'F'],
+        ['B', 'T'],
+        ['X', 'T']
+      ]);
+
+      expect(
+          BayesEventMonitor.fromJsonEncoded(eventMonitor.toJsonEncoded())
+              .toJson(),
+          equals(eventMonitor.toJson()));
+
+      expect(
+          BayesEventMonitor.fromSerializable(eventMonitor.toSerializable())
+              .toJson(),
+          equals(eventMonitor.toJson()));
+
+      var bayesNet = eventMonitor.buildBayesianNetwork(
+          unseenMinimalProbability: 0.0, verbose: true);
+
+      print(bayesNet);
+    });
+  });
+
   group('BayesianNetwork', () {
+    test('errors', () {
+      var bayesNet = BayesianNetwork('basic');
+
+      bayesNet.addVariable('X', [], [], []);
+
+      expect(() => bayesNet.addVariable('Y', [], ['N'], []),
+          throwsA(isA<ValidationError>()));
+
+      expect(() => bayesNet.addDependency(['A'], []),
+          throwsA(isA<ValidationError>()));
+
+      expect(() => bayesNet.addDependency(['A', 'B'], []),
+          throwsA(isA<ValidationError>()));
+    });
+
     test('basic', () {
       print('--------------------------------------------------------');
 
@@ -72,6 +181,9 @@ void main() {
       print(bayesNet);
 
       var analyser = bayesNet.analyser;
+
+      var result0 = analyser.showAnswer('P(c)');
+      expect(result0.probability, _isNear(0.50));
 
       var result1 = analyser.showAnswer('P(c|m,b)');
       expect(result1.probability, _isNear(0.80));
@@ -224,28 +336,130 @@ void main() {
         "A = T, B = T, XOR = F: 0.0",
       ]);
 
-      print(bayesNet);
+      _testBayesNetXOR(bayesNet);
+    });
 
-      var analyser = bayesNet.analyser;
+    test('xor + and', () {
+      print('--------------------------------------------------------');
 
-      expect(analyser.showAnswer('P(xor|a,b)', verbose: true).probability,
-          _isNear(0.0));
+      var bayesNet = BayesianNetwork('XOR');
 
-      expect(analyser.showAnswer('P(xor|-a,b)', verbose: true).probability,
-          _isNear(1.0));
+      bayesNet.addVariable("XOR", [
+        'F',
+        'T',
+      ], [], [
+        "XOR = F: 0.5",
+        "XOR = T: 0.5",
+      ]);
 
-      expect(analyser.showAnswer('P(xor)').probability, _isNear(0.50));
+      bayesNet.addVariable("AND", [
+        'F',
+        'T',
+      ], [], [
+        "AND = F: 0.5",
+        "AND = T: 0.5",
+      ]);
 
-      expect(analyser.showAnswer('P(xor|a)').probability, _isNear(0.50));
-      expect(analyser.showAnswer('P(xor|-a)').probability, _isNear(0.50));
+      bayesNet.addVariable("A", [
+        'F',
+        'T',
+      ], [
+        "XOR",
+        "AND",
+      ], [
+        "A = F, XOR = F: 0.50",
+        "A = F, XOR = T: 0.50",
+        "A = T, XOR = F: 0.50",
+        "A = T, XOR = T: 0.50",
+        "A = F, AND = F: 0.50",
+        "A = F, AND = T: 0.50",
+        "A = T, AND = F: 0.50",
+        "A = T, AND = T: 0.50",
+      ]);
 
-      expect(analyser.showAnswer('P(xor|b)').probability, _isNear(0.50));
-      expect(analyser.showAnswer('P(xor|-b)').probability, _isNear(0.50));
+      bayesNet.addVariable("B", [
+        'F',
+        'T',
+      ], [
+        "XOR",
+        "AND",
+      ], [
+        "B = F, XOR = F: 0.50",
+        "B = F, XOR = T: 0.50",
+        "B = T, XOR = F: 0.50",
+        "B = T, XOR = T: 0.50",
+        "B = F, AND = F: 0.50",
+        "B = F, AND = T: 0.50",
+        "B = T, AND = F: 0.50",
+        "B = T, AND = T: 0.50",
+      ]);
 
-      expect(analyser.showAnswer('P(xor|a,-b)').probability, _isNear(1.0));
-      expect(analyser.showAnswer('P(xor|a,b)').probability, _isNear(0.0));
-      expect(analyser.showAnswer('P(xor|-a,b)').probability, _isNear(1.0));
-      expect(analyser.showAnswer('P(xor|a,b)').probability, _isNear(0.0));
+      bayesNet.addDependency([
+        'A',
+        'B'
+      ], [
+        "A = F, B = F, XOR = F: 0.0",
+        "A = F, B = T, XOR = T: 1.0",
+        "A = T, B = F, XOR = T: 1.0",
+        "A = T, B = T, XOR = F: 0.0",
+      ]);
+
+      _testBayesNetXOR(bayesNet);
+    });
+
+    test('xor + and (by event)', () {
+      print('--------------------------------------------------------');
+
+      var eventMonitor = BayesEventMonitor('XOR');
+
+      _notifyManyEvents(eventMonitor, 50, ['XOR=F']);
+      _notifyManyEvents(eventMonitor, 50, ['XOR=T']);
+
+      _notifyManyEvents(eventMonitor, 50, ['AND=F']);
+      _notifyManyEvents(eventMonitor, 50, ['AND=T']);
+
+      _notifyManyEvents(eventMonitor, 50, ["A = F", "XOR = F"]);
+      _notifyManyEvents(eventMonitor, 50, ["A = F", "XOR = T"]);
+      _notifyManyEvents(eventMonitor, 50, ["A = T", "XOR = F"]);
+      _notifyManyEvents(eventMonitor, 50, ["A = T", "XOR = T"]);
+
+      _notifyManyEvents(eventMonitor, 50, ["A = F", "AND = F"]);
+      _notifyManyEvents(eventMonitor, 50, ["A = F", "AND = T"]);
+      _notifyManyEvents(eventMonitor, 50, ["A = T", "AND = F"]);
+      _notifyManyEvents(eventMonitor, 50, ["A = T", "AND = T"]);
+
+      _notifyManyEvents(eventMonitor, 50, ["B = F", "XOR = F"]);
+      _notifyManyEvents(eventMonitor, 50, ["B = F", "XOR = T"]);
+      _notifyManyEvents(eventMonitor, 50, ["B = T", "XOR = F"]);
+      _notifyManyEvents(eventMonitor, 50, ["B = T", "XOR = T"]);
+
+      _notifyManyEvents(eventMonitor, 50, ["B = F", "AND = F"]);
+      _notifyManyEvents(eventMonitor, 50, ["B = F", "AND = T"]);
+      _notifyManyEvents(eventMonitor, 50, ["B = T", "AND = F"]);
+      _notifyManyEvents(eventMonitor, 50, ["B = T", "AND = T"]);
+
+      _notifyManyEvents(eventMonitor, 0, ["A = F", "B = F", "XOR = F"],
+          dependency: ['A', 'B']);
+      _notifyManyEvents(eventMonitor, 100, ["A = F", "B = T", "XOR = T"],
+          dependency: ['A', 'B']);
+      _notifyManyEvents(eventMonitor, 100, ["A = T", "B = F", "XOR = T"],
+          dependency: ['A', 'B']);
+      _notifyManyEvents(eventMonitor, 0, ["A = T", "B = T", "XOR = F"],
+          dependency: ['A', 'B']);
+
+      expect(eventMonitor.eventsLength, equals(20));
+      expect(eventMonitor.dependenciesLength, equals(2));
+
+      var bayesNet = eventMonitor.buildBayesianNetwork(
+          unseenMinimalProbability: 0.0, verbose: true);
+
+      expect(
+          BayesEventMonitor.fromJsonEncoded(eventMonitor.toJsonEncoded())
+              .buildBayesianNetwork(unseenMinimalProbability: 0.0)
+              .toJson(),
+          equals(bayesNet.toJson()));
+
+      _testBayesNetXOR(bayesNet);
     });
 
     test('cancer', () {
@@ -272,8 +486,6 @@ void main() {
         "X = N, C = T: 0.10",
         "X = P, C = T: 0.90",
       ]);
-
-      print(bayesNet);
 
       bayesNet.analyser.showAnswer('P(C|X)', verbose: true);
 
@@ -315,8 +527,6 @@ void main() {
 
       eventMonitor.populateNodes(bayesNet);
 
-      print(bayesNet);
-
       _testBayesNetCancer(bayesNet, hasGhostBranch: true);
     });
 
@@ -328,8 +538,6 @@ void main() {
       var bayesNet = BayesianNetwork('cancer');
 
       eventMonitor.populateNodes(bayesNet);
-
-      print(bayesNet);
 
       _testBayesNetCancer(bayesNet, hasGhostBranch: true);
     });
@@ -384,63 +592,349 @@ void main() {
   });
 }
 
+void _testBayesNetXOR(BayesianNetwork bayesNet) {
+  print(bayesNet);
+
+  {
+    var jsonEncoded = bayesNet.toJsonEncoded(pretty: true);
+    print(jsonEncoded);
+
+    var bayesNet2 = BayesianNetwork.fromJsonEncoded(jsonEncoded);
+
+    expect(bayesNet2.toJsonEncoded(pretty: true), equals(jsonEncoded));
+  }
+
+  print(bayesNet);
+
+  var withAND = bayesNet.variablesNames.contains('AND');
+
+  expect(() => bayesNet.getNodeByName('Z'), throwsA(isA<ValidationError>()));
+
+  expect(bayesNet.getNodeByName('XOR').isRoot, isTrue);
+
+  expect(bayesNet.getNodeByName('A').isRoot, isFalse);
+  expect(bayesNet.getNodeByName('B').isRoot, isFalse);
+
+  expect(
+      bayesNet
+          .getNodeByName('B')
+          .allRootChains
+          .map((e) => e.map((e) => e.variablesAsString)),
+      unorderedEquals([
+        ['XOR', 'B'],
+        if (withAND) ['AND', 'B'],
+      ]));
+
+  expect(
+      bayesNet
+          .getNodeByName('B')
+          .rootChains(bayesNet.getNodesByNames(['XOR']))
+          .map((e) => e.map((e) => e.variablesAsString)),
+      unorderedEquals([
+        ['XOR', 'B']
+      ]));
+
+  expect(
+      bayesNet.getNodeByName('XOR').values.toStringsList(), equals(['F', 'T']));
+  expect(
+      bayesNet.getNodeByName('A').values.toStringsList(), equals(['F', 'T']));
+  expect(
+      bayesNet.getNodeByName('B').values.toStringsList(), equals(['F', 'T']));
+
+  expect(bayesNet.getNodeByName('B').variablesAsString, equals('B'));
+
+  expect(bayesNet.getDependencyByVariables(['B', 'A'])?.variablesAsString,
+      equals('A+B'));
+
+  expect(
+      bayesNet.getNodeByName('XOR').ancestors.map((e) => e.variablesAsString),
+      equals([]));
+  expect(
+      bayesNet.getNodeByName('A').ancestors.map((e) => e.variablesAsString),
+      unorderedEquals([
+        'XOR',
+        if (withAND) 'AND',
+      ]));
+  expect(
+      bayesNet.getNodeByName('B').ancestors.map((e) => e.variablesAsString),
+      unorderedEquals([
+        'XOR',
+        if (withAND) 'AND',
+      ]));
+
+  expect(bayesNet.getNodeByName('A').getValueName(name: 'T'), equals('T'));
+  expect(bayesNet.getNodeByName('A').getValueName(name: 'F'), equals('F'));
+
+  expect(bayesNet.getNodeByName('A').getValueName(name: 't'), equals('T'));
+  expect(bayesNet.getNodeByName('A').getValueName(name: 'f'), equals('F'));
+
+  expect(bayesNet.getNodeByName('A').getValueName(name: '+'), equals('T'));
+  expect(bayesNet.getNodeByName('A').getValueName(name: '-'), equals('F'));
+  expect(bayesNet.getNodeByName('A').getValueName(name: '?'), equals('T'));
+
+  expect(
+      bayesNet.getNodeByName('A').getProbability('A=T, XOR=F'), equals(0.50));
+  expect(
+      bayesNet.getNodeByName('A').getProbability('A=F, XOR=F'), equals(0.50));
+
+  expect(
+      bayesNet.getNodeByName('A').getProbability('A=T, XOR=T'), equals(0.50));
+  expect(
+      bayesNet.getNodeByName('A').getProbability('A=F, XOR=T'), equals(0.50));
+
+  expect(
+      bayesNet.getNodeByName('A').getProbability('A=T, XOR=T'), equals(0.50));
+
+  expect(
+      bayesNet
+          .getDependencyByVariables(['A', 'B'])
+          ?.ancestors
+          .map((e) => e.variablesAsString),
+      unorderedEquals([
+        'XOR',
+        if (withAND) 'AND',
+      ]));
+
+  expect(bayesNet.getDependencyByVariables(['A', 'B'])?.values.map((e) => '$e'),
+      equals(['F', 'T', 'F', 'T']));
+
+  expect(
+      bayesNet.getDependencyByVariables(['A', 'B'])?.getProbability(
+          'A=F, B=T,XOR=T'),
+      equals(1.0));
+
+  var analyser = bayesNet.analyser;
+
+  expect(analyser.showAnswer('P(xor|a,b)', verbose: true).probability,
+      _isNear(0.0));
+
+  expect(analyser.showAnswer('P(xor|-a,b)', verbose: true).probability,
+      _isNear(1.0));
+
+  expect(analyser.showAnswer('P(xor)').probability, _isNear(0.50));
+
+  expect(analyser.showAnswer('P(xor|a)').probability, _isNear(0.50));
+  expect(analyser.showAnswer('P(xor|-a)').probability, _isNear(0.50));
+
+  expect(analyser.showAnswer('P(xor|b)').probability, _isNear(0.50));
+  expect(analyser.showAnswer('P(xor|-b)').probability, _isNear(0.50));
+
+  expect(analyser.showAnswer('P(xor|a,-b)').probability, _isNear(1.0));
+  expect(analyser.showAnswer('P(xor|a,b)').probability, _isNear(0.0));
+  expect(analyser.showAnswer('P(xor|-a,b)').probability, _isNear(1.0));
+  expect(analyser.showAnswer('P(xor|a,b)').probability, _isNear(0.0));
+
+  expect(
+      () => analyser.generateQuestions('XOR',
+          variables: ['N'], allowEmptySelection: false),
+      throwsA(isA<StateError>()));
+
+  expect(
+      () => analyser.generateQuestions('XOR',
+          variablesFilter: (v) => v.startsWith('N'),
+          allowEmptySelection: false),
+      throwsA(isA<StateError>()));
+
+  expect(
+      () => analyser.generateQuestions('XOR',
+          ignoreVariables: ['A', 'B', 'AND'], allowEmptySelection: false),
+      throwsA(isA<StateError>()));
+
+  expect(
+      () => analyser.generateQuestions('XOR',
+          ignoreVariablesFilter: (v) => true, allowEmptySelection: false),
+      throwsA(isA<StateError>()));
+
+  var questions = analyser.generateQuestions('XOR',
+      ignoreVariables: ['AND'], combinationsLevel: 2);
+  var answers = analyser.quiz(questions);
+
+  answers.sortByQuery();
+  expect(
+      answers.map((e) => e.toString(
+          withPerformance: false, withProbabilityUnnormalized: false)),
+      equals([
+        'P(XOR|-A) -> XOR = T | A = F -> 0.5',
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0',
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
+        'P(XOR|A) -> XOR = T | A = T -> 0.5',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0',
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0',
+        'P(XOR|-B) -> XOR = T | B = F -> 0.5',
+        'P(XOR|B) -> XOR = T | B = T -> 0.5',
+      ]));
+
+  answers.sortByProbability();
+  expect(
+      answers.map((e) => e.toString(
+          withPerformance: false, withProbabilityUnnormalized: false)),
+      equals([
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0',
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0',
+        'P(XOR|-A) -> XOR = T | A = F -> 0.5',
+        'P(XOR|A) -> XOR = T | A = T -> 0.5',
+        'P(XOR|-B) -> XOR = T | B = F -> 0.5',
+        'P(XOR|B) -> XOR = T | B = T -> 0.5',
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0'
+      ]));
+
+  answers.sortBySelectedValues();
+  expect(
+      answers.map((e) => e.toString(
+          withPerformance: false, withProbabilityUnnormalized: false)),
+      equals([
+        'P(XOR|-A) -> XOR = T | A = F -> 0.5',
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0',
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
+        'P(XOR|A) -> XOR = T | A = T -> 0.5',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0',
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0',
+        'P(XOR|-B) -> XOR = T | B = F -> 0.5',
+        'P(XOR|B) -> XOR = T | B = T -> 0.5'
+      ]));
+
+  answers.sortByPerformance();
+  expect(
+      answers.map((e) => e.toString(
+          withPerformance: true, withProbabilityUnnormalized: false)),
+      equals([
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0 >> 0.00%',
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0 >> 0.00%',
+        'P(XOR|-A) -> XOR = T | A = F -> 0.5 >> 100.00%',
+        'P(XOR|A) -> XOR = T | A = T -> 0.5 >> 100.00%',
+        'P(XOR|-B) -> XOR = T | B = F -> 0.5 >> 100.00%',
+        'P(XOR|B) -> XOR = T | B = T -> 0.5 >> 100.00%',
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0 >> 200.00%',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0 >> 200.00%'
+      ]));
+
+  expect(
+      answers.selectBestVariablesNames(size: 1), unorderedEquals(['A', 'B']));
+
+  expect(answers.selectBestVariablesNames(size: 0), unorderedEquals([]));
+
+  expect(
+      answers.selectBestVariablesNames(sizeRatio: 0.01), unorderedEquals([]));
+
+  expect(answers.selectBestVariablesNames(sizeRatio: 0.01, minimumSize: 1),
+      unorderedEquals(['A', 'B']));
+
+  expect(answers.selectBestVariablesNames(sizeRatio: 1.0, maximumSize: 1),
+      unorderedEquals(['A', 'B']));
+
+  expect(
+      answers.withSelectedValueName('T').map((e) => e.toString(
+          withProbabilityUnnormalized: false, withPerformance: false)),
+      unorderedEquals([
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0',
+        'P(XOR|A) -> XOR = T | A = T -> 0.5',
+        'P(XOR|B) -> XOR = T | B = T -> 0.5',
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0',
+      ]));
+
+  expect(
+      answers.withSelectedValueName('F').map((e) => e.toString(
+          withProbabilityUnnormalized: false, withPerformance: false)),
+      unorderedEquals([
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0',
+        'P(XOR|-A) -> XOR = T | A = F -> 0.5',
+        'P(XOR|-B) -> XOR = T | B = F -> 0.5',
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0',
+      ]));
+
+  expect(
+      answers.withSelectedValueSignal(BayesValueSignal.unknown).map((e) =>
+          e.toString(
+              withProbabilityUnnormalized: false, withPerformance: false)),
+      unorderedEquals([
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0',
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0',
+        'P(XOR|-A) -> XOR = T | A = F -> 0.5',
+        'P(XOR|A) -> XOR = T | A = T -> 0.5',
+        'P(XOR|-B) -> XOR = T | B = F -> 0.5',
+        'P(XOR|B) -> XOR = T | B = T -> 0.5',
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0'
+      ]));
+}
+
 BayesEventMonitor _generateCancerEvents(int multiplier) {
   var eventMonitor = BayesEventMonitor('cancer');
 
   var limit = 990 * multiplier;
-  for (var i = 0; i < limit; ++i) {
-    eventMonitor.notifyEvent(['C=F']);
-  }
+  _notifyManyEvents(eventMonitor, limit, ['C=F']);
 
   limit = 10 * multiplier;
-  for (var i = 0; i < limit; ++i) {
-    eventMonitor.notifyEvent(['C=T']);
-  }
+  _notifyManyEvents(eventMonitor, limit, ['C=T']);
 
   limit = 901 * multiplier;
-  for (var i = 0; i < limit; ++i) {
-    eventMonitor.notifyEvent(['X=N', 'C=F']);
-  }
+  _notifyManyEvents(eventMonitor, limit, ['X=N', 'C=F']);
 
   limit = 89 * multiplier;
-  for (var i = 0; i < limit; ++i) {
-    eventMonitor.notifyEvent(['X=P', 'C=F']);
-  }
+  _notifyManyEvents(eventMonitor, limit, ['X=P', 'C=F']);
 
   limit = 1 * multiplier;
-  for (var i = 0; i < limit; ++i) {
-    eventMonitor.notifyEvent(['X=N', 'C=T']);
-  }
+  _notifyManyEvents(eventMonitor, limit, ['X=N', 'C=T']);
 
   limit = 9 * multiplier;
-  for (var i = 0; i < limit; ++i) {
-    eventMonitor.notifyEvent(['X=P', 'C=T']);
-  }
-
-  limit = 10 * multiplier;
-  for (var i = 0; i < limit; ++i) {
-    eventMonitor.notifyEvent(['D=T']);
-    eventMonitor.notifyEvent(['D=F']);
-  }
+  _notifyManyEvents(eventMonitor, limit, ['X=P', 'C=T']);
 
   // Nodes out of `C` chain:
+
   limit = 10 * multiplier;
-  for (var i = 0; i < limit; ++i) {
-    eventMonitor.notifyEvent(['Y=N', 'D=T']);
-  }
+  _notifyManyEvents(eventMonitor, limit, ['D=T']);
+  _notifyManyEvents(eventMonitor, limit, ['D=F']);
+
+  limit = 10 * multiplier;
+  _notifyManyEvents(eventMonitor, limit, ['Y=N', 'D=T']);
 
   limit = 90 * multiplier;
-  for (var i = 0; i < limit; ++i) {
-    eventMonitor.notifyEvent(['Y=P', 'D=T']);
-  }
+  _notifyManyEvents(eventMonitor, limit, ['Y=P', 'D=T']);
 
   print(eventMonitor);
+
+  var eventMonitorJson = eventMonitor.toJson();
+
+  var jsonEncoder = dart_convert.JsonEncoder.withIndent('  ');
+
+  var eventMonitorJsonEncoded = jsonEncoder.convert(eventMonitorJson);
+  print(eventMonitorJsonEncoded);
+
+  var eventMonitor2 = BayesEventMonitor.fromJson(eventMonitorJson);
+
+  var eventMonitorJson2 = eventMonitor2.toJson();
+  var eventMonitorJsonEncoded2 = jsonEncoder.convert(eventMonitorJson2);
+
+  expect(eventMonitorJsonEncoded2, equals(eventMonitorJsonEncoded));
+
   return eventMonitor;
+}
+
+void _notifyManyEvents(BayesEventMonitor eventMonitor, int limit, Object event,
+    {List<String>? dependency}) {
+  for (var i = 0; i < limit; ++i) {
+    if (dependency != null) {
+      eventMonitor.notifyDependency(dependency, event);
+    } else {
+      eventMonitor.notifyEvent(event);
+    }
+  }
 }
 
 void _testBayesNetCancer(BayesianNetwork bayesNet,
     {double tolerance = 0.0001, bool hasGhostBranch = false}) {
   expect(bayesNet.isValid, isTrue);
+
+  print(bayesNet);
+
+  {
+    var jsonEncoded = bayesNet.toJsonEncoded(pretty: true);
+
+    print(jsonEncoded);
+  }
 
   expect(bayesNet.hasNodeWithName('C'), isTrue);
   expect(bayesNet.hasNodeWithName('X'), isTrue);

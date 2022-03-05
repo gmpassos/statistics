@@ -3,6 +3,7 @@
 - New `CountTable`.
 - `BayesianNetwork` and `BayesEventMonitor`:
   - Significant performance improvement for high number of variables and dependencies.
+  - Allow variables nodes with multiple root paths.
 - `Pair`:
   - Added `hashCode` cache.
 - `generateCombinations`:
@@ -20,7 +21,7 @@
 - `String` extension
   - Added `headEqualsLength`, `tailEqualsLength`, `headEquals`, `tailDifferent`.
 - `ListExtension`:
-  - Added `equalsElements`, `removeAll`, `retainAll`, `toDistinctList`.
+  - Added `equalsElements`, `removeAll`, `retainAll`, `toDistinctList`, `shuffleCopy`, `randomSelection`.
 - `SetExtension`:
   - Added `copy`, `equalsElements`.
 - `IterableExtension`:

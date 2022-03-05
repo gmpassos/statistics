@@ -80,9 +80,9 @@ void main() {
       expect(evenForecaster.allObservations.length, equals(0));
 
       _testEvenProductProbabilities(evenForecaster.eventMonitor,
-          populateDependencies: false);
+          populateDependencies: false, withPhases: false);
       _testEvenProductProbabilities(evenForecaster.eventMonitor,
-          populateDependencies: true);
+          populateDependencies: true, withPhases: false);
     });
 
     test('forecast: EvenProduct{phases: [A, B]}', () {
@@ -135,15 +135,15 @@ void main() {
       }
 
       _testEvenProductProbabilities(evenForecaster.eventMonitor,
-          populateDependencies: false);
+          populateDependencies: false, withPhases: true);
       _testEvenProductProbabilities(evenForecaster.eventMonitor,
-          populateDependencies: true);
+          populateDependencies: true, withPhases: true);
     });
   });
 }
 
 void _testEvenProductProbabilities(BayesEventMonitor eventMonitor,
-    {required bool populateDependencies}) {
+    {required bool populateDependencies, required withPhases}) {
   print('----------------');
   print(eventMonitor);
 
@@ -152,20 +152,28 @@ void _testEvenProductProbabilities(BayesEventMonitor eventMonitor,
       populateDependencies: populateDependencies);
   print(bayesNet);
 
+  var phaseA = withPhases ? 'A.' : '';
+  var phaseB = withPhases ? '.' : '';
+
   var analyser = bayesNet.analyser;
 
   expect(analyser.showAnswer('P(EVEN)').probability, _isNear(0.75, 0.01));
   expect(analyser.showAnswer('P(-EVEN)').probability, _isNear(0.25, 0.01));
 
-  expect(analyser.showAnswer('P(EVEN|LAST_BIT_A)').probability,
+  expect(analyser.showAnswer('P(EVEN|${phaseA}LAST_BIT_A)').probability,
       _isNear(0.50, 0.01));
-  expect(analyser.showAnswer('P(EVEN|-LAST_BIT_A)').probability, _isNear(1.0));
+  expect(analyser.showAnswer('P(EVEN|-${phaseA}LAST_BIT_A)').probability,
+      _isNear(1.0));
 
-  expect(analyser.showAnswer('P(EVEN|LAST_BIT_B)').probability,
+  expect(analyser.showAnswer('P(EVEN|${phaseB}LAST_BIT_B)').probability,
       _isNear(0.50, 0.01));
-  expect(analyser.showAnswer('P(EVEN|-LAST_BIT_B)').probability, _isNear(1.0));
+  expect(analyser.showAnswer('P(EVEN|-${phaseB}LAST_BIT_B)').probability,
+      _isNear(1.0));
 
-  expect(analyser.showAnswer('P(EVEN|-LAST_BIT_A,-LAST_BIT_B)').probability,
+  expect(
+      analyser
+          .showAnswer('P(EVEN|-${phaseA}LAST_BIT_A,-${phaseB}LAST_BIT_B)')
+          .probability,
       _isNear(1.0));
 }
 

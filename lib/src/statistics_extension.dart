@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
+import 'package:data_serializer/data_serializer.dart';
 import 'package:intl/intl.dart';
 import 'package:statistics/src/statistics_combination.dart';
 
@@ -317,9 +318,7 @@ extension ListExtension<T> on List<T> {
               return <T>[a, b, c];
             }
           } else if (b == d) {
-            if (a == b) {
-              return a == c ? <T>[a] : <T>[a, c];
-            } else if (a == c) {
+            if (a == c) {
               return <T>[a, b];
             } else if (b == c) {
               return <T>[a, b];
@@ -329,10 +328,6 @@ extension ListExtension<T> on List<T> {
           } else if (c == d) {
             if (a == b) {
               return a == c ? <T>[a] : <T>[a, c];
-            } else if (a == c) {
-              return <T>[a, b];
-            } else if (b == c) {
-              return <T>[a, b];
             } else {
               return <T>[a, b, c];
             }
@@ -351,6 +346,44 @@ extension ListExtension<T> on List<T> {
       default:
         return toSet().toList();
     }
+  }
+
+  List<T> shuffleCopy({math.Random? random, int? seed}) {
+    random = math.Random(seed);
+    var list = copy();
+    list.shuffle(random);
+    return list;
+  }
+
+  List<T> randomSelection(
+      {int? length,
+      double? lengthRatio,
+      int? minimumSize,
+      math.Random? random,
+      int? seed}) {
+    random = math.Random(seed);
+
+    if (length == null) {
+      if (lengthRatio != null) {
+        length = this.lengthRatio(lengthRatio);
+      } else {
+        length = random.nextInt(this.length);
+      }
+    }
+
+    if (minimumSize != null && minimumSize >= 0 && length < minimumSize) {
+      length = minimumSize;
+    }
+
+    if (length > this.length) {
+      length = this.length;
+    }
+
+    if (length == 0) return <T>[];
+
+    var list = shuffleCopy();
+    list = list.sublist(0, length);
+    return list;
   }
 }
 

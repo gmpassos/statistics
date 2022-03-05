@@ -107,6 +107,9 @@ class Chronometer implements Comparable<Chronometer> {
       }
     }
 
+    var hertz = this.hertz;
+    if (hertz == 0) return Duration.zero;
+
     return Duration(seconds: totalOperation ~/ hertz);
   }
 

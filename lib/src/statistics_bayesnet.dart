@@ -3,6 +3,8 @@ Author: Graciliano M. P.
 */
 
 import 'dart:collection';
+import 'dart:convert' as dart_convert;
+import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
 import 'package:statistics/statistics.dart';
@@ -59,7 +61,13 @@ abstract class Freezeable {
 abstract class NetworkCache {
   Map<String, String> get _resolvedVariablesNamesCache;
 
+  Map<String, String> get _resolvedVariablesNamesNoPhaseCache;
+
   Map<String, String> get _resolvedValuesNamesCache;
+
+  Map<Pair<String>, ObservedEventValue> get _resolvedObservedEventValueCache;
+
+  void disposeCaches();
 }
 
 /// A Bayesian Network implementation.
@@ -69,6 +77,7 @@ class BayesianNetwork extends Iterable<String>
   /// Name of the network.
   final String name;
   final Map<String, BayesVariable> _nodes = <String, BayesVariable>{};
+  final Map<String, BayesVariable> _nodesNoPhase = <String, BayesVariable>{};
   final Map<String, BayesDependency> _dependencies =
       <String, BayesDependency>{};
 
@@ -86,9 +95,22 @@ class BayesianNetwork extends Iterable<String>
     }
   }
 
+  void _setVariableNode(BayesVariable node) {
+    var name = node.name;
+    if (_nodes.containsKey(name)) {
+      throw ValidationError('Variable node already exists: $name');
+    }
+
+    _nodes[node.name] = node;
+    _nodesNoPhase[node.nameNoPhase] = node;
+  }
+
+  List<BayesVariable>? _rootNodes;
+
   /// The root [BayesVariable] nodes.
   List<BayesVariable> get rootNodes =>
-      _nodes.values.where((e) => e.isRoot).toList();
+      _rootNodes ??= UnmodifiableListView<BayesVariable>(
+          _nodes.values.where((e) => e.isRoot).toList());
 
   /// All the [BayesVariable] nodes of this network.
   List<BayesVariable> get nodes => _nodes.values.toList();
@@ -119,17 +141,18 @@ class BayesianNetwork extends Iterable<String>
       Iterable<BayesVariable> selectedNodes) {
     var nodes = this.nodes;
 
-    selectedNodesSet = nodes.where((n) => selectedNodesSet.contains(n)).toSet();
+    selectedNodesSet = nodes.whereIn(selectedNodesSet).toSet();
 
-    selectedNodesSet =
-        selectedNodesSet.expand((n) => n.rootChains.expand((l) => l)).toSet();
+    selectedNodesSet = selectedNodesSet
+        .expand((n) => n.allRootChains.expand((l) => l))
+        .toSet();
 
     while (selectedNodes.length < nodes.length) {
       var added = false;
       for (var n in nodes) {
         if (selectedNodesSet.contains(n)) continue;
 
-        var rootChains = n.rootChains;
+        var rootChains = n.allRootChains;
         var inChain =
             rootChains.any((c) => c.any((e) => selectedNodesSet.contains(e)));
 
@@ -207,7 +230,7 @@ class BayesianNetwork extends Iterable<String>
     checkNotFrozen();
 
     var variables =
-        _nodes.values.where((e) => variablesNames.contains(e.name)).toList();
+        _nodes.values.whereIn(variablesNames, view: (e) => e.name).toList();
 
     var dependency = BayesDependency(this, variables,
         probabilities: probabilities,
@@ -221,21 +244,54 @@ class BayesianNetwork extends Iterable<String>
     return dependency;
   }
 
+  Map<String, List<BayesDependency>>? _dependenciesByVariableCache;
+
+  Map<String, List<BayesDependency>> get _dependenciesByVariable =>
+      _dependenciesByVariableCache ??= _dependenciesByVariableImpl();
+
+  Map<String, List<BayesDependency>> _dependenciesByVariableImpl() {
+    Map<String, List<BayesDependency>> dependenciesByVariable =
+        <String, List<BayesDependency>>{};
+
+    for (var d in _dependencies.values) {
+      for (var v in d.variables) {
+        var group = dependenciesByVariable.putIfAbsent(
+            v.name, () => <BayesDependency>[]);
+        group.add(d);
+      }
+    }
+
+    return dependenciesByVariable;
+  }
+
   @override
   final Map<String, String> _resolvedVariablesNamesCache = <String, String>{};
 
   @override
+  final Map<String, String> _resolvedVariablesNamesNoPhaseCache =
+      <String, String>{};
+
+  @override
   final Map<String, String> _resolvedValuesNamesCache = <String, String>{};
 
+  @override
+  final Map<Pair<String>, ObservedEventValue> _resolvedObservedEventValueCache =
+      <Pair<String>, ObservedEventValue>{};
+
   /// Disposes internal caches.
+  @override
   void disposeCaches() {
     _resolvedVariablesNamesCache.clear();
+    _resolvedVariablesNamesNoPhaseCache.clear();
     _resolvedValuesNamesCache.clear();
+    _resolvedObservedEventValueCache.clear();
 
     _disposeInternalCaches();
   }
 
   void _disposeInternalCaches() {
+    _dependenciesByVariableCache = null;
+
     _nodesInChainCache.clear();
 
     for (var n in _nodes.values) {
@@ -262,14 +318,27 @@ class BayesianNetwork extends Iterable<String>
   BayesVariable getNodeByName(String name) {
     var node = _nodes[name];
     if (node == null) {
-      throw ValidationError("No `Variable` node with name: $name");
+      var nameNoPhase =
+          BayesVariable.resolveNameNoPhase(name, networkCache: this);
+      node = _nodes[name] ?? _nodesNoPhase[nameNoPhase];
+
+      if (node == null) {
+        throw ValidationError(
+            "No `Variable` node with name `$name`. Nodes: ${_nodes.values.map((e) => e.name).toList()}");
+      }
     }
     return node;
   }
 
   /// Returns a [List] of [BayesVariable]s nodes with matching [names].
   List<BayesVariable> getNodesByNames(Iterable<String> names) =>
-      _nodes.values.where((e) => names.contains(e.name)).toList();
+      _nodes.values.whereIn(names, view: (e) => e.name).toList();
+
+  BayesDependency? getDependencyByVariables(List<String> dependentVariables) {
+    dependentVariables = dependentVariables.toDistinctList()..sort();
+    var variablesNames = dependentVariables.join('+');
+    return _dependencies[variablesNames];
+  }
 
   BayesCondition _parseCondition(String line) {
     line = line.replaceAll(_regexpSpace, '');
@@ -293,12 +362,7 @@ class BayesianNetwork extends Iterable<String>
       throw ValidationError("Expected \"variable=value\", received " + line);
     }
 
-    var name = e[0];
-    var node = _nodes[name];
-    if (node == null) {
-      throw StateError('No such variable <' + e[0] + ">.");
-    }
-
+    var node = getNodeByName(e[0]);
     return BayesEvent.byOutcomeName(node, e[1]);
   }
 
@@ -318,11 +382,75 @@ class BayesianNetwork extends Iterable<String>
   int get hashCode => _listEqualityVariable.hash(_nodes.values);
 
   @override
-  String toString() {
-    return 'BayesianNetwork[$name]{ variables: ${_nodes.length} }<\n'
-        '${_nodes.values.join('\n')}\n'
-        '${_dependencies.values.join('\n')}\n'
-        '>';
+  String toString(
+      {bool withTables = true,
+      bool allowHugeTables = false,
+      int hugeTableLimit = 500}) {
+    var s = 'BayesianNetwork[$name]{ '
+        'variables: ${_nodes.length} , '
+        'dependencies: ${_dependencies.length} '
+        '}';
+
+    if (withTables && _nodes.isNotEmpty) {
+      if (allowHugeTables || _nodes.length < hugeTableLimit) {
+        s += '<\n'
+            '${_nodes.values.join('\n')}\n'
+            '${_dependencies.values.join('\n')}\n'
+            '>';
+      }
+    }
+
+    return s;
+  }
+
+  factory BayesianNetwork.fromJsonEncoded(jsonEncoded) {
+    var json = dart_convert.json.decode(jsonEncoded);
+    return BayesianNetwork.fromJson(json);
+  }
+
+  factory BayesianNetwork.fromJson(Map<String, Object?> json) {
+    var bayesNet = BayesianNetwork(json['name'] as String);
+
+    var nodes = (json['nodes'] as Iterable).cast<Map>();
+    var dependencies = (json['dependencies'] as Iterable).cast<Map>();
+
+    for (var m in nodes) {
+      var name = m['name'];
+      var values = (m['values'] as Iterable).map((e) => '$e').toList();
+      var parents = (m['parents'] as Iterable).map((e) => '$e').toList();
+      List<String> probabilities =
+          BayesCondition.parseProbabilitiesJson(m['probabilities']);
+      bayesNet.addVariable(name, values, parents, probabilities);
+    }
+
+    for (var m in dependencies) {
+      var variables = (m['variables'] as Iterable).map((e) => '$e').toList();
+      List<String> probabilities =
+          BayesCondition.parseProbabilitiesJson(m['probabilities']);
+      bayesNet.addDependency(variables, probabilities);
+    }
+
+    return bayesNet;
+  }
+
+  Map<String, Object> toJson() => <String, Object>{
+        'name': name,
+        'nodes': _nodes.values.nodesInTopologicalOrder
+            .map((e) => e.toJson())
+            .toList(),
+        'dependencies': _dependencies.values.nodesInTopologicalOrder
+            .map((e) => e.toJson())
+            .toList(),
+      };
+
+  String toJsonEncoded({bool pretty = false}) {
+    var json = toJson();
+
+    if (pretty) {
+      return dart_convert.JsonEncoder.withIndent('  ').convert(json);
+    } else {
+      return dart_convert.json.encode(json);
+    }
   }
 }
 
@@ -331,6 +459,61 @@ enum BayesValueSignal {
   positive,
   negative,
   unknown,
+}
+
+BayesValueSignal? parseBayesValueSignal(Object? o) {
+  if (o == null) return null;
+  if (o is BayesValueSignal) return o;
+
+  var s = o.toString().trim().toLowerCase();
+
+  switch (s) {
+    case '+':
+    case 'p':
+    case 't':
+    case 'positive':
+      return BayesValueSignal.positive;
+    case '-':
+    case 'n':
+    case 'f':
+    case 'negative':
+      return BayesValueSignal.negative;
+    case '':
+    case '?':
+    case '.':
+    case 'unknown':
+      return BayesValueSignal.unknown;
+    default:
+      throw StateError('Unknown enum name: $o');
+  }
+}
+
+extension BayesValueSignalExtension on BayesValueSignal {
+  String get name {
+    switch (this) {
+      case BayesValueSignal.positive:
+        return 'positive';
+      case BayesValueSignal.negative:
+        return 'negative';
+      case BayesValueSignal.unknown:
+        return 'unknown';
+      default:
+        throw StateError('Unknown enum: $this');
+    }
+  }
+
+  String get signal {
+    switch (this) {
+      case BayesValueSignal.positive:
+        return '+';
+      case BayesValueSignal.negative:
+        return '-';
+      case BayesValueSignal.unknown:
+        return '';
+      default:
+        throw StateError('Unknown enum: $this');
+    }
+  }
 }
 
 /// A value in a [BayesianNetwork].
@@ -384,6 +567,8 @@ class BayesValue extends Validatable implements Comparable<BayesValue> {
   @override
   Object? validate() => variable.validate();
 
+  String get nameAndSignal => signal.signal + name;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -413,6 +598,8 @@ class BayesValue extends Validatable implements Comparable<BayesValue> {
 
   @override
   String toString() => name;
+
+  String toJson() => nameAndSignal;
 }
 
 /// A network event: [Variable] [node] + [value].
@@ -462,8 +649,10 @@ class BayesEvent implements Comparable<BayesEvent> {
 
   @override
   String toString() {
-    return "${node.variablesAsString} = ${value.name}";
+    return '${node.name} = ${value.name}';
   }
+
+  String toJson() => '${node.name}=${value.name}';
 }
 
 abstract class BayesNode extends Validatable with Freezeable {
@@ -485,6 +674,8 @@ abstract class BayesNode extends Validatable with Freezeable {
   List<BayesVariable> get rootChain;
 
   Set<BayesVariable> get ancestors;
+
+  Set<BayesVariable> get descendants;
 
   Iterable<BayesVariable>? _conditionVariables;
 
@@ -573,6 +764,8 @@ abstract class BayesNode extends Validatable with Freezeable {
   }
 
   BayesCondition _parseCondition(String line);
+
+  Map<String, Object> toJson();
 }
 
 class BayesDependency extends BayesNode implements Comparable<BayesDependency> {
@@ -630,14 +823,21 @@ class BayesDependency extends BayesNode implements Comparable<BayesDependency> {
   Set<BayesVariable> get ancestors =>
       _ancestors ??= _variables.expand((e) => e.ancestors).toSet();
 
+  Set<BayesVariable>? _descendants;
+
+  @override
+  Set<BayesVariable> get descendants =>
+      _descendants ??= _variables.expand((e) => e.descendants).toSet();
+
   @override
   BayesCondition _parseCondition(String line) {
     line = line.replaceAll(_regexpSpace, '');
 
     var eventsStr = line.split(",");
-    if (eventsStr.length != conditionVariables.length) {
+    if (eventsStr.length != conditionVariables.length &&
+        (eventsStr.isEmpty || eventsStr.length > conditionVariables.length)) {
       throw ValidationError(
-          "Number of events (${eventsStr.length}) mismatches required number (${conditionVariables.length}): $line");
+          "Number of events (${eventsStr.length}) mismatches. Not in range 1 .. (${conditionVariables.length}): $line");
     }
 
     var events = eventsStr.map(parseEvent).toList();
@@ -671,12 +871,19 @@ class BayesDependency extends BayesNode implements Comparable<BayesDependency> {
     }
     return cmp;
   }
+
+  @override
+  Map<String, Object> toJson() => <String, Object>{
+        'variables': variables.map((e) => e.name).toList(),
+        'probabilities': probabilities.toJson(),
+      };
 }
 
 /// A variable in the [BayesianNetwork] graph.
 class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
   /// The name of the variable.
   final String name;
+  final String nameNoPhase;
 
   @override
   late final List<BayesVariable> variables = UnmodifiableListView([this]);
@@ -691,12 +898,9 @@ class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
       List<String>? probabilities,
       double? unseenMinimalProbability})
       : name = resolveName(name, networkCache: network),
+        nameNoPhase = resolveNameNoPhase(name, networkCache: network),
         super(network) {
-    if (network._nodes.containsKey(name)) {
-      throw ValidationError('Variable node already exists: $name');
-    }
-
-    network._nodes[name] = this;
+    network._setVariableNode(this);
 
     if (values != null) {
       for (var v in values) {
@@ -713,6 +917,26 @@ class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
     _setProbabilities(unseenMinimalProbability, probabilities);
   }
 
+  static String resolveNameNoPhase(String name,
+      {required NetworkCache? networkCache}) {
+    var cache = networkCache?._resolvedVariablesNamesNoPhaseCache;
+
+    var cached = cache?[name];
+    if (cached != null) return cached;
+
+    var resolved = resolveName(name, networkCache: networkCache);
+    var idx = resolved.indexOf('.');
+
+    if (idx >= 0) {
+      resolved = resolved.substring(idx + 1);
+    }
+
+    cache?[name] = resolved;
+    return resolved;
+  }
+
+  static final RegExp _regExpNameInvalids = RegExp(r'[^\w\.]');
+
   static String resolveName(String name,
       {required NetworkCache? networkCache}) {
     var cache = networkCache?._resolvedVariablesNamesCache;
@@ -720,7 +944,8 @@ class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
     var cached = cache?[name];
     if (cached != null) return cached;
 
-    var resolved = name.trim().toUpperCase();
+    var resolved =
+        name.trim().replaceAll(_regExpNameInvalids, '').trim().toUpperCase();
 
     cache?[name] = resolved;
     return resolved;
@@ -825,22 +1050,31 @@ class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
     return _shortestChain(chains);
   }
 
-  List<List<BayesVariable>>? _rootChains;
+  List<List<BayesVariable>>? _allRootChains;
 
   /// Returns all the chains until the root.
-  List<List<BayesVariable>> get rootChains =>
-      (_rootChains ??= _rootChainsImpl()).map((e) => e.toList()).toList();
+  List<List<BayesVariable>> get allRootChains =>
+      (_allRootChains ??= _rootChainsImpl(rootNodes))
+          .map((e) => e.toList())
+          .toList();
 
-  List<List<BayesVariable>> _rootChainsImpl() {
-    var rootNodes = this.rootNodes;
+  /// Returns all the chains until the [rootNodes].
+  List<List<BayesVariable>> rootChains(List<BayesVariable> rootNodes) {
+    if (rootNodes.isEmpty) return <List<BayesVariable>>[];
+    var selectedRootNodes = this.rootNodes;
+    selectedRootNodes.retainAll(rootNodes);
+    return _rootChainsImpl(selectedRootNodes);
+  }
+
+  List<List<BayesVariable>> _rootChainsImpl(List<BayesVariable> rootNodes) {
     if (rootNodes.isEmpty) {
       return <List<BayesVariable>>[
         <BayesVariable>[this]
       ];
+    } else {
+      var chains = rootNodes.map((r) => r.nodeChain(this)).toList();
+      return chains;
     }
-
-    var chains = rootNodes.map((r) => r.nodeChain(this)).toList();
-    return chains;
   }
 
   Set<BayesVariable>? _ancestors;
@@ -852,6 +1086,18 @@ class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
   Set<BayesVariable> _ancestorsImpl() {
     if (_parents.isEmpty) return <BayesVariable>{};
     var list = _parents.expand((p) => [p, ...p.ancestors]).toSet();
+    return list;
+  }
+
+  Set<BayesVariable>? _descendants;
+
+  @override
+  Set<BayesVariable> get descendants =>
+      (_descendants ??= _descendantsImpl()).toSet();
+
+  Set<BayesVariable> _descendantsImpl() {
+    if (_children.isEmpty) return <BayesVariable>{};
+    var list = _children.expand((c) => [c, ...c.descendants]).toSet();
     return list;
   }
 
@@ -871,9 +1117,10 @@ class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
     line = line.replaceAll(_regexpSpace, '');
 
     var eventsStr = line.split(",");
-    if (eventsStr.length != conditionVariables.length) {
+    if (eventsStr.length != conditionVariables.length &&
+        (eventsStr.isEmpty || eventsStr.length > conditionVariables.length)) {
       throw ValidationError(
-          "Number of events (${eventsStr.length}) mismatches required number (${conditionVariables.length}): $line");
+          "Number of events (${eventsStr.length}) mismatches. Not in range 1 .. (${conditionVariables.length}): $line > ${conditionVariables.map((e) => e.name).toList()}");
     }
 
     var events = eventsStr.map(parseEvent).toList();
@@ -915,6 +1162,8 @@ class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
 
   /// Returns the name of a value in this node with [name] or [signal].
   String? getValueName({String? name, BayesValueSignal? signal}) {
+    var nameOrig = name;
+
     if (name != null) {
       name = BayesValue.resolveName(name, networkCache: network);
       if (_domain.containsKey(name)) {
@@ -926,6 +1175,16 @@ class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
       var values = _domain.values.where((e) => e.signal == signal).toList();
       if (values.isNotEmpty) {
         return values.first.name;
+      }
+    }
+
+    if (signal == null && nameOrig != null) {
+      if (nameOrig.contains('+')) {
+        signal = BayesValueSignal.positive;
+      } else if (nameOrig.contains('-')) {
+        signal = BayesValueSignal.negative;
+      } else if (nameOrig.contains('?')) {
+        signal = BayesValueSignal.unknown;
       }
     }
 
@@ -994,8 +1253,20 @@ class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
     _ancestors = null;
     _rootNodes = null;
     _rootChain = null;
-    _rootChains = null;
+    _allRootChains = null;
+    _conditionVariables = null;
+    _descendants = null;
+    _rootChain = null;
+    _rootNodes = null;
   }
+
+  @override
+  Map<String, Object> toJson() => <String, Object>{
+        'name': name,
+        'parents': parents.map((e) => e.name).toList(),
+        'values': values.map((e) => e.toJson()).toList(),
+        'probabilities': probabilities.toJson(),
+      };
 }
 
 extension ListBayesNodeExtension<T extends BayesNode> on Iterable<T> {
@@ -1041,14 +1312,29 @@ class BayesCondition extends Iterable<BayesEvent>
   static List<BayesCondition> allConditions(List<BayesVariable> nodes) {
     var nodesLength = nodes.length;
 
-    var combinations = nodes.combinations<BayesEvent>(nodesLength, nodesLength,
-        allowRepetition: false,
-        mapper: (node) => node.values.map((v) => BayesEvent(node, v)));
+    var minCombinations = math.min(nodesLength, 2);
+
+    var combinations =
+        nodes.combinations<BayesEvent>(minCombinations, nodesLength,
+            allowRepetition: false,
+            validator: nodesLength == 1
+                ? (c) => true
+                : (c) {
+                    var idx = nodes.indexOf(c.first.node);
+                    return idx == 0;
+                  },
+            mapper: (node) => node.values.map((v) => BayesEvent(node, v)));
 
     var conditions =
         combinations.map((events) => BayesCondition(events)).toList();
     return conditions;
   }
+
+  static List<String> parseProbabilitiesJson(Iterable jsonList) => jsonList
+      .cast<Map>()
+      .map((e) =>
+          (e['condition'] as Iterable).join(',') + ': ' + e['p'].toString())
+      .toList();
 
   final List<BayesEvent> _events;
 
@@ -1171,6 +1457,17 @@ class BayesCondition extends Iterable<BayesEvent>
 
     return _events.compareWith(other._events);
   }
+
+  List<String> toJson() => events.map((e) => e.toJson()).toList();
+}
+
+extension BayesConditionProbabilitiesExtension on Map<BayesCondition, double> {
+  List<Map<String, Object>> toJson() => entries
+      .map((e) => <String, Object>{
+            'condition': e.key.toJson(),
+            'p': e.value,
+          })
+      .toList();
 }
 
 extension ConditionProbabilitiesExtension on Map<BayesCondition, num> {
@@ -1199,8 +1496,10 @@ class _Factor {
     _variables = _nodes.expand((e) => e.variables).toSet().toList();
   }
 
-  _Factor(BayesNode node, BayesCondition evidence, {bool verbose = false})
-      : _nodes = node.parents.cast<BayesNode>().toList(),
+  _Factor(BayesNode node, BayesCondition evidence, List<BayesNode> nodesInChain,
+      {bool verbose = false})
+      : _nodes = node.parents.cast<BayesNode>().toList()
+          ..retainAll(nodesInChain),
         _probabilities = Map<BayesCondition, double>.from(node.probabilities) {
     _nodes.add(node);
     _defineVariables();
@@ -1452,13 +1751,16 @@ class Answer implements Comparable<Answer> {
   int get hashCode => query.hashCode ^ probability.hashCode;
 
   @override
-  String toString() {
-    var pUnnormalized = probability != probabilityUnnormalized
-        ? ' ($probabilityUnnormalized)'
-        : '';
+  String toString(
+      {bool withPerformance = true, bool withProbabilityUnnormalized = true}) {
+    var pUnnormalized =
+        withProbabilityUnnormalized && probability != probabilityUnnormalized
+            ? ' ($probabilityUnnormalized)'
+            : '';
 
-    var performanceStr =
-        _targetProbability != null ? ' >> ' + performance.toPercentage() : '';
+    var performanceStr = withPerformance && _targetProbability != null
+        ? ' >> ' + performance.toPercentage()
+        : '';
 
     if (originalQuery != query) {
       return '$originalQuery -> $query -> $probability$pUnnormalized$performanceStr';
@@ -1763,10 +2065,40 @@ abstract class BayesAnalyser {
   /// Performas a Quiz: Asks all the [questions] and returns the answers sorted
   /// by best probability ([Answer.probability]).
   List<Answer> quiz(List<String> questions,
-      {String positive = 'T', String negative = 'F'}) {
-    var answers = questions.map((q) => ask(q)).toList();
+      {String positive = 'T', String negative = 'F', bool verbose = false}) {
+    var answers = <Answer>[];
+    var length = questions.length;
+
+    var chronometer = verbose
+        ? (Chronometer('${network.name}:questions')
+          ..totalOperation = length
+          ..start())
+        : null;
+
+    for (var i = 0; i < length; ++i) {
+      var q = questions[i];
+      var a = ask(q);
+      answers.add(a);
+
+      chronometer?.operations++;
+
+      if (verbose && chronometer!.operations % 10 == 0) {
+        chronometer.executeOnMarkPeriod('verbose', Duration(seconds: 2), () {
+          print('-- $chronometer');
+        });
+      }
+    }
+
+    if (verbose) {
+      print('-- Sorting answers (${answers.length}) ...');
+    }
     answers.sort();
+
+    if (verbose) {
+      print('-- Defining answers (${answers.length}) performance ...');
+    }
     _definePerformance(answers, positive, negative);
+
     return answers;
   }
 
@@ -1893,67 +2225,22 @@ class BayesAnalyserVariableElimination extends BayesAnalyser {
       {String? originalQuery, bool verbose = false}) {
     // Get target event and evidence objects.
     var target = network.parseEvent(targetVariable);
-
     var evidence = network._parseCondition(selectedVariables);
-    var evidenceVariables = evidence.events.map((e) => e.node).toList();
-
-    // All nodes of the query:
-    var selectedNodes = <BayesNode>[target.node, ...evidenceVariables];
-
-    // All nodes in chain to answer the query:
-    var nodesInChain =
-        selectedNodes.expand((n) => [n, ...n.ancestors]).toSet().toList();
-
-    var dependencies = _selectDependencies(evidenceVariables);
 
     if (verbose) {
       print('** INFER: $target | $evidence');
-      print('-- selectedNodes: ${selectedNodes.nodesNames}');
-      print('-- nodesInChain: ${nodesInChain.nodesNames}');
-
-      if (dependencies.isNotEmpty) {
-        print('-- dependencies: ${dependencies.nodesNames}');
-      }
     }
 
-    // To eliminate in reverse topological ordering.
-    var order = nodesInChain.nodesInTopologicalOrder.reversed.toList();
+    // All nodes in chain to answer the query:
+    var nodesInChain = _computeNodesInChain(target, evidence, verbose);
 
-    if (dependencies.isNotEmpty) {
-      if (verbose) {
-        print('-- Order (no dependencies): ${order.nodesNames}');
-      }
-
-      var newOrder = <BayesNode>[];
-
-      for (var node in order) {
-        var nodeVariables = node.variables;
-
-        var dependency = dependencies
-            .firstWhereOrNull((d) => d.variables.containsAll(nodeVariables));
-
-        if (dependency != null) {
-          var alreadyInOrder =
-              newOrder.any((e) => e.variables.containsAny(nodeVariables));
-          if (!alreadyInOrder) {
-            newOrder.add(dependency);
-          }
-        } else {
-          newOrder.add(node);
-        }
-      }
-
-      order = newOrder;
-    }
-
-    if (verbose) {
-      print('-- Order: ${order.nodesNames}');
-    }
+    // The order of nodes to compute the factors:
+    var order = _computeOrder(target, evidence, nodesInChain, verbose);
 
     // For each variable, make it into a factor.
     var factors = <_Factor>[];
     for (var node in order) {
-      var f = _Factor(node, evidence, verbose: verbose);
+      var f = _Factor(node, evidence, nodesInChain, verbose: verbose);
       factors.add(f);
 
       // if the variable is a hidden variable, then perform sum out
@@ -1983,12 +2270,156 @@ class BayesAnalyserVariableElimination extends BayesAnalyser {
     return answer;
   }
 
+  List<BayesNode> _computeOrder(BayesEvent target, BayesCondition evidence,
+      List<BayesNode> nodesInChain, bool verbose) {
+    var evidenceVariables = evidence.eventsVariables;
+    var dependencies = _selectDependencies(evidenceVariables);
+
+    if (verbose) {
+      if (dependencies.isNotEmpty) {
+        print('-- dependencies: ${dependencies.nodesNames}');
+      }
+    }
+
+    // To eliminate in reverse topological ordering.
+    var order = _computeOrderCached(nodesInChain, dependencies, verbose);
+
+    if (verbose) {
+      print('-- Order: ${order.nodesNames}');
+    }
+
+    return order;
+  }
+
+  final Map<Pair<List<BayesNode>>, List<BayesNode>> _nodesInChainCache =
+      <Pair<List<BayesNode>>, List<BayesNode>>{};
+
+  List<BayesNode> _computeNodesInChain(
+      BayesEvent target, BayesCondition evidence, bool verbose) {
+    var cacheKey = Pair([target.node], evidence.eventsVariables);
+
+    var nodesInChain = _nodesInChainCache.putIfAbsent(
+        cacheKey, () => _computeNodesInChainImpl(target, evidence, verbose));
+
+    if (verbose) {
+      print('-- nodesInChain: ${nodesInChain.nodesNames}');
+    }
+
+    return nodesInChain;
+  }
+
+  List<BayesNode> _computeNodesInChainImpl(
+      BayesEvent target, BayesCondition evidence, bool verbose) {
+    var evidenceVariables = evidence.eventsVariables;
+
+    // All nodes of the query:
+    var selectedNodes = <BayesVariable>[target.node, ...evidenceVariables];
+
+    // All nodes in chain to answer the query:
+    var nodesInChain =
+        selectedNodes.expand((n) => [n, ...n.ancestors]).toSet().toList();
+
+    var rootNodes = nodesInChain.where((e) => e.isRoot).toList();
+
+    if (rootNodes.length > 1) {
+      var mainRootNode = _computeMainRootNode(
+          target, evidence, selectedNodes, nodesInChain, rootNodes);
+
+      var rootNodeChildren = <BayesVariable>[
+        mainRootNode,
+        ...mainRootNode.descendants
+      ];
+
+      nodesInChain.retainAll(rootNodeChildren);
+    }
+
+    if (verbose) {
+      print('-- selectedNodes: ${selectedNodes.nodesNames}');
+    }
+
+    return nodesInChain;
+  }
+
+  BayesVariable _computeMainRootNode(
+      BayesEvent target,
+      BayesCondition evidence,
+      List<BayesVariable> selectedNodes,
+      List<BayesVariable> nodesInChain,
+      List<BayesVariable> rootNodes) {
+    if (rootNodes.contains(target.node)) {
+      return target.node;
+    }
+
+    for (var e in evidence.eventsVariables) {
+      if (rootNodes.contains(e)) {
+        return e;
+      }
+    }
+
+    throw ValidationError(
+        "Can't define main root node. Multiple options: ${rootNodes.map((e) => e.name).toList()}");
+  }
+
+  final Map<Pair<List<BayesNode>>, List<BayesNode>> _ordersCache =
+      <Pair<List<BayesNode>>, List<BayesNode>>{};
+
+  List<BayesNode> _computeOrderCached(List<BayesNode> nodesInChain,
+      List<BayesDependency> dependencies, bool verbose) {
+    var cacheKey = Pair<List<BayesNode>>(nodesInChain, dependencies);
+
+    var order = _ordersCache.putIfAbsent(
+        cacheKey, () => _computeOrderImpl(nodesInChain, dependencies, verbose));
+
+    return order;
+  }
+
+  List<BayesNode> _computeOrderImpl(List<BayesNode> nodesInChain,
+      List<BayesDependency> dependencies, bool verbose) {
+    var order = nodesInChain.nodesInTopologicalOrder.reversed.toList();
+
+    if (dependencies.isNotEmpty) {
+      if (verbose) {
+        print('-- Order (no dependencies): ${order.nodesNames}');
+      }
+
+      var newOrder = <BayesNode>[];
+
+      for (var node in order) {
+        var nodeVariables = node.variables;
+
+        var dependency = dependencies
+            .firstWhereOrNull((d) => d.variables.containsAll(nodeVariables));
+
+        if (dependency != null) {
+          var alreadyInOrder =
+              newOrder.any((e) => e.variables.containsAny(nodeVariables));
+          if (!alreadyInOrder) {
+            newOrder.add(dependency);
+          }
+        } else {
+          newOrder.add(node);
+        }
+      }
+
+      order = newOrder;
+    }
+
+    return order;
+  }
+
   List<BayesDependency> _selectDependencies(List<BayesNode> evidenceVariables) {
     if (network._dependencies.isEmpty || evidenceVariables.isEmpty) {
       return <BayesDependency>[];
     }
 
-    var dependenciesMatching = network._dependencies.values
+    var dependenciesByVariable = network._dependenciesByVariable;
+
+    var variablesDependencies = evidenceVariables
+        .expand((node) =>
+            node.variables.expand((v) => dependenciesByVariable[v.name]!))
+        .toSet();
+
+    var dependenciesMatching = variablesDependencies
         .where((d) =>
             d.variables.length <= evidenceVariables.length &&
             evidenceVariables.containsAll(d.variables))
@@ -2028,17 +2459,48 @@ class BayesEventMonitor implements NetworkCache {
   final Map<String, String> _resolvedVariablesNamesCache = <String, String>{};
 
   @override
+  final Map<String, String> _resolvedVariablesNamesNoPhaseCache =
+      <String, String>{};
+
+  @override
   final Map<String, String> _resolvedValuesNamesCache = <String, String>{};
 
-  final Map<ObservedEvent, int> _eventsCount = <ObservedEvent, int>{};
+  @override
+  final Map<Pair<String>, ObservedEventValue> _resolvedObservedEventValueCache =
+      <Pair<String>, ObservedEventValue>{};
+
+  @override
+  void disposeCaches() {
+    _resolvedVariablesNamesCache.clear();
+    _resolvedVariablesNamesNoPhaseCache.clear();
+    _resolvedValuesNamesCache.clear();
+    _resolvedObservedEventValueCache.clear();
+  }
+
+  final CountTable<ObservedEvent> _eventsCount = CountTable<ObservedEvent>();
+
+  final CountTable<ObservedDependencyEvent> _dependencyCount =
+      CountTable<ObservedDependencyEvent>();
 
   int get eventsLength => _eventsCount.length;
 
+  int get dependenciesLength => _dependencyCount.length;
+
+  void clear() {
+    _eventsCount.clear();
+    _dependencyCount.clear();
+    currentObservations.clear();
+    disposeCaches();
+  }
+
   /// Notifies an event.
-  void notifyEvent(Iterable eventValues, {bool dependency = false}) {
-    var event =
-        ObservedEvent(eventValues, networkCache: this, dependency: dependency);
-    _eventsCount.update(event, (count) => count + 1, ifAbsent: () => 1);
+  void notifyEvent(Object event) =>
+      _eventsCount.increment(ObservedEvent(event, networkCache: this));
+
+  /// Notifies an event with dependency.
+  void notifyDependency(List<String> dependentVariables, Object event) {
+    _dependencyCount.increment(
+        ObservedDependencyEvent(dependentVariables, event, networkCache: this));
   }
 
   final List<List<List<String>>> currentObservations = <List<List<String>>>[];
@@ -2066,35 +2528,46 @@ class BayesEventMonitor implements NetworkCache {
   /// Instantiates a [BayesianNetwork], calls [populateNodes] and returns it.
   BayesianNetwork buildBayesianNetwork(
       {double unseenMinimalProbability = 0.0000001,
-      bool populateDependencies = true}) {
+      bool populateDependencies = true,
+      bool verbose = false}) {
     var network = BayesianNetwork(name,
         unseenMinimalProbability: unseenMinimalProbability);
-    populateNodes(network, populateDependencies: populateDependencies);
+    populateNodes(network,
+        populateDependencies: populateDependencies, verbose: verbose);
     return network;
   }
 
   /// Populates [network] with all recorded events.
   void populateNodes(BayesianNetwork network,
-      {bool populateDependencies = true}) {
-    var variablesEvents =
-        Map.fromEntries(_eventsCount.entries.where((e) => !e.key.dependency));
-
+      {bool populateDependencies = true, bool verbose = false}) {
     var variablesProbabilities =
-        _computeProbabilities(network, variablesEvents);
+        _computeProbabilities(network, _eventsCount, 'VARIABLES', verbose);
 
-    for (var e in variablesProbabilities.values) {
-      network.addVariable(e.name, e.values, e.parents, e.probabilities);
+    if (verbose) {
+      print('-- [VARIABLES] Adding variables '
+          '(${variablesProbabilities.length < 10 ? variablesProbabilities.map((e) => e.namesAsString).toList() : variablesProbabilities.length}) '
+          'to ${network.toString(withTables: false)} ...');
     }
 
-    if (populateDependencies) {
-      var dependencyEvents =
-          Map.fromEntries(_eventsCount.entries.where((e) => e.key.dependency));
+    for (var e in variablesProbabilities) {
+      network.addVariable(e.names.first, e.values, e.parents, e.probabilities);
+    }
 
-      var dependenciesProbabilities =
-          _computeProbabilities(network, dependencyEvents);
+    if (populateDependencies && _dependencyCount.isNotEmpty) {
+      var dependenciesProbabilities = _computeProbabilities(
+          network, _dependencyCount, 'DEPENDENCIES', verbose);
 
-      for (var e in dependenciesProbabilities.values) {
-        var names = [e.name, ...e.parents];
+      if (verbose) {
+        print(
+            '-- [DEPENDENCIES] Adding dependencies (${dependenciesProbabilities.length < 10 ? dependenciesProbabilities.map((e) => e.namesAsString).toList() : dependenciesProbabilities.length}) to ${network.toString(withTables: false)} ...');
+      }
+
+      var addCount = 0;
+
+      for (var e in dependenciesProbabilities) {
+        ++addCount;
+
+        var names = [...e.names, ...e.parents];
         var nodes = network
             .getNodesByNames(names)
             .nodesInTopologicalOrder
@@ -2102,7 +2575,7 @@ class BayesEventMonitor implements NetworkCache {
             .toList();
 
         var variablesNames = <String>[];
-        var parentsNames = <String>[];
+        var parentsNames = <String>{};
 
         for (var node in nodes) {
           var nodeName = node.name;
@@ -2112,27 +2585,48 @@ class BayesEventMonitor implements NetworkCache {
           }
         }
 
+        if (verbose && addCount % 1000 == 0) {
+          print(
+              '-- [DEPENDENCIES][$addCount / ${dependenciesProbabilities.length}] '
+              '$variablesNames > Ps: ${e.probabilities.length}');
+        }
+
         network.addDependency(variablesNames, e.probabilities);
       }
     }
 
     network.freeze();
+
+    if (verbose) {
+      print('-- Network populated: ${network.toString(withTables: false)} ...');
+    }
   }
 
-  LinkedHashMap<String, ObservedEventProbabilities> _computeProbabilities(
-      BayesianNetwork network, Map<ObservedEvent, int> _eventsCount) {
+  List<ObservedEventProbabilities> _computeProbabilities(
+      BayesianNetwork network,
+      CountTable<ObservedEvent> eventsCount,
+      String computationType,
+      bool verbose) {
     var groups = <String, List<ObservedEvent>>{};
-    var totals = <String, int>{};
+    var totals = CountTable<String>();
 
-    for (var e in _eventsCount.entries) {
+    if (verbose) print('-- [$computationType] Computing probabilities...');
+    var eventsEntries = eventsCount.entries.toList();
+
+    if (verbose) print('-- [$computationType] Grouping variables values...');
+    var variablesValues = eventsEntries
+        .expand((e) => e.key.values)
+        .groupSetsBy((val) => val.variableName);
+
+    for (var e in eventsEntries) {
       var event = e.key;
       var count = e.value;
       var groupKey = event.groupKey;
 
-      groups.update(groupKey, (group) => group..add(event),
-          ifAbsent: () => <ObservedEvent>[event]);
+      var group = groups.putIfAbsent(groupKey, () => <ObservedEvent>[]);
+      group.add(event);
 
-      totals.update(groupKey, (total) => total + count, ifAbsent: () => count);
+      totals.incrementBy(groupKey, count);
     }
 
     // Need a sorted `HashMap`:
@@ -2140,23 +2634,26 @@ class BayesEventMonitor implements NetworkCache {
         // ignore: prefer_collection_literals
         LinkedHashMap<String, ObservedEventProbabilities>();
 
-    var eventsEntries = _eventsCount.entries.toList();
+    if (verbose) print('-- [$computationType] Sorting events by topology...');
     _sortEventsByTopology(eventsEntries);
+
+    if (verbose) {
+      print(
+          '-- [$computationType] Calculating variables nodes (events: ${eventsEntries.length})...');
+    }
 
     for (var e in eventsEntries) {
       var event = e.key;
       var groupKey = event.groupKey;
       var group = groups[groupKey]!;
 
-      var nodeName = event.values.first.variableName;
       var nodeVariablesNames = event.variablesNamesString;
 
       if (!variablesProbabilities.containsKey(nodeVariablesNames)) {
-        var observationsValues = groups.values
-            .expand((e) => e.expand((e) => e.values))
-            .where((v) => v.variableName == nodeName)
-            .toSet()
-            .toList();
+        var mainVariablesNames = event.mainVariablesNames;
+
+        var observationsValues =
+            mainVariablesNames.expand((e) => variablesValues[e]!).toList();
 
         var valuesSignals = <String, BayesValueSignal>{};
 
@@ -2184,13 +2681,19 @@ class BayesEventMonitor implements NetworkCache {
         }).toList();
 
         var parents = group
-            .expand((g) => g.values.map((v) => v.variableName).skip(1))
+            .expand((g) => g.values.map((v) => v.variableName))
+            .whereNotIn(mainVariablesNames)
             .toSet()
             .toList();
 
-        variablesProbabilities[nodeVariablesNames] =
-            ObservedEventProbabilities(nodeName, valuesNames, parents);
+        variablesProbabilities[nodeVariablesNames] = ObservedEventProbabilities(
+            mainVariablesNames, valuesNames, parents);
       }
+    }
+
+    if (verbose) {
+      print(
+          '-- [$computationType] Calculating events (${eventsEntries.length}) probabilities...');
     }
 
     for (var e in eventsEntries) {
@@ -2198,7 +2701,7 @@ class BayesEventMonitor implements NetworkCache {
       var count = e.value;
       var groupKey = event.groupKey;
 
-      var total = totals[groupKey]!;
+      var total = totals.get(groupKey)!;
       var ratio = count / total;
 
       var nodeVariablesNames = event.variablesNamesString;
@@ -2209,58 +2712,429 @@ class BayesEventMonitor implements NetworkCache {
       variablesProbability.probabilities.add(p);
     }
 
-    return variablesProbabilities;
+    var variablesGroups =
+        variablesProbabilities.values.groupListsBy((e) => e.namesAsString);
+
+    if (verbose) {
+      print(
+          '-- [$computationType] Computed ${variablesProbabilities.length} variables nodes.');
+    }
+
+    if (verbose) {
+      print('-- [$computationType] Computing variables...');
+    }
+
+    var chronometer = verbose
+        ? (Chronometer('ComputeProbabilities:merge')
+          ..totalOperation = variablesProbabilities.length
+          ..start())
+        : null;
+
+    var variablesNodes = variablesGroups.values
+        .map((e) => e.reduce((value, element) {
+              if (verbose) {
+                chronometer!.operations++;
+                chronometer.executeOnMarkPeriod('verbose', Duration(seconds: 2),
+                    () => print('-- $chronometer'));
+              }
+              return value.merge(element);
+            }))
+        .toList();
+
+    if (verbose) {
+      print(
+          '-- [$computationType] Computed variables: ${variablesNodes.length}');
+    }
+
+    variablesNodes.sort((a, b) {
+      var cmp = a.parents.length.compareTo(b.parents.length);
+      if (cmp == 0) {
+        cmp = a.values.length.compareTo(b.values.length);
+      }
+      return cmp;
+    });
+
+    return variablesNodes;
   }
 
   void _sortEventsByTopology(List<MapEntry<ObservedEvent, int>> entries) {
     entries.sort((a, b) {
-      var values1 = a.key.values.toList();
-      var values2 = b.key.values.toList();
+      var values1 = a.key.values;
+      var values2 = b.key.values;
 
       var l1 = values1.length;
       var l2 = values2.length;
 
-      var cmp = l1.compareTo(l2);
-      if (cmp == 0) {
-        cmp = values1.compareWith(values2);
+      if (l1 < l2) {
+        return -1;
+      } else if (l1 == l2) {
+        return values1.compareWith(values2);
+      } else {
+        return 1;
       }
-
-      return cmp;
     });
   }
 
   @override
-  String toString() {
-    var entries = _eventsCount.entries.toList();
-    _sortEventsByTopology(entries);
+  String toString(
+      {bool withTables = true,
+      bool allowHugeTables = false,
+      int hugeTableLimit = 500}) {
+    var eventsStr = '';
 
-    return 'EventMonitor[$name]<\n  '
-        '${entries.map((e) => '${e.key}: ${e.value}').join('\n  ')}\n>';
+    if (withTables) {
+      var entries = _eventsCount.entries.toList();
+      _sortEventsByTopology(entries);
+
+      eventsStr += '<';
+
+      if (_eventsCount.isNotEmpty) {
+        if (allowHugeTables || _eventsCount.length < hugeTableLimit) {
+          eventsStr +=
+              '\n  ${entries.map((e) => '${e.key}: ${e.value}').join('\n  ')}\n';
+        } else {
+          eventsStr += ' events: ${_eventsCount.length} ';
+        }
+      }
+
+      var dependencies = _dependencyCount.entries.toList();
+      _sortEventsByTopology(dependencies);
+
+      if (_dependencyCount.isNotEmpty) {
+        if (allowHugeTables || _dependencyCount.length < hugeTableLimit) {
+          eventsStr +=
+              '\n  ${dependencies.map((e) => '${e.key} <-> ${e.value}').join('\n  ')}\n';
+        } else {
+          eventsStr += 'dependencyCount: ${_dependencyCount.length} ';
+        }
+      }
+
+      eventsStr += '>';
+    }
+
+    return 'BayesEventMonitor[$name]$eventsStr';
   }
+
+  factory BayesEventMonitor.fromJsonEncoded(String jsonEncoded) =>
+      BayesEventMonitor.fromJson(dart_convert.json.decode(jsonEncoded));
+
+  factory BayesEventMonitor.fromJson(Map<String, Object?> json) {
+    var eventMonitor = BayesEventMonitor(json['name'] as String);
+    eventMonitor.loadFromJson(json);
+    return eventMonitor;
+  }
+
+  void loadFromJsonEncoded(String jsonEncoded) {
+    var json = dart_convert.json.decode(jsonEncoded);
+    return loadFromJson(json);
+  }
+
+  void loadFromJson(Object json) {
+    clear();
+    incrementFromJson(json);
+  }
+
+  void incrementFromJson(Object json) {
+    var eventsCount = _resolveEventsCountJson(json);
+
+    for (var e in eventsCount) {
+      var event = ObservedEvent.fromJson(e['event'] as Map<String, Object?>,
+          networkCache: this);
+      var count = e['count'] as int;
+
+      _eventsCount.incrementBy(event, count);
+    }
+
+    var dependencyCount = _resolveDependenciesCountJson(json);
+
+    for (var e in dependencyCount) {
+      var event = ObservedDependencyEvent.fromJson(
+          e['event'] as Map<String, Object?>,
+          networkCache: this);
+      var count = e['count'] as int;
+
+      _dependencyCount.incrementBy(event, count);
+    }
+  }
+
+  Iterable<Map<String, Object?>> _resolveEventsCountJson(Object json) {
+    if (json is Iterable<Map<String, Object?>>) {
+      return json;
+    } else if (json is Map<String, Object?>) {
+      return (json['eventsCount'] as Iterable).cast<Map<String, Object?>>();
+    } else {
+      throw ArgumentError("Can't parse JSON(${json.runtimeType}): $json");
+    }
+  }
+
+  Iterable<Map<String, Object?>> _resolveDependenciesCountJson(Object json) {
+    if (json is Iterable<Map<String, Object?>>) {
+      return json;
+    } else if (json is Map<String, Object?>) {
+      return (json['dependencyCount'] as Iterable).cast<Map<String, Object?>>();
+    } else {
+      throw ArgumentError("Can't parse JSON(${json.runtimeType}): $json");
+    }
+  }
+
+  factory BayesEventMonitor.fromSerializable(
+      Map<String, Object?> serializable) {
+    var eventMonitor = BayesEventMonitor(serializable['name'] as String);
+    eventMonitor.loadFromSerializable(serializable);
+    return eventMonitor;
+  }
+
+  void loadFromSerializable(Object serializable) {
+    clear();
+    incrementFromSerializable(serializable);
+  }
+
+  void incrementFromSerializable(Object serializable) {
+    var eventsCount = _resolveEventsCountSerializable(serializable);
+
+    var length = eventsCount.length;
+    for (var i = 0; i < length; i += 2) {
+      var event = eventsCount.elementAt(i) as ObservedEvent;
+      var count = eventsCount.elementAt(i + 1) as int;
+
+      _eventsCount.incrementBy(event, count);
+    }
+
+    var dependencyCount = _resolveDependencyCountSerializable(serializable);
+
+    length = dependencyCount.length;
+    for (var i = 0; i < length; i += 2) {
+      var event = dependencyCount.elementAt(i) as ObservedDependencyEvent;
+      var count = dependencyCount.elementAt(i + 1) as int;
+
+      _dependencyCount.incrementBy(event, count);
+    }
+  }
+
+  Iterable<Object> _resolveEventsCountSerializable(Object json) {
+    if (json is Iterable<Object>) {
+      return json;
+    } else if (json is Map<String, Object?>) {
+      return (json['eventsCount'] as Iterable<Object>);
+    } else {
+      throw ArgumentError("Can't parse JSON(${json.runtimeType}): $json");
+    }
+  }
+
+  Iterable<Object> _resolveDependencyCountSerializable(Object json) {
+    if (json is Iterable<Object>) {
+      return json;
+    } else if (json is Map<String, Object?>) {
+      return (json['dependencyCount'] as Iterable<Object>);
+    } else {
+      throw ArgumentError("Can't parse JSON(${json.runtimeType}): $json");
+    }
+  }
+
+  String toJsonEncoded({bool pretty = false}) {
+    if (pretty) {
+      return dart_convert.JsonEncoder.withIndent('  ').convert(toJson());
+    } else {
+      return dart_convert.json.encode(toJson());
+    }
+  }
+
+  Map<String, Object> toJson() => <String, Object>{
+        'name': name,
+        'eventsCount': _eventsCount.entries
+            .map((e) =>
+                <String, Object>{'event': e.key.toJson(), 'count': e.value})
+            .toList(),
+        'dependencyCount': _dependencyCount.entries
+            .map((e) =>
+                <String, Object>{'event': e.key.toJson(), 'count': e.value})
+            .toList(),
+      };
+
+  Map<String, Object> toSerializable() => <String, Object>{
+        'name': name,
+        'eventsCount':
+            _eventsCount.entries.expand((e) => [e.key, e.value]).toList(),
+        'dependencyCount':
+            _dependencyCount.entries.expand((e) => [e.key, e.value]).toList(),
+      };
 }
 
 class ObservedEventProbabilities {
-  final String name;
+  final List<String> names;
   final List<String> values;
 
   final List<String> parents;
 
-  final List<String> probabilities = <String>[];
+  final List<String> probabilities;
 
-  ObservedEventProbabilities(this.name, this.values, this.parents);
+  ObservedEventProbabilities(this.names, this.values, this.parents,
+      {List<String>? probabilities})
+      : probabilities = probabilities ?? <String>[];
+
+  String? _namesAsString;
+
+  String get namesAsString => _namesAsString ??= names.join('+');
+
+  ObservedEventProbabilities merge(ObservedEventProbabilities other,
+      {bool resolveConditionsCollisions = false}) {
+    if (!UnorderedIterableEquality<String>().equals(names, other.names)) {
+      throw StateError(
+          "Can't merge different variables: $names != ${other.names}");
+    }
+
+    var values = [...this.values, ...other.values].toDistinctList();
+    var parents = [...this.parents, ...other.parents].toDistinctList();
+
+    var probabilities2 = probabilities.toList();
+
+    if (resolveConditionsCollisions) {
+      for (var p in other.probabilities) {
+        var idx = p.indexOf(':');
+        var condition = p.substring(0, idx + 1).trim();
+
+        var collision = false;
+        for (var i = 0; i < probabilities2.length; ++i) {
+          var prev = probabilities2[i];
+
+          if (prev.startsWith(condition)) {
+            collision = true;
+
+            var prevVal = prev.substring(idx + 1);
+            var val = p.substring(idx + 1);
+
+            if (prevVal != val) {
+              prev = prev.substring(idx + 1).trim();
+              p = p.substring(idx + 1).trim();
+            }
+
+            if (prevVal != val) {
+              var prob2 = (prevVal.toDouble() + val.toDouble()) / 2;
+              probabilities2[i] = condition + ' ' + prob2.toString();
+            }
+
+            break;
+          }
+        }
+
+        if (!collision) {
+          probabilities2.add(p);
+        }
+      }
+    } else {
+      probabilities2.addAll(other.probabilities);
+    }
+
+    return ObservedEventProbabilities(names, values, parents,
+        probabilities: probabilities2);
+  }
+}
+
+class ObservedDependencyEvent extends ObservedEvent {
+  final List<String> _dependentVariables;
+
+  ObservedDependencyEvent._(
+      Iterable<String> dependentVariables, Iterable values,
+      {required NetworkCache? networkCache})
+      : _dependentVariables =
+            _resolveDependentVariables(dependentVariables, networkCache),
+        super._(values, networkCache: networkCache) {
+    _check();
+  }
+
+  static List<String> _resolveDependentVariables(
+      Iterable<String> dependentVariables, NetworkCache? networkCache) {
+    return dependentVariables
+        .map((e) => BayesVariable.resolveName(e, networkCache: networkCache))
+        .toList(growable: false);
+  }
+
+  ObservedDependencyEvent.withValues(
+      Iterable<String> dependentVariables, Iterable<ObservedEventValue> values,
+      {required NetworkCache? networkCache})
+      : _dependentVariables =
+            _resolveDependentVariables(dependentVariables, networkCache),
+        super.withValues(values, networkCache: networkCache) {
+    _check();
+  }
+
+  void _check() {
+    if (_dependentVariables.length < 2) {
+      throw StateError(
+          "Needs at least 2 dependent variables> dependentVariables: ${_dependentVariables.length}");
+    }
+  }
+
+  factory ObservedDependencyEvent(List<String> dependentVariables, Object event,
+      {required NetworkCache? networkCache}) {
+    if (event is ObservedDependencyEvent) {
+      return event;
+    } else if (event is Iterable<ObservedEventValue>) {
+      return ObservedDependencyEvent.withValues(dependentVariables, event,
+          networkCache: networkCache);
+    } else if (event is Iterable) {
+      return ObservedDependencyEvent._(dependentVariables, event,
+          networkCache: networkCache);
+    }
+
+    throw StateError("Can't resolve event: $event");
+  }
+
+  factory ObservedDependencyEvent.fromJson(Map<String, Object?> json,
+          {required NetworkCache? networkCache}) =>
+      ObservedDependencyEvent.withValues(
+          (json['dependency'] as Iterable<dynamic>).map((e) => '$e').toList(),
+          (json['values'] as Iterable<dynamic>)
+              .map((e) =>
+                  ObservedEventValue.fromJson(e, networkCache: networkCache))
+              .toList(),
+          networkCache: networkCache);
+
+  @override
+  List<String> get mainVariablesNames =>
+      UnmodifiableListView<String>(_dependentVariables);
+
+  @override
+  Map<String, Object> toJson() {
+    var json = super.toJson();
+    json['dependency'] = _dependentVariables;
+    return json;
+  }
 }
 
 class ObservedEvent {
-  final bool dependency;
-  final Set<ObservedEventValue> _values;
+  final List<ObservedEventValue> _values;
 
-  ObservedEvent(Iterable values,
-      {required NetworkCache? networkCache, this.dependency = false})
-      : _values = values
-            .map((pair) => ObservedEventValue(pair, networkCache: networkCache))
-            .toSet();
+  ObservedEvent._(Iterable values, {required NetworkCache? networkCache})
+      : _values = _resolveDistinctValues(values, networkCache: networkCache);
 
-  Set<ObservedEventValue> get values => UnmodifiableSetView(_values);
+  ObservedEvent.withValues(Iterable<ObservedEventValue> values,
+      {required NetworkCache? networkCache})
+      : _values = _resolveDistinctValues(values, networkCache: networkCache);
+
+  static List<ObservedEventValue> _resolveDistinctValues(Iterable values,
+          {required NetworkCache? networkCache}) =>
+      values
+          .map((pair) =>
+              ObservedEventValue.from(pair, networkCache: networkCache))
+          .toList()
+          .toDistinctList();
+
+  factory ObservedEvent(Object event, {required NetworkCache? networkCache}) {
+    if (event is ObservedEvent) {
+      return event;
+    } else if (event is Iterable<ObservedEventValue>) {
+      return ObservedEvent.withValues(event, networkCache: networkCache);
+    } else if (event is Iterable) {
+      return ObservedEvent._(event, networkCache: networkCache);
+    }
+
+    throw StateError("Can't resolve event: $event");
+  }
+
+  List<ObservedEventValue> get values => UnmodifiableListView(_values);
+
+  List<String> get mainVariablesNames => [values.first.variableName];
 
   List<String> get variablesNames => values.map((v) => v.variableName).toList();
 
@@ -2269,18 +3143,22 @@ class ObservedEvent {
   String get variablesNamesString =>
       _variablesNamesString ??= variablesNames.join(',');
 
-  static final _setEquality = SetEquality<ObservedEventValue>();
+  static final _listEquality = ListEquality<ObservedEventValue>();
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is ObservedEvent &&
           runtimeType == other.runtimeType &&
-          dependency == other.dependency &&
-          _setEquality.equals(_values, other._values);
+          _valuesHash == other._valuesHash &&
+          _listEquality.equals(_values, other._values);
+
+  int? _valuesHashcode;
+
+  int get _valuesHash => _valuesHashcode ??= _listEquality.hash(_values);
 
   @override
-  int get hashCode => _setEquality.hash(_values) ^ dependency.hashCode;
+  int get hashCode => _valuesHash;
 
   String? _groupKey;
 
@@ -2299,7 +3177,7 @@ class ObservedEvent {
 
     var rest = s.substring(idx);
 
-    var k = '$main$rest${dependency ? ' <->' : ''}';
+    var k = '$main$rest';
     return k;
   }
 
@@ -2307,36 +3185,75 @@ class ObservedEvent {
 
   @override
   String toString() => _str ??= _values.join(', ');
+
+  factory ObservedEvent.fromJson(Map<String, Object?> json,
+          {required NetworkCache? networkCache}) =>
+      ObservedEvent.withValues(_resolveValues(json, networkCache),
+          networkCache: networkCache);
+
+  static List<ObservedEventValue> _resolveValues(
+      Map<String, Object?> json, NetworkCache? networkCache) {
+    return (json['values'] as Iterable<dynamic>)
+        .map((e) => ObservedEventValue.fromJson(e, networkCache: networkCache))
+        .toList();
+  }
+
+  Map<String, Object> toJson() => {
+        'values': _values.map((e) => e.toJson()).toList(),
+      };
 }
 
 class ObservedEventValue implements Comparable<ObservedEventValue> {
   final String variableName;
   final String valueName;
-  final BayesValueSignal valueSignal;
+  late final BayesValueSignal valueSignal;
 
   ObservedEventValue._(String variable, String value,
       {required NetworkCache? networkCache})
       : variableName =
             BayesVariable.resolveName(variable, networkCache: networkCache),
         valueName = BayesValue.resolveName(value, networkCache: networkCache),
-        valueSignal = BayesValue.resolveSignal();
+        valueSignal = BayesValue.resolveSignal(name: value);
 
-  factory ObservedEventValue(Object o, {required NetworkCache? networkCache}) {
+  factory ObservedEventValue._cached(String variable, String value,
+      {required NetworkCache? networkCache}) {
+    var cache = networkCache?._resolvedObservedEventValueCache;
+
+    var key = Pair<String>(variable, value);
+
+    var cached = cache?[key];
+    if (cached != null) return cached;
+
+    var resolved =
+        ObservedEventValue._(variable, value, networkCache: networkCache);
+
+    cache?[key] = resolved;
+    return resolved;
+  }
+
+  factory ObservedEventValue(String variable, Object value,
+          {required NetworkCache? networkCache}) =>
+      ObservedEventValue._cached(variable, _resolveValueToString(value),
+          networkCache: networkCache);
+
+  factory ObservedEventValue.from(Object o,
+      {required NetworkCache? networkCache}) {
     if (o is ObservedEventValue) return o;
 
     if (o is MapEntry) {
-      return ObservedEventValue._(
+      return ObservedEventValue._cached(
           o.key.toString(), _resolveValueToString(o.value),
           networkCache: networkCache);
     }
 
     if (o is Pair) {
-      return ObservedEventValue._(o.a.toString(), _resolveValueToString(o.b),
+      return ObservedEventValue._cached(
+          o.a.toString(), _resolveValueToString(o.b),
           networkCache: networkCache);
     }
 
     if (o is Iterable<String>) {
-      return ObservedEventValue._(o.elementAt(0), o.elementAt(1),
+      return ObservedEventValue._cached(o.elementAt(0), o.elementAt(1),
           networkCache: networkCache);
     }
 
@@ -2345,7 +3262,7 @@ class ObservedEventValue implements Comparable<ObservedEventValue> {
       var value = o.elementAt(1);
       var valueStr = _resolveValueToString(value);
 
-      return ObservedEventValue._(variable, valueStr,
+      return ObservedEventValue._cached(variable, valueStr,
           networkCache: networkCache);
     }
 
@@ -2369,7 +3286,8 @@ class ObservedEventValue implements Comparable<ObservedEventValue> {
         }
       }
 
-      return ObservedEventValue._(variable, value, networkCache: networkCache);
+      return ObservedEventValue._cached(variable, value,
+          networkCache: networkCache);
     }
 
     throw StateError("Can't parse: $o");
@@ -2409,6 +3327,21 @@ class ObservedEventValue implements Comparable<ObservedEventValue> {
 
   @override
   String toString() => _str ??= '$variableName = $valueName';
+
+  factory ObservedEventValue.fromJson(Object json,
+      {required NetworkCache? networkCache}) {
+    if (json is String) {
+      return ObservedEventValue.from(json, networkCache: networkCache);
+    } else if (json is Map) {
+      return ObservedEventValue(
+          json['variableName'] as String, json['valueName'] as String,
+          networkCache: networkCache);
+    } else {
+      throw ArgumentError("Can't parse as JSON: $json");
+    }
+  }
+
+  String toJson() => '$variableName=$valueName';
 }
 
 class _IterableKey<T> {

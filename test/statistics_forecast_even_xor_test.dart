@@ -8,16 +8,6 @@ void main() {
     test('forecast: EvenXOR{no phases}', () {
       var evenForecaster = EvenXorForecaster();
 
-      /*
-      evenForecaster.conclusionListener = (Pair<int> source, ForecastObservation<Pair<int>, bool>? observation, String event, bool conclusion) {
-        var observations = evenForecaster.selectedObservations(allPhases: true);
-
-        var groups = observations.groupBy((e) => e.source);
-
-        print('!!!');
-      };
-       */
-
       expect(
           evenForecaster.getPhaseOperations('').map((o) => '$o'),
           equals([
@@ -153,8 +143,8 @@ void main() {
 void _testEvenProductProbabilities(BayesEventMonitor eventMonitor) {
   print(eventMonitor);
 
-  var bayesNet =
-      eventMonitor.buildBayesianNetwork(unseenMinimalProbability: 0.0);
+  var bayesNet = eventMonitor.buildBayesianNetwork(
+      unseenMinimalProbability: 0.0, verbose: true);
   print(bayesNet);
 
   var analyser = bayesNet.analyser;

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:statistics/statistics.dart';
 import 'package:test/test.dart';
 
@@ -15,6 +17,21 @@ void main() {
 
       expect(['10', '20', '20'].asSet,
           allOf(isA<Set<String>>(), equals({'10', '20'})));
+
+      {
+        var combinations = generateCombinations<String, String>(
+            ['10', '20', '30', '40'], 1, 4);
+
+        print(
+            '-- Testing `toDistinctList`. combinations: ${combinations.length}');
+
+        for (var c in combinations) {
+          var set = c.toSet().toList()..sort();
+
+          expect(c.toDistinctList()..sort(),
+              allOf(isA<List<String>>(), equals(set)));
+        }
+      }
 
       expect(['10', '20', '20', '30'].toDistinctList(),
           allOf(isA<List<String>>(), equals(['10', '20', '30'])));
@@ -46,6 +63,57 @@ void main() {
       expect(
           ['10'].toDistinctList(), allOf(isA<List<String>>(), equals(['10'])));
 
+      expect(['10', '10', '10', '10'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10'])));
+
+      expect(['10', '10', '20', '10'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20'])));
+
+      expect(['10', '20', '20', '10'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20'])));
+
+      expect(['20', '20', '20', '10'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['20', '10'])));
+
+      expect(['10', '20', '30', '10'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20', '30'])));
+
+      expect(['10', '10', '20', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20', '30'])));
+
+      expect(['20', '10', '10', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['20', '10', '30'])));
+
+      expect(['10', '10', '20', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20', '30'])));
+
+      expect(['10', '20', '10', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20', '30'])));
+
+      expect(['10', '20', '10', '10'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20'])));
+
+      expect(['10', '20', '30', '40'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20', '30', '40'])));
+
+      expect(['10', '20', '20', '20'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20'])));
+
+      expect(['10', '20', '30', '20'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20', '30'])));
+
+      expect(['10', '10', '30', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '30'])));
+
+      expect(['10', '20', '30', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20', '30'])));
+
+      expect(['10', '30', '30', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '30'])));
+
+      expect(['10', '10', '20', '30', '40', '50'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['10', '20', '30', '40', '50'])));
+
       expect(
           <String>[].toDistinctList(), allOf(isA<List<String>>(), equals([])));
 
@@ -56,6 +124,46 @@ void main() {
 
       expect(l.toMap((e) => e, (e) => int.parse(e)),
           equals({'10': 10, '20': 20, '30': 30}));
+
+      {
+        var l = ['00', '10', '20', '30', '40', '50'];
+        var l2 = l.shuffleCopy(seed: 123);
+
+        expect(l2.length, equals(l.length));
+        expect(l2, isNot(equals(l)));
+        expect(l2.toDistinctList()..sort(), equals(l.toDistinctList()..sort()));
+
+        var l3 = l.randomSelection(seed: 123, length: 2);
+        expect(l3.length, equals(2));
+        expect(l3.toDistinctList().length, equals(2));
+
+        l3 = l.randomSelection(seed: 123, lengthRatio: 0.40);
+        expect(l3.length, equals(2));
+        expect(l3.toDistinctList().length, equals(2));
+
+        l3 = l.randomSelection(seed: 123, lengthRatio: 0.20);
+        expect(l3.length, equals(1));
+        expect(l3.toDistinctList().length, equals(1));
+
+        l3 = l.randomSelection(seed: 123, lengthRatio: 0.33334);
+        expect(l3.length, equals(2));
+        expect(l3.toDistinctList().length, equals(2));
+
+        l3 = l.randomSelection(seed: 123, length: 200);
+        expect(l3.length, equals(6));
+        expect(l3.toDistinctList().length, equals(6));
+
+        l3 = l.randomSelection(seed: 123, lengthRatio: 0.10, minimumSize: 2);
+        expect(l3.length, equals(2));
+        expect(l3.toDistinctList().length, equals(2));
+
+        var random = Random(1234);
+        for (var i = 0; i < 1000; ++i) {
+          var l4 = l3.randomSelection(random: random);
+          expect(l4.toDistinctList().length, equals(l4.length));
+          expect(l4, isNot(equals(l)));
+        }
+      }
 
       {
         var out = <String>[];

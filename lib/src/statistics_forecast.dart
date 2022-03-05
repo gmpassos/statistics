@@ -1,7 +1,10 @@
+import 'dart:math' show Random;
+
 import 'package:collection/collection.dart';
 
 import 'statistics_bayesnet.dart';
 import 'statistics_combination.dart';
+import 'statistics_extension.dart';
 
 typedef ForecastConclusionListener<T, V> = void Function(T source,
     List<ForecastObservation<T, V>>? observations, String event, V conclusion);
@@ -10,9 +13,23 @@ typedef ForecastConclusionListener<T, V> = void Function(T source,
 abstract class EventForecaster<T, V, F> {
   final BayesEventMonitor eventMonitor;
 
-  EventForecaster.withEventMonitor(this.eventMonitor);
+  final int maxDependencyLevel;
+  final double dependencyNotificationRatio;
 
-  EventForecaster(String name) : eventMonitor = BayesEventMonitor(name);
+  final Random _random;
+
+  EventForecaster.withEventMonitor(this.eventMonitor,
+      {this.maxDependencyLevel = 2,
+      this.dependencyNotificationRatio = 0.50,
+      Random? random})
+      : _random = random ?? Random();
+
+  EventForecaster(String name,
+      {this.maxDependencyLevel = 2,
+      this.dependencyNotificationRatio = 0.50,
+      Random? random})
+      : eventMonitor = BayesEventMonitor(name),
+        _random = random ?? Random();
 
   final Map<String, List<ObservationOperation<T, V>>> _operations =
       <String, List<ObservationOperation<T, V>>>{};
@@ -99,8 +116,14 @@ abstract class EventForecaster<T, V, F> {
   ///
   /// See [concludeObservations].
   void removeObservations(List<ForecastObservation<T, V>> observations) {
-    for (var o in observations) {
-      removeObservation(o);
+    var observationsByPhase = observations.groupBy((e) => e.phase);
+
+    for (var e in observationsByPhase.entries) {
+      var phase = _phasesObservations[e.key];
+      if (phase == null) continue;
+
+      var list = e.value;
+      phase.removeAll(list);
     }
   }
 
@@ -117,11 +140,21 @@ abstract class EventForecaster<T, V, F> {
     var selectedObservations =
         this.selectedObservations(phases: phases, source: source);
 
-    var opsIDs = selectedObservations.map((e) => e.opID).toSet();
+    Map<String, ForecastObservation<T, V>> observationsByID;
+    List<List<String>> dependencies;
 
-    var dependencies = opsIDs.isEmpty
-        ? <List<String>>[]
-        : _combinationCache.getCombinationsShared(opsIDs, 2, opsIDs.length);
+    if (dependencyNotificationRatio > 0) {
+      observationsByID =
+          Map.fromEntries(selectedObservations.map((e) => MapEntry(e.id, e)));
+
+      var ids = observationsByID.keys.toSet();
+      dependencies = ids.isEmpty
+          ? <List<String>>[]
+          : _combinationCache.getCombinationsShared(ids, 2, maxDependencyLevel);
+    } else {
+      observationsByID = <String, ForecastObservation<T, V>>{};
+      dependencies = <List<String>>[];
+    }
 
     for (var e in conclusions.entries) {
       var event = e.key;
@@ -132,11 +165,14 @@ abstract class EventForecaster<T, V, F> {
       }
 
       for (var combination in dependencies) {
-        var dependentObservations = selectedObservations
-            .where((e) => combination.contains(e.opID))
-            .toList();
-        _notifyConclusion(source, dependentObservations, event, value,
-            dependency: true);
+        if (dependencyNotificationRatio >= 1 ||
+            _random.nextDouble() < dependencyNotificationRatio) {
+          var dependentObservations =
+              combination.map((id) => observationsByID[id]).whereNotNull();
+
+          _notifyConclusion(source, dependentObservations, event, value,
+              dependency: true);
+        }
       }
 
       _notifyConclusion(source, null, event, value);
@@ -173,20 +209,34 @@ abstract class EventForecaster<T, V, F> {
 
   ForecastConclusionListener<T, V>? conclusionListener;
 
-  void _notifyConclusion(T source,
-      List<ForecastObservation<T, V>>? observations, String event, V conclusion,
+  void _notifyConclusion(
+      T source,
+      Iterable<ForecastObservation<T, V>>? observations,
+      String event,
+      V conclusion,
       {bool dependency = false}) {
-    var eventValues = [
+    var eventValues = {
       if (observations != null && observations.isNotEmpty)
-        ...observations.map((o) => MapEntry(o.opID, o.value)),
-      MapEntry(event, conclusion),
-    ];
+        ...observations.map((o) =>
+            ObservedEventValue(o.id, o.value!, networkCache: eventMonitor)),
+      ObservedEventValue(event, conclusion!, networkCache: eventMonitor)
+    };
 
-    eventMonitor.notifyEvent(eventValues, dependency: dependency);
+    if (dependency) {
+      var dependentVariables = observations?.map((o) => o.id).toList();
+      if (dependentVariables == null || dependentVariables.length < 2) {
+        throw StateError(
+            "Dependency requires at least 2 variables: $dependentVariables");
+      }
+
+      eventMonitor.notifyDependency(dependentVariables, eventValues);
+    } else {
+      eventMonitor.notifyEvent(eventValues);
+    }
 
     var conclusionListener = this.conclusionListener;
     if (conclusionListener != null) {
-      conclusionListener(source, observations, event, conclusion);
+      conclusionListener(source, observations?.toList(), event, conclusion);
     }
   }
 }
@@ -248,9 +298,16 @@ class ForecastObservation<T, V> {
   /// The [operation.id].
   String get opID => operation.id;
 
+  String? _id;
+
+  /// ID of the observation.
+  ///
+  /// It's the [opID] prefixed with the [phase] (if the [phase] is not empty).
+  String get id => _id ??= phase.isNotEmpty ? phase + '.' + opID : opID;
+
   @override
   String toString() {
-    var phaseStr = phase.isNotEmpty ? '[$phase] ' : '';
+    var phaseStr = phase.isNotEmpty ? phase + '.' : '';
     return '$phaseStr${operation.id}($source) -> $value';
   }
 }
