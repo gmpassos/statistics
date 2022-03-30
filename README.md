@@ -346,7 +346,7 @@ Both implements `DynamicNumber` and are interchangeable in operations.
     the internal representation using a `BigInt`.
 
 - [Decimal][api_doc_decimal]:
-  - A decimal number with variable decimal precision. The precision can be defined in the constructor os is identified
+  - A decimal number with variable decimal precision. The precision can be defined in the constructor or is identified
     automatically while parsing or converting a number to `Decimal`.
   - If an operation needs more precision to correctly represent a `Decimal` the precision will be expanded.
   - The internal representation uses a `DynamicInt`.
