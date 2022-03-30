@@ -1,3 +1,8 @@
+## 1.0.19
+
+- Added High-Precision Arithmetic: `DynamicInt` and `Decimal`.
+- Added benchmark tools.
+
 ## 1.0.18
 
 - New `CountTable`.

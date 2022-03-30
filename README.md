@@ -335,9 +335,59 @@ OUTPUT:
 3,0.0,300.0
 ```
 
+## High-Precision Arithmetic 
+
+For high-precision arithmetics you can use `DynamicInt` and `Decimal` classes.
+Both implements `DynamicNumber` and are interchangeable in operations.
+
+- [DynamicInt][api_doc_dynamic_int]:
+  - An integer that internally uses a native or `BigInt` representation.
+  - When a native `DynamicInt` operation will overflow `DynamicInt.isSafeInteger` it will expand
+    the internal representation using a `BigInt`.
+
+- [Decimal][api_doc_decimal]:
+  - A decimal number with variable decimal precision. The precision can be defined in the constructor os is identified
+    automatically while parsing or converting a number to `Decimal`.
+  - If an operation needs more precision to correctly represent a `Decimal` the precision will be expanded.
+  - The internal representation uses a `DynamicInt`.
+
+The main motivation of this high-Precision Arithmetic implementation is to have an internal representation that
+avoid the use of `BigInt` unless is really needed, avoiding slow `BigInt` operations and extra memory. Also,
+this implementation allows `power` with high precision and `power` with decimal exponents, what is not present
+int many libraries.
+
+Example:
+
+```dart
+import 'package:statistics/statistics.dart';
+
+void main(){
+  var n1 = DynamicInt.fromInt(123) + Decimal.parse('0.456');
+  print(n1); // 123.456
+
+  var n2 = Decimal.parse('0.1') + Decimal.parse('0.2');
+  print(n2); // 0.3
+
+  // Using `toDecimal` extension to convert an `int` to `Decimal`:
+  var n3 = 123.toDecimal().powerInt(41); // power with an integer exponent. 
+  print(n3); // 48541095000524544750127162673405880068636916264012200797813591925035550682238127143323.0
+
+  var n4 = 2.toDecimal().powerDouble(2.2); // power with a double exponent.
+  print(n4); // 4.594793419988
+
+  // Using `toDynamicInt` extension to convert an `int` to `DynamicInt`:
+  var n5 = 2.toDynamicInt().powerInt(-1); // power with a negative exponent.
+  print(n5); // 0.5
+}
+```
+
+See the [API Documentation][api_doc] for a full documentation of [DynamicInt][api_doc_dynamic_int] and
+[Decimal][api_doc_decimal].
+
+[api_doc_dynamic_int]: https://pub.dev/documentation/statistics/latest/statistics/DynamicInt-class.html
+[api_doc_decimal]: https://pub.dev/documentation/statistics/latest/statistics/Decimal-class.html
+
 ## Tools
-
-
 
 Parsers:
 - [parseDouble](https://pub.dev/documentation/statistics/latest/statistics/parseDouble.html)

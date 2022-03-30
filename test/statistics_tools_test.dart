@@ -329,7 +329,7 @@ void main() {
       expect(chronometer.isStarted, isFalse);
       expect(chronometer.isFinished, isFalse);
       expect(chronometer.operations, equals(0));
-    });
+    }, retry: 3);
 
     test('CountTable', () {
       var counter = CountTable<String>();
