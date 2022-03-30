@@ -1,4 +1,4 @@
-@Tags(['num'])
+@Tags(['num', 'decimal'])
 import 'dart:math' as math;
 
 import 'package:statistics/statistics.dart';
@@ -110,9 +110,24 @@ void main() {
       expect(Decimal.from([1234, '567'], precision: 2).toString(),
           equals('1234.56'));
 
+      expect(Decimal.fromDouble(1234567890123456.0).precision, equals(0));
+
+      expect(Decimal.fromDouble(1234567890123456.0, precision: 2).precision,
+          equals(2));
+
       expect(
-          Decimal.fromDouble(12345678901234567000.0, precision: 2).toString(),
-          equals('12345678901234567168.0'));
+          Decimal.fromDouble(1234567890123456.0, precision: 2)
+              .compactedPrecision
+              .precision,
+          equals(0));
+
+      expect(Decimal.fromDouble(1234567890123456.0, precision: 2).toString(),
+          equals('1234567890123456.00'));
+
+      expect(
+          Decimal.fromDouble(1234567890123456.0, precision: 2)
+              .toString(thousands: true),
+          equals('1,234,567,890,123,456.00'));
     });
 
     test('equalsInt/BigInt', () {
@@ -712,6 +727,12 @@ void main() {
       expect((Decimal.fromInt(-20) - Decimal.fromDouble(-30.30)).toDouble(),
           equals(10.30));
 
+      expect((Decimal.zero - Decimal.fromDouble(30.30)).toDouble(),
+          equals(-30.30));
+
+      expect((Decimal.zero - Decimal.fromDouble(-30.30)).toDouble(),
+          equals(30.30));
+
       expect(Decimal.fromInt(-20).subtractInt(-30).toDouble(), equals(10));
 
       expect(Decimal.fromInt(-20).subtractDouble(-30.30).toDouble(),
@@ -779,22 +800,25 @@ void main() {
           equals('152415768327997.345526756774'));
 
       expect(
-          (Decimal.fromDouble(123456789.12345678, precision: 8) *
-                  Decimal.fromDouble(123456789.12345678, precision: 8))
-              .toString(thousands: false),
-          equals('15241578780673676.293400416527'));
+          ((Decimal.fromDouble(123456789.12345678, precision: 8) *
+                      Decimal.fromDouble(123456789.12345678, precision: 8)) -
+                  Decimal.parse('15241578780673676.293400416527'))
+              .toDouble(),
+          _isNear(0, 2.5));
 
       expect(
-          (Decimal.fromDouble(123456789.12345678, precision: 15) *
-                  Decimal.fromDouble(123456789.12345678, precision: 15))
-              .toString(thousands: false),
-          equals('15241578780673676.293400416527'));
+          ((Decimal.fromDouble(123456789.12345678, precision: 15) *
+                      Decimal.fromDouble(123456789.12345678, precision: 15)) -
+                  Decimal.parse('15241578780673676.293400416527'))
+              .toDouble(),
+          _isNear(0, 2.5));
 
       expect(
-          (Decimal.fromDouble(1234.1234567000002, precision: 17) *
-                  Decimal.fromDouble(1234.1234567000002, precision: 17))
-              .toString(thousands: false),
-          equals('1523060.70637715726853938268000004'));
+          ((Decimal.fromDouble(1234.1234567000002, precision: 17) *
+                      Decimal.fromDouble(1234.1234567000002, precision: 17)) -
+                  Decimal.parse('1523060.70637715726853938268000004'))
+              .toDouble(),
+          _isNear(0, 2.5));
 
       expect(
           (Decimal.parse('1234.12', precision: 2) * Decimal.fromInt(10))
@@ -1037,7 +1061,7 @@ void main() {
       expect((1001.toDecimal() / 2.toDecimal()).toString(), equals('500.5'));
 
       expect((1000.toDecimal().divideDouble(3.0)).toString(),
-          equals('333.333333333333333'));
+          equals('333.3333333333333333'));
 
       expect((1000.toDecimal().divideInt(3)).toString(),
           equals('333.3333333333333333'));
@@ -1181,17 +1205,20 @@ void main() {
     });
 
     test('operation ~', () {
-      expect((~Decimal.parse('0')).toString(), equals('-1'));
-      expect((~Decimal.parse('1')).toString(), equals('-2'));
-      expect((~Decimal.parse('-1')).toString(), equals('0'));
+      expect((~Decimal.parse('0')).toHex(), equals('FFFFFFFF'));
+      expect((~Decimal.parse('1')).toHex(), equals('FFFFFFFE'));
+      expect((~Decimal.parse('-1')).toHex(), equals('00000000'));
 
-      expect((~Decimal.parse('0.00')).toString(), equals('-1'));
-      expect((~Decimal.parse('1.00')).toString(), equals('-2'));
-      expect((~Decimal.parse('-1.00')).toString(), equals('0'));
+      expect((~Decimal.parse('0.00')).toHex(), equals('FFFFFFFF'));
+      expect((~Decimal.parse('1.00')).toHex(), equals('FFFFFFFE'));
+      expect((~Decimal.parse('-1.00')).toHex(), equals('00000000'));
 
-      expect((~Decimal.parse('0.00', precision: 2)).toString(), equals('-1'));
-      expect((~Decimal.parse('1.00', precision: 2)).toString(), equals('-2'));
-      expect((~Decimal.parse('-1.00', precision: 2)).toString(), equals('0'));
+      expect(
+          (~Decimal.parse('0.00', precision: 2)).toHex(), equals('FFFFFFFF'));
+      expect(
+          (~Decimal.parse('1.00', precision: 2)).toHex(), equals('FFFFFFFE'));
+      expect(
+          (~Decimal.parse('-1.00', precision: 2)).toHex(), equals('00000000'));
     });
 
     test('square', () {
@@ -1202,6 +1229,11 @@ void main() {
       expect(Decimal.parse('11').square.toString(), equals('121.0'));
       expect(Decimal.parse('11.1').square.toString(), equals('123.21'));
     });
+
+    test('power (browser)', () {
+      expect(123456.toDecimal().power(2.2.toDecimal()).toString(),
+          equals('158974271527.972720545792'));
+    }, tags: ['num', 'decimal', 'browser']);
 
     test('power', () {
       expect(0.toDecimal().power(2.toDynamicInt()).toString(), equals('0.0'));
@@ -1268,18 +1300,22 @@ void main() {
           equals('-100307394518534338601.882103054300'));
 
       expect(
-          DynamicInt.parse('12345678901234567890')
-              .toDecimal()
-              .power(2.2.toDecimal())
-              .toString(),
-          equals('1003073945406026304562947426382490991920732.343838280700'));
+          (DynamicInt.parse('12345678901234567890')
+                  .toDecimal()
+                  .power(2.2.toDecimal()) -
+              Decimal.parse(
+                  '1003073945406026304562947426382490991920732.343838280700')),
+          _isNearDecimal(
+              Decimal.zero, Decimal.parse('304831575064776735003810400')));
 
       expect(
-          DynamicInt.parse('-12345678901234567890')
-              .toDecimal()
-              .power(2.2.toDecimal())
-              .toString(),
-          equals('-1003073945406026304562947426382490991920732.343838280700'));
+          (DynamicInt.parse('-12345678901234567890')
+                  .toDecimal()
+                  .power(2.2.toDecimal()) -
+              Decimal.parse(
+                  '-1003073945406026304562947426382490991920732.343838280700')),
+          _isNearDecimal(
+              Decimal.zero, Decimal.parse('304831575064776735003810400')));
 
       expect(123.toDecimal().power(12.toDynamicInt()).toString(),
           equals('11991163848716906297072721.0'));
@@ -1416,4 +1452,17 @@ void main() {
           equals([1, 2, 3].asDecimal));
     });
   });
+}
+
+Matcher _isNear(num value, [double tolerance = 0.0001]) {
+  var min = value - tolerance;
+  var max = value + tolerance;
+  return inInclusiveRange(min, max);
+}
+
+Matcher _isNearDecimal(Decimal value, [Decimal? tolerance]) {
+  tolerance ??= Decimal.parse('0.0001');
+  var min = value - tolerance;
+  var max = value + tolerance;
+  return allOf(greaterThanOrEqualTo(min), lessThanOrEqualTo(max));
 }

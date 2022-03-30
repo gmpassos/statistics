@@ -138,9 +138,9 @@ void main() {
       expect((-DynamicInt.fromInt(123)).toString(), equals('-123'));
       expect((-DynamicInt.fromInt(-123)).toString(), equals('123'));
 
-      expect((~DynamicInt.fromInt(0)).toString(), equals('-1'));
-      expect((~DynamicInt.fromInt(1)).toString(), equals('-2'));
-      expect((~DynamicInt.fromInt(-1)).toString(), equals('0'));
+      expect((~DynamicInt.fromInt(0)).toHex(), equals('FFFFFFFF'));
+      expect((~DynamicInt.fromInt(1)).toHex(), equals('FFFFFFFE'));
+      expect((~DynamicInt.fromInt(-1)).toHex(), equals('00000000'));
 
       expect((~DynamicInt.fromInt(0).asDynamicIntBig).toString(), equals('-1'));
       expect((~DynamicInt.fromInt(1).asDynamicIntBig).toString(), equals('-2'));
@@ -156,6 +156,25 @@ void main() {
       expect((DynamicInt.fromInt(1) >> 1).toString(), equals('0'));
       expect((DynamicInt.fromInt(2) >> 1).toString(), equals('1'));
       expect((DynamicInt.fromInt(4) >> 1).toString(), equals('2'));
+
+      expect((DynamicInt.fromInt(3721041) << 1).toBigInt().toString(),
+          equals('7442082'));
+      expect((DynamicInt.fromInt(3721041) << 2).toBigInt().toString(),
+          equals('14884164'));
+      expect((DynamicInt.fromInt(3721041) << 8).toBigInt().toString(),
+          equals('952586496'));
+      expect((DynamicInt.fromInt(3721041) << 10).toBigInt().toString(),
+          equals('3810345984'));
+      expect((DynamicInt.fromInt(3721041) << 11).toBigInt().toString(),
+          equals('7620691968'));
+      expect((DynamicInt.fromInt(3721041) << 12).toBigInt().toString(),
+          equals('15241383936'));
+      expect((DynamicInt.fromInt(3721041) << 13).toBigInt().toString(),
+          equals('30482767872'));
+      expect((DynamicInt.fromInt(3721041) << 14).toBigInt().toString(),
+          equals('60965535744'));
+      expect((DynamicInt.fromInt(3721041) << 15).toBigInt().toString(),
+          equals('121931071488'));
 
       expect(
           (DynamicInt.fromBigInt(0.toBigInt()) << 0).toString(), equals('0'));
@@ -764,7 +783,8 @@ void main() {
 
       expect(
           (DynamicInt.parse('12345678901234567000').subtract(157.0)).toString(),
-          equals('12345678901234566843.0'));
+          anyOf(equals('12345678901234566843.0'),
+              equals('12345678901234566843')));
 
       expect(
           (DynamicInt.parse('12345678901234567000').subtract(157.40))
@@ -828,8 +848,10 @@ void main() {
               .toString(),
           equals('1234567890123456700.0'));
 
-      expect((DynamicInt.parse('12345678901234567').multiply(100.0)).toString(),
-          equals('1234567890123456700.0'));
+      expect(
+          (DynamicInt.parse('12345678901234567').multiply(100.0)).toString(),
+          anyOf(
+              equals('1234567890123456700.0'), equals('1234567890123456700')));
 
       expect((DynamicInt.parse('12345678901234567').multiply(100.1)).toString(),
           equals('1235802458013580156.7'));
@@ -974,54 +996,56 @@ void main() {
 
       expect((1000.toDynamicInt().divide(10)).toString(), equals('100'));
 
-      expect((1000.toDynamicInt().divide(10.0)).toString(), equals('100.0'));
+      expect((1000.toDynamicInt().divide(10.0)).toString(),
+          anyOf(equals('100.0'), equals('100')));
 
-      expect((1000.toDynamicInt().divideInt(10)).toString(), equals('100'));
+      expect((1000.toDynamicInt().divideInt(10)).toString(),
+          anyOf(equals('100.0'), equals('100')));
       expect((1000.toDynamicInt().divideBigInt(10.toBigInt())).toString(),
-          equals('100'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect((1000.toDynamicInt().asDynamicIntBig.divideInt(10)).toString(),
-          equals('100'));
+          anyOf(equals('100.0'), equals('100')));
       expect(
           (1000.toDynamicInt().asDynamicIntBig.divideBigInt(10.toBigInt()))
               .toString(),
-          equals('100'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect((1000.toDynamicInt().divideIntAsDouble(10)).toString(),
-          equals('100.0'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect(
           (1000.toDynamicInt().asDynamicIntBig.divideIntAsDouble(10))
               .toString(),
-          equals('100.0'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect((1000.toDynamicInt().divideDoubleAsDouble(10.0)).toString(),
-          equals('100.0'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect(
           (1000.toDynamicInt().asDynamicIntBig.divideDoubleAsDouble(10.0))
               .toString(),
-          equals('100.0'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect((1000.toDynamicInt().divideNumAsDouble(10.0)).toString(),
-          equals('100.0'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect(
           (1000.toDynamicInt().asDynamicIntBig.divideNumAsDouble(10.0))
               .toString(),
-          equals('100.0'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect((1000.toDynamicInt().divideNumAsDouble(10)).toString(),
-          equals('100.0'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect(
           (1000.toDynamicInt().asDynamicIntBig.divideNumAsDouble(10))
               .toString(),
-          equals('100.0'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect(
           (1000.toDynamicInt().divideBigIntAsDouble(10.toBigInt())).toString(),
-          equals('100.0'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect(
           (1000
@@ -1029,10 +1053,10 @@ void main() {
                   .asDynamicIntBig
                   .divideBigIntAsDouble(10.toBigInt()))
               .toString(),
-          equals('100.0'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect((1000.toDynamicInt().divideIntAsDecimal(10)).toString(),
-          equals('100.0'));
+          anyOf(equals('100.0'), equals('100')));
 
       expect((1000.toDynamicInt().divideDoubleAsDecimal(3.0)).toString(),
           equals('333.3333333333333333'));

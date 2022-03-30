@@ -41,6 +41,10 @@ abstract class DynamicNumber<T extends DynamicNumber<T>>
   static final int safeIntegerBits =
       math.min(maxSafeInteger.bitLength, minSafeInteger.bitLength);
 
+  /// The safe integer bits for shift operations.
+  static final int safeIntegerShiftBits =
+      safeIntegerBits < 60 ? 32 : safeIntegerBits;
+
   // coverage:ignore-star
   static int _computeMinSafeInteger() {
     var n = _validateSafeInt('-9223372036854775807') ??
@@ -76,10 +80,10 @@ abstract class DynamicNumber<T extends DynamicNumber<T>>
   static Decimal fromDouble(double n) => Decimal.fromDouble(n);
 
   static DynamicNumber<dynamic> fromNum(num n) {
-    if (n is double) {
-      return Decimal.fromDouble(n);
+    if (n is int) {
+      return DynamicInt.fromInt(n);
     } else {
-      return DynamicInt.fromInt(n.toInt());
+      return Decimal.fromDouble(n.toDouble());
     }
   }
 
@@ -320,6 +324,9 @@ abstract class DynamicNumber<T extends DynamicNumber<T>>
   /// Shift the bits of this integer to the left by [shiftAmount].
   DynamicInt operator <<(int shiftAmount);
 
+  /// This number as an integer in hexadecimal format.
+  String toHex();
+
   /// Formats this number to a [String] in a standard format, like [int] or [double].
   String toStringStandard();
 
@@ -398,6 +405,9 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
 
   /// Alias to [DynamicNumber.safeIntegerBits].
   static final int safeIntegerBits = DynamicNumber.safeIntegerBits;
+
+  /// The safe integer bits for shift operations.
+  static final int safeIntegerShiftBits = DynamicNumber.safeIntegerShiftBits;
 
   static final DynamicInt zero = DynamicInt.fromInt(0);
   static final DynamicInt one = DynamicInt.fromInt(1);
@@ -639,10 +649,10 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
 
   @override
   DynamicNumber<dynamic> sum(num n2) {
-    if (n2 is double) {
-      return sumDouble(n2);
+    if (n2 is int) {
+      return sumInt(n2);
     } else {
-      return sumInt(n2.toInt());
+      return sumDouble(n2.toDouble());
     }
   }
 
@@ -659,10 +669,10 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
 
   @override
   DynamicNumber<dynamic> subtract(num n2) {
-    if (n2 is double) {
-      return subtractDouble(n2);
+    if (n2 is int) {
+      return subtractInt(n2);
     } else {
-      return subtractInt(n2.toInt());
+      return subtractDouble(n2.toDouble());
     }
   }
 
@@ -679,10 +689,10 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
 
   @override
   DynamicNumber<dynamic> multiply(num n2) {
-    if (n2 is double) {
-      return multiplyDouble(n2);
+    if (n2 is int) {
+      return multiplyInt(n2);
     } else {
-      return multiplyInt(n2.toInt());
+      return multiplyDouble(n2.toDouble());
     }
   }
 
@@ -712,10 +722,10 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
 
   @override
   DynamicNumber<dynamic> divide(num n2) {
-    if (n2 is double) {
-      return divideDouble(n2);
+    if (n2 is int) {
+      return divideInt(n2);
     } else {
-      return divideInt(n2.toInt());
+      return divideDouble(n2.toDouble());
     }
   }
 
@@ -738,10 +748,10 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
 
   @override
   Decimal divideNumAsDecimal(num n2) {
-    if (n2 is double) {
-      return divideDoubleAsDecimal(n2);
+    if (n2 is int) {
+      return divideIntAsDecimal(n2);
     } else {
-      return divideIntAsDecimal(n2.toInt());
+      return divideDoubleAsDecimal(n2.toDouble());
     }
   }
 
@@ -888,6 +898,7 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
     var answer = DynamicInt.one;
 
     var workingExponent = exponent;
+
     // Perform exponentiation using repeated squaring trick
     while (!workingExponent.isZero) {
       if (workingExponent.isOdd) {
@@ -902,7 +913,8 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
     // Multiply back the (exponentiated) powers of two (quickly,
     // by shifting left)
     if (powersOfTwo > 0) {
-      answer = answer << (exponent.multiplyInt(powersOfTwo)).toInt();
+      var shift = (exponent.multiplyInt(powersOfTwo)).toInt();
+      answer = answer << shift;
     }
 
     return isNegative && exponent.isOdd ? -answer : answer;
@@ -1015,12 +1027,22 @@ class _DynamicIntNative extends DynamicInt {
   DynamicInt operator ~() => _DynamicIntNative(~_n);
 
   @override
-  DynamicInt operator >>(int shiftAmount) =>
-      _DynamicIntNative(_n >> shiftAmount);
+  DynamicInt operator >>(int shiftAmount) {
+    if ((_n.bitLength + shiftAmount) > DynamicInt.safeIntegerShiftBits) {
+      return _DynamicIntBig(_n.toBigInt() >> shiftAmount);
+    } else {
+      return _DynamicIntNative(_n >> shiftAmount);
+    }
+  }
 
   @override
-  DynamicInt operator <<(int shiftAmount) =>
-      _DynamicIntNative(_n << shiftAmount);
+  DynamicInt operator <<(int shiftAmount) {
+    if ((_n.bitLength + shiftAmount) > DynamicInt.safeIntegerShiftBits) {
+      return _DynamicIntBig(_n.toBigInt() << shiftAmount);
+    } else {
+      return _DynamicIntNative(_n << shiftAmount);
+    }
+  }
 
   @override
   DynamicInt moduloInt(int n2) => _DynamicIntNative(_n % n2);
@@ -1212,6 +1234,15 @@ class _DynamicIntNative extends DynamicInt {
 
   @override
   Decimal get squareRoot => toDecimal().squareRoot;
+
+  @override
+  String toHex() {
+    if (_n.bitLength <= 32) {
+      return _n.toHex32();
+    } else {
+      return _n.toHex64();
+    }
+  }
 
   @override
   String toStringStandard() => _n.toString();
@@ -1430,6 +1461,17 @@ class _DynamicIntBig extends DynamicInt {
 
   @override
   Decimal get squareRoot => toDecimal().squareRoot;
+
+  @override
+  String toHex() {
+    if (_n.bitLength <= 32) {
+      return _n.toHex32();
+    } else if (_n.bitLength <= 64) {
+      return _n.toHex64();
+    } else {
+      return _n.toHex();
+    }
+  }
 
   @override
   String toStringStandard() => _n.toString();

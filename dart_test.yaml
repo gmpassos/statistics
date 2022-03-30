@@ -1,9 +1,15 @@
 
 tags:
-  # Test number tests.
+  # Number tests.
   num:
     timeout: 30s
-  # Test number tests.
+  # Decimal tests.
+  decimal:
+    timeout: 30s
+  # Specific browser tests.
+  browser:
+    timeout: 30s
+  # Platform tests.
   platform:
     timeout: 30s
 

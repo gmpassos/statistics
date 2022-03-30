@@ -2,6 +2,8 @@
 
 - Added High-Precision Arithmetic: `DynamicInt` and `Decimal`.
 - Added benchmark tools.
+- Added browser tests to CI.
+  - Fixed some tests for browser.
 
 ## 1.0.18
 

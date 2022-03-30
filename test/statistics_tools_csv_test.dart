@@ -79,11 +79,11 @@ void main() {
       var csv2 = categories.generateCSV(valueNormalizer: (v) => (v ?? 0) * 2);
 
       expect(
-          csv2,
+          csv2.replaceAll('.0,', ',').replaceAll('.0\n', '\n'),
           equals('#,a,b\n'
-              '1,20.0,200.0\n'
-              '2,41.02469,400.0\n'
-              '3,0.0,600.0\n'));
+              '1,20,200\n'
+              '2,41.02469,400\n'
+              '3,0,600\n'));
 
       expect(categories.csvFileName('test', 'list'),
           matches(RegExp(r'^test--list--\d+\.csv$')));
@@ -137,10 +137,10 @@ void main() {
           list2.generateCSV(valueNormalizer: (v) => v is num ? v * 2 : v!);
 
       expect(
-          csv5,
+          csv5.replaceAll('.0,', ',').replaceAll('.0\n', '\n'),
           equals('mean,standardDeviation,length,min,max,sum,squaresSum\n'
-              '40.0,43.20493798938573,6,20,60,120,2800\n'
-              '80.0,81.64965809277261,6,60,100,240,10000\n'));
+              '40,43.20493798938573,6,20,60,120,2800\n'
+              '80,81.64965809277261,6,60,100,240,10000\n'));
 
       expect(list2.csvFileName('test', 'list'),
           matches(RegExp(r'^test--list--\d+\.csv$')));

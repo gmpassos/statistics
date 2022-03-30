@@ -183,7 +183,7 @@ void main() {
       expect(statistics.toString(precision: 2),
           equals('{~25 +-27.38 [10..(30)..40] #4}'));
       expect(statistics.toString(precision: 0),
-          equals('{~25.0 +-27.386127875258307 [10..(30)..40] #4}'));
+          equals('{~25 +-27 [10..(30)..40] #4}'));
 
       expect(data.statisticsWithData.data, equals(data));
     });
@@ -221,7 +221,7 @@ void main() {
       expect(
           statistics.toString(), equals('{~20 +-21.6024 [10..(20)..30] #3}'));
       expect(statistics.toString(precision: 0),
-          equals('{~20.0 +-21.602468994692867 [10..(20)..30] #3}'));
+          equals('{~20 +-21 [10..(20)..30] #3}'));
 
       expect(data.statisticsWithData.data, equals(data));
     });

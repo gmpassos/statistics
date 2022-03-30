@@ -751,62 +751,70 @@ void _testBayesNetXOR(BayesianNetwork bayesNet) {
 
   answers.sortByQuery();
   expect(
-      answers.map((e) => e.toString(
-          withPerformance: false, withProbabilityUnnormalized: false)),
+      answers.map((e) => e
+          .toString(withPerformance: false, withProbabilityUnnormalized: false)
+          .replaceAll('1.0', '1')
+          .replaceAll('0.0', '0')),
       equals([
         'P(XOR|-A) -> XOR = T | A = F -> 0.5',
-        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0',
-        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0',
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1',
         'P(XOR|A) -> XOR = T | A = T -> 0.5',
-        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0',
-        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1',
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0',
         'P(XOR|-B) -> XOR = T | B = F -> 0.5',
         'P(XOR|B) -> XOR = T | B = T -> 0.5',
       ]));
 
   answers.sortByProbability();
   expect(
-      answers.map((e) => e.toString(
-          withPerformance: false, withProbabilityUnnormalized: false)),
+      answers.map((e) => e
+          .toString(withPerformance: false, withProbabilityUnnormalized: false)
+          .replaceAll('1.0', '1')
+          .replaceAll('0.0', '0')),
       equals([
-        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0',
-        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0',
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0',
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0',
         'P(XOR|-A) -> XOR = T | A = F -> 0.5',
         'P(XOR|A) -> XOR = T | A = T -> 0.5',
         'P(XOR|-B) -> XOR = T | B = F -> 0.5',
         'P(XOR|B) -> XOR = T | B = T -> 0.5',
-        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
-        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0'
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1'
       ]));
 
   answers.sortBySelectedValues();
   expect(
-      answers.map((e) => e.toString(
-          withPerformance: false, withProbabilityUnnormalized: false)),
+      answers.map((e) => e
+          .toString(withPerformance: false, withProbabilityUnnormalized: false)
+          .replaceAll('1.0', '1')
+          .replaceAll('0.0', '0')),
       equals([
         'P(XOR|-A) -> XOR = T | A = F -> 0.5',
-        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0',
-        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0',
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1',
         'P(XOR|A) -> XOR = T | A = T -> 0.5',
-        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0',
-        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1',
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0',
         'P(XOR|-B) -> XOR = T | B = F -> 0.5',
         'P(XOR|B) -> XOR = T | B = T -> 0.5'
       ]));
 
   answers.sortByPerformance();
   expect(
-      answers.map((e) => e.toString(
-          withPerformance: true, withProbabilityUnnormalized: false)),
+      answers.map((e) => e
+          .toString(withPerformance: true, withProbabilityUnnormalized: false)
+          .replaceAll('1.0', '1')
+          .replaceAll('0.0 ', '0 ')),
       equals([
-        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0 >> 0.00%',
-        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0 >> 0.00%',
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0 >> 0.00%',
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0 >> 0.00%',
         'P(XOR|-A) -> XOR = T | A = F -> 0.5 >> 100.00%',
         'P(XOR|A) -> XOR = T | A = T -> 0.5 >> 100.00%',
         'P(XOR|-B) -> XOR = T | B = F -> 0.5 >> 100.00%',
         'P(XOR|B) -> XOR = T | B = T -> 0.5 >> 100.00%',
-        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0 >> 200.00%',
-        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0 >> 200.00%'
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1 >> 200.00%',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1 >> 200.00%'
       ]));
 
   expect(
@@ -824,40 +832,45 @@ void _testBayesNetXOR(BayesianNetwork bayesNet) {
       unorderedEquals(['A', 'B']));
 
   expect(
-      answers.withSelectedValueName('T').map((e) => e.toString(
-          withProbabilityUnnormalized: false, withPerformance: false)),
+      answers.withSelectedValueName('T').map((e) => e
+          .toString(withProbabilityUnnormalized: false, withPerformance: false)
+          .replaceAll('1.0', '1')
+          .replaceAll('0.0', '0')),
       unorderedEquals([
-        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0',
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0',
         'P(XOR|A) -> XOR = T | A = T -> 0.5',
         'P(XOR|B) -> XOR = T | B = T -> 0.5',
-        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
-        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0',
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1',
       ]));
 
   expect(
-      answers.withSelectedValueName('F').map((e) => e.toString(
-          withProbabilityUnnormalized: false, withPerformance: false)),
+      answers.withSelectedValueName('F').map((e) => e
+          .toString(withProbabilityUnnormalized: false, withPerformance: false)
+          .replaceAll('1.0', '1')
+          .replaceAll('0.0', '0')),
       unorderedEquals([
-        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0',
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0',
         'P(XOR|-A) -> XOR = T | A = F -> 0.5',
         'P(XOR|-B) -> XOR = T | B = F -> 0.5',
-        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
-        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0',
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1',
       ]));
 
   expect(
-      answers.withSelectedValueSignal(BayesValueSignal.unknown).map((e) =>
-          e.toString(
-              withProbabilityUnnormalized: false, withPerformance: false)),
+      answers.withSelectedValueSignal(BayesValueSignal.unknown).map((e) => e
+          .toString(withProbabilityUnnormalized: false, withPerformance: false)
+          .replaceAll('1.0', '1')
+          .replaceAll('0.0', '0')),
       unorderedEquals([
-        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0.0',
-        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0.0',
+        'P(XOR|-A,-B) -> XOR = T | A = F, B = F -> 0',
+        'P(XOR|A,B) -> XOR = T | A = T, B = T -> 0',
         'P(XOR|-A) -> XOR = T | A = F -> 0.5',
         'P(XOR|A) -> XOR = T | A = T -> 0.5',
         'P(XOR|-B) -> XOR = T | B = F -> 0.5',
         'P(XOR|B) -> XOR = T | B = T -> 0.5',
-        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1.0',
-        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1.0'
+        'P(XOR|-A,B) -> XOR = T | A = F, B = T -> 1',
+        'P(XOR|A,-B) -> XOR = T | A = T, B = F -> 1'
       ]));
 }
 

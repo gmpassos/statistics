@@ -533,16 +533,13 @@ class Statistics<N extends num> extends DataEntry {
       return '{empty}';
     }
 
-    var minStr = precision > 0 ? formatDecimal(min, precision: precision) : min;
-    var maxStr = precision > 0 ? formatDecimal(max, precision: precision) : max;
-    var centerStr =
-        precision > 0 ? formatDecimal(center, precision: precision) : center;
+    var minStr = formatDecimal(min, precision: precision);
+    var maxStr = formatDecimal(max, precision: precision);
+    var centerStr = formatDecimal(center, precision: precision);
 
-    var meanStr =
-        precision > 0 ? formatDecimal(mean, precision: precision) : mean;
-    var standardDeviationStr = precision > 0
-        ? formatDecimal(standardDeviation, precision: precision)
-        : standardDeviation;
+    var meanStr = formatDecimal(mean, precision: precision);
+    var standardDeviationStr =
+        formatDecimal(standardDeviation, precision: precision);
 
     return '{~$meanStr +-$standardDeviationStr [$minStr..($centerStr)..$maxStr] #$length}';
   }

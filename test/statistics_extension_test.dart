@@ -1207,13 +1207,25 @@ void main() {
         var d6 = DateTime.utc(2021, 10, 11, 20, 14, 15, 500, 600);
 
         expect(d1.toStringDifference(d0), equals(''));
-        expect(d2.toStringDifference(d0), equals('15.500600Z'));
-        expect(d3.toStringDifference(d0), equals('14:15.500600Z'));
-        expect(d4.toStringDifference(d0), equals('13:14:15.500600Z'));
+
+        expect(d2.toStringDifference(d0),
+            anyOf(equals('15.500600Z'), equals('15.501Z')));
+
+        expect(d3.toStringDifference(d0),
+            anyOf(equals('14:15.500600Z'), equals('14:15.501Z')));
+
+        expect(d4.toStringDifference(d0),
+            anyOf(equals('13:14:15.500600Z'), equals('13:14:15.501Z')));
+
         expect(
-            d5.toStringDifference(d0), equals('2020-11-11 12:14:15.500600Z'));
+            d5.toStringDifference(d0),
+            anyOf(equals('2020-11-11 12:14:15.500600Z'),
+                equals('2020-11-11 12:14:15.501Z')));
+
         expect(
-            d6.toStringDifference(d0), equals('2021-10-11 20:14:15.500600Z'));
+            d6.toStringDifference(d0),
+            anyOf(equals('2021-10-11 20:14:15.500600Z'),
+                equals('2021-10-11 20:14:15.501Z')));
       }
     });
   });

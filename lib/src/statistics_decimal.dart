@@ -169,6 +169,8 @@ class Decimal implements DynamicNumber<Decimal> {
       var n = (BigInt.from(d) * dScale.toBigInt()) + BigInt.from(dec * dScaleI);
 
       var decimal = Decimal._(n.toDynamicInt(), dPrecision, dScale);
+      decimal = decimal.withPrecision(precision);
+
       return decimal;
     }
   }
@@ -183,9 +185,15 @@ class Decimal implements DynamicNumber<Decimal> {
       var idx = s.indexOf('.');
       if (idx >= 0) {
         var lng = s.length - (idx + 1);
+        if (lng == 1) {
+          var dec = s.substring(idx + 1);
+          if (dec == '0') {
+            return 0;
+          }
+        }
         precision = math.min(lng, maxPrecision);
       } else {
-        precision = 4;
+        precision = 0;
       }
     }
 
@@ -194,10 +202,10 @@ class Decimal implements DynamicNumber<Decimal> {
 
   /// Creates a [Decimal] from a [num].
   factory Decimal.fromNum(num n, {int? precision}) {
-    if (n is double) {
-      return Decimal.fromDouble(n, precision: precision);
+    if (n is int) {
+      return Decimal.fromInt(n, precision: precision ?? 0);
     } else {
-      return Decimal.fromInt(n as int, precision: precision ?? 0);
+      return Decimal.fromDouble(n.toDouble(), precision: precision);
     }
   }
 
@@ -212,7 +220,9 @@ class Decimal implements DynamicNumber<Decimal> {
       }
 
       String d;
-      if (decimal is double) {
+      if (decimal is int) {
+        d = decimal.toString();
+      } else {
         if (decimal > 1) {
           throw ArgumentError('Decimal > 1: $decimal');
         }
@@ -227,8 +237,6 @@ class Decimal implements DynamicNumber<Decimal> {
         } else {
           throw ArgumentError('Invalid decimal: $decimal');
         }
-      } else {
-        d = decimal.toString();
       }
 
       return Decimal.parseParts(whole.toString(), d, precision: precision);
@@ -319,8 +327,8 @@ class Decimal implements DynamicNumber<Decimal> {
     if (o == null) return null;
     if (o is Decimal) return o;
 
-    if (o is double) return Decimal.fromDouble(o, precision: precision);
     if (o is int) return Decimal.fromInt(o, precision: precision ?? 0);
+    if (o is double) return Decimal.fromDouble(o, precision: precision);
 
     if (o is BigInt) return Decimal.fromBigInt(o, precision: precision ?? 0);
 
@@ -541,9 +549,19 @@ class Decimal implements DynamicNumber<Decimal> {
     var n = _wholePartMultiplied(_scale);
     var d = (_n - n).abs();
     var s = d.toString();
-    while (s.length < precision) {
-      s = '0' + s;
+
+    if (s.length < precision) {
+      var needed = precision - s.length;
+
+      var str = StringBuffer('0');
+      for (var i = 1; i < needed; ++i) {
+        str.write('0');
+      }
+      str.write(s);
+
+      s = str.toString();
     }
+
     return s;
   }
 
@@ -614,6 +632,9 @@ class Decimal implements DynamicNumber<Decimal> {
 
   @override
   Decimal toDecimal() => this;
+
+  @override
+  String toHex() => toDynamicInt().toHex();
 
   /// Formats this decimal to a [String].
   ///
@@ -769,10 +790,11 @@ class Decimal implements DynamicNumber<Decimal> {
 
   @override
   Decimal sum(num n2) {
-    if (n2 is double) {
-      return sumDouble(n2);
+    if (n2 is int) {
+      return sumInt(n2);
+    } else {
+      return sumDouble(n2.toDouble());
     }
-    return sumInt(n2.toInt());
   }
 
   @override
@@ -805,10 +827,11 @@ class Decimal implements DynamicNumber<Decimal> {
 
   @override
   Decimal subtract(num n2) {
-    if (n2 is double) {
-      return subtractDouble(n2);
+    if (n2 is int) {
+      return subtractInt(n2);
+    } else {
+      return subtractDouble(n2.toDouble());
     }
-    return subtractInt(n2.toInt());
   }
 
   @override
@@ -821,7 +844,7 @@ class Decimal implements DynamicNumber<Decimal> {
 
   Decimal _sumSubOperation(Decimal other, bool doSum) {
     if (isZero) {
-      return other;
+      return doSum ? other : -other;
     } else if (other.isZero) {
       return this;
     }
@@ -1013,10 +1036,10 @@ class Decimal implements DynamicNumber<Decimal> {
 
   @override
   Decimal divide(num n2) {
-    if (n2 is double) {
-      return _divideOperationByDouble(n2);
+    if (n2 is int) {
+      return divideInt(n2);
     } else {
-      return divideInt(n2.toInt());
+      return _divideOperationByDouble(n2.toDouble());
     }
   }
 
@@ -1188,8 +1211,13 @@ class Decimal implements DynamicNumber<Decimal> {
   double divideDoubleAsDouble(double n2) => divideDouble(n2).toDouble();
 
   @override
-  double divideNumAsDouble(num n2) =>
-      n2 is double ? divideDoubleAsDouble(n2) : divideIntAsDouble(n2.toInt());
+  double divideNumAsDouble(num n2) {
+    if (n2 is int) {
+      return divideIntAsDouble(n2);
+    } else {
+      return divideDoubleAsDouble(n2.toDouble());
+    }
+  }
 
   @override
   double divideDynamicIntAsDouble(DynamicInt n2) => (this / n2).toDouble();
@@ -1401,10 +1429,11 @@ class Decimal implements DynamicNumber<Decimal> {
     var eWhole = exponent.wholePart;
     var eDecimal = exponent.decimalPartAsDouble;
 
-    var partWhole = n1.powerAsDynamicInt(eWhole);
+    var partWhole = n1._powerDynamicInt(eWhole);
 
     var nSafe = n1;
     var nSafeScale = BigInt.one;
+
     while (nSafe.precision > 0 && !nSafe.toDynamicInt().isSafeInteger) {
       nSafe = nSafe.withPrecision(nSafe.precision - 1);
       nSafeScale *= _bigIntTen;
@@ -1486,10 +1515,10 @@ class Decimal implements DynamicNumber<Decimal> {
 extension DecimalOnNumExtension on num {
   Decimal toDecimal() {
     var n = this;
-    if (n is double) {
-      return Decimal.fromDouble(n);
+    if (n is int) {
+      return Decimal.fromInt(n);
     } else {
-      return Decimal.fromInt(n.toInt());
+      return Decimal.fromDouble(n.toDouble());
     }
   }
 }
