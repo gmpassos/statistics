@@ -41,10 +41,28 @@ void main() {
       expect(DynamicNumber.fromNum(12).toString(), equals('12'));
       expect(DynamicNumber.fromNum(1.2).toString(), equals('1.2'));
 
+      expect(DynamicNumber.parse('123').toString(), equals('123'));
       expect(DynamicNumber.parse('1.23').toString(), equals('1.23'));
       expect(DynamicNumber.parse('-1.23').toString(), equals('-1.23'));
 
+      expect(DynamicNumber.tryParse(''), isNull);
+      expect(DynamicNumber.tryParse(' x '), isNull);
+      expect(DynamicNumber.tryParse(' e '), isNull);
+      expect(DynamicNumber.tryParse(' a.b '), isNull);
+      expect(DynamicNumber.tryParse('123').toString(), equals('123'));
+      expect(DynamicNumber.tryParse('1.23').toString(), equals('1.23'));
+      expect(DynamicNumber.tryParse('-1.23').toString(), equals('-1.23'));
+
       expect(DynamicNumber.from(null), isNull);
+      expect(DynamicNumber.from(''), isNull);
+      expect(DynamicNumber.from(' x '), isNull);
+      expect(DynamicNumber.from(' e '), isNull);
+      expect(DynamicNumber.from(' a.b '), isNull);
+      expect(DynamicNumber.from(123).toString(), equals('123'));
+      expect(DynamicNumber.from(123.45).toString(), equals('123.45'));
+      expect(DynamicNumber.from('123').toString(), equals('123'));
+      expect(DynamicNumber.from('1.23').toString(), equals('1.23'));
+      expect(DynamicNumber.from('-1.23').toString(), equals('-1.23'));
 
       expect(DynamicNumber.from(123).toString(), equals('123'));
       expect(DynamicNumber.from(123.toBigInt()).toString(), equals('123'));
@@ -200,11 +218,28 @@ void main() {
       expect(123.toDynamicInt().asDynamicIntNative.isBigInt, isFalse);
       expect(123.toDynamicInt().asDynamicIntBig.isBigInt, isTrue);
 
+      expect(DynamicInt.parse('123').toString(), equals('123'));
       expect(DynamicInt.parse('12345678901234567890').isBigInt, isTrue);
       expect(DynamicInt.parse('12345678901234567890').asDynamicIntBig.isBigInt,
           isTrue);
       expect(() => DynamicInt.parse('12345678901234567890').asDynamicIntNative,
           throwsA(isA<UnsupportedError>()));
+
+      expect(DynamicInt.tryParse('123.3'), isNull);
+      expect(DynamicInt.tryParse(' a.b '), isNull);
+      expect(DynamicInt.tryParse(''), isNull);
+      expect(DynamicInt.tryParse('123').toString(), equals('123'));
+      expect(DynamicInt.tryParse('12345678901234567890').toString(),
+          equals('12345678901234567890'));
+
+      expect(DynamicInt.from(null), isNull);
+      expect(DynamicInt.from(' a.b '), isNull);
+      expect(DynamicInt.from(''), isNull);
+      expect(DynamicInt.from(123).toString(), equals('123'));
+      expect(DynamicInt.from('123.3').toString(), equals('123'));
+      expect(DynamicInt.from('123').toString(), equals('123'));
+      expect(DynamicInt.from('12345678901234567890').toString(),
+          equals('12345678901234567890'));
 
       expect(DynamicInt.fromInt(123456).format(thousands: false),
           equals('123456'));

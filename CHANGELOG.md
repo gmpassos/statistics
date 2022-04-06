@@ -1,3 +1,7 @@
+## 1.0.20
+
+- Added `Decimal.tryParse` and `DynamicInt.tryParse`.
+
 ## 1.0.19
 
 - Added High-Precision Arithmetic: `DynamicInt` and `Decimal`.

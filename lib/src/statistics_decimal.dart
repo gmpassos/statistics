@@ -272,6 +272,19 @@ class Decimal implements DynamicNumber<Decimal> {
     return Decimal.parseParts(n, d, precision: precision);
   }
 
+  /// Tries to [parse] [String] [s] to a [Decimal].
+  static Decimal? tryParse(String s,
+      {int? precision, String decimalDelimiter = '.'}) {
+    if (s.isEmpty) return null;
+
+    try {
+      return Decimal.parse(s,
+          precision: precision, decimalDelimiter: decimalDelimiter);
+    } on FormatException {
+      return null;
+    }
+  }
+
   factory Decimal.parseParts(String whole, String decimal, {int? precision}) {
     whole = whole.trim();
     if (whole.isEmpty) {
@@ -348,7 +361,7 @@ class Decimal implements DynamicNumber<Decimal> {
       return Decimal.fromParts(n, d, precision: precision);
     }
 
-    return Decimal.parse(o.toString(), precision: precision);
+    return Decimal.tryParse(o.toString(), precision: precision);
   }
 
   /// Returns `this` instance with a new [precision]. Returns the same instance

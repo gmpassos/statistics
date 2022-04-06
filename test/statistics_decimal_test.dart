@@ -9,6 +9,24 @@ void main() {
     setUp(() {});
 
     test('basic', () {
+      expect(Decimal.parse('0.2').toString(), equals('0.2'));
+      expect(Decimal.parse('123').toString(), equals('123.0'));
+
+      expect(Decimal.tryParse(''), isNull);
+      expect(Decimal.tryParse(' a.b '), isNull);
+      expect(Decimal.tryParse(' e '), isNull);
+      expect(Decimal.tryParse('0.2').toString(), equals('0.2'));
+      expect(Decimal.tryParse('123').toString(), equals('123.0'));
+
+      expect(Decimal.from(null), isNull);
+      expect(Decimal.from(''), isNull);
+      expect(Decimal.from(' a.b '), isNull);
+      expect(Decimal.from(' e '), isNull);
+      expect(Decimal.from(123).toString(), equals('123.0'));
+      expect(Decimal.from(123.45).toString(), equals('123.45'));
+      expect(Decimal.from('0.2').toString(), equals('0.2'));
+      expect(Decimal.from('123').toString(), equals('123.0'));
+
       {
         var d = Decimal.parse('0.2');
         expect(d.precision, equals(1));

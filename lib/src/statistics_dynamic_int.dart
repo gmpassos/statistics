@@ -95,15 +95,39 @@ abstract class DynamicNumber<T extends DynamicNumber<T>>
 
     if (n is DynamicNumber) return n;
 
-    return parse(n.toString());
+    return tryParse(n.toString());
   }
 
-  static DynamicNumber<dynamic> parse(String s) {
-    if (s.contains('.') || s.contains('e')) {
+  /// Parses [s] to a [DynamicInt] or to a [Decimal] if contains  `.` as decimal separator.
+  static DynamicNumber<dynamic> parse(String s,
+      {String decimalDelimiter = '.'}) {
+    _checkDecimalDelimiter(decimalDelimiter);
+
+    if (s.contains(decimalDelimiter) || s.contains('e')) {
       return Decimal.parse(s);
     }
 
     return DynamicInt.parse(s);
+  }
+
+  static void _checkDecimalDelimiter(String decimalDelimiter) {
+    if (decimalDelimiter.length != 1) {
+      throw ArgumentError("Invalid decimalDelimiter: `$decimalDelimiter`");
+    }
+  }
+
+  /// Tries to [parse] [s].
+  static DynamicNumber<dynamic>? tryParse(String s,
+      {String decimalDelimiter = '.'}) {
+    if (s.isEmpty) return null;
+
+    _checkDecimalDelimiter(decimalDelimiter);
+
+    if (s.contains(decimalDelimiter) || s.contains('e')) {
+      return Decimal.tryParse(s, decimalDelimiter: decimalDelimiter);
+    }
+
+    return DynamicInt.tryParse(s);
   }
 
   /// Returns the sign of this number. See [int.sign].
@@ -443,27 +467,29 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
       return _DynamicIntBig(n);
     }
 
-    return DynamicNumber.parse(n.toString()).toDynamicInt();
+    return DynamicNumber.tryParse(n.toString())?.toDynamicInt();
   }
 
-  /// Parses [String] [n] to a [DynamicInt] integer.
+  /// Parses [String] [s] to a [DynamicInt] integer.
   ///
   /// - It will select the best internal representation for the parsed [n] [String].
-  factory DynamicInt.parse(String n) {
-    if (n.length < maxSafeIntegerDigits) {
-      return DynamicInt.fromInt(int.parse(n));
+  factory DynamicInt.parse(String s) {
+    if (s.length < maxSafeIntegerDigits) {
+      return DynamicInt.fromInt(int.parse(s));
     } else {
-      return DynamicInt.fromBigInt(BigInt.parse(n));
+      return DynamicInt.fromBigInt(BigInt.parse(s));
     }
   }
 
-  /// Tries to [parse] [String] [n] to a [DynamicInt] integer.
-  static DynamicInt? tryParse(String n) {
-    if (n.length < maxSafeIntegerDigits) {
-      var i = int.tryParse(n);
+  /// Tries to [parse] [String] [s] to a [DynamicInt] integer.
+  static DynamicInt? tryParse(String s) {
+    if (s.isEmpty) return null;
+
+    if (s.length < maxSafeIntegerDigits) {
+      var i = int.tryParse(s);
       return i == null ? null : DynamicInt.fromInt(i);
     } else {
-      var i = BigInt.tryParse(n);
+      var i = BigInt.tryParse(s);
       return i == null ? null : DynamicInt.fromBigInt(i);
     }
   }
