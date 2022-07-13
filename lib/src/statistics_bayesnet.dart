@@ -359,7 +359,7 @@ class BayesianNetwork extends Iterable<String>
 
     var e = line.split("=");
     if (e.length != 2) {
-      throw ValidationError("Expected \"variable=value\", received " + line);
+      throw ValidationError("Expected \"variable=value\", received $line");
     }
 
     var node = getNodeByName(e[0]);
@@ -935,7 +935,7 @@ class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
     return resolved;
   }
 
-  static final RegExp _regExpNameInvalids = RegExp(r'[^\w\.]');
+  static final RegExp _regExpNameInvalids = RegExp(r'[^\w.]');
 
   static String resolveName(String name,
       {required NetworkCache? networkCache}) {
@@ -1233,7 +1233,7 @@ class BayesVariable extends BayesNode implements Comparable<BayesVariable> {
 
   @override
   String toString() {
-    var s = '$name: [' + _parents.map((v) => v.name).join(', ') + ']';
+    var s = '$name: [${_parents.map((v) => v.name).join(', ')}]';
     s += toStringProbabilities(name);
     return s;
   }
@@ -1332,8 +1332,7 @@ class BayesCondition extends Iterable<BayesEvent>
 
   static List<String> parseProbabilitiesJson(Iterable jsonList) => jsonList
       .cast<Map>()
-      .map((e) =>
-          (e['condition'] as Iterable).join(',') + ': ' + e['p'].toString())
+      .map((e) => '${(e['condition'] as Iterable).join(',')}: ${e['p']}')
       .toList();
 
   final List<BayesEvent> _events;
@@ -1418,7 +1417,7 @@ class BayesCondition extends Iterable<BayesEvent>
           .toList();
 
       if (mainEvents.isNotEmpty && otherEvents.isNotEmpty) {
-        return mainEvents.join(', ') + ', ' + otherEvents.join(', ');
+        return '${mainEvents.join(', ')}, ${otherEvents.join(', ')}';
       }
     }
 
@@ -1759,7 +1758,7 @@ class Answer implements Comparable<Answer> {
             : '';
 
     var performanceStr = withPerformance && _targetProbability != null
-        ? ' >> ' + performance.toPercentage()
+        ? ' >> ${performance.toPercentage()}'
         : '';
 
     if (originalQuery != query) {
@@ -2171,13 +2170,13 @@ abstract class BayesAnalyser {
       {String positive = 'T', String negative = 'F'}) {
     var q = query.split('(')[1].split(')')[0].split('|');
 
-    var ret = _convert(q[0], positive: positive, negative: negative) + " | ";
+    var ret = "${_convert(q[0], positive: positive, negative: negative)} | ";
 
     if (q.length > 1) {
       var evidences = q[1].split(",");
       for (int i = 0; i < evidences.length; i++) {
-        ret += _convert(evidences[i], positive: positive, negative: negative) +
-            ", ";
+        ret +=
+            "${_convert(evidences[i], positive: positive, negative: negative)}, ";
       }
       if (evidences.isNotEmpty) {
         ret = ret.substring(0, ret.length - 2);
@@ -3010,7 +3009,7 @@ class ObservedEventProbabilities {
 
             if (prevVal != val) {
               var prob2 = (prevVal.toDouble() + val.toDouble()) / 2;
-              probabilities2[i] = condition + ' ' + prob2.toString();
+              probabilities2[i] = '$condition $prob2';
             }
 
             break;
@@ -3355,10 +3354,10 @@ class _IterableKey<T> {
   static final _listEquality = ListEquality();
   static final _iterableEquality = IterableEquality();
 
-  static Equality<Iterable?> _resolveEquality(Iterable _iterable) {
-    if (_iterable is Set) {
+  static Equality<Iterable?> _resolveEquality(Iterable iterable) {
+    if (iterable is Set) {
       return _setEquality;
-    } else if (_iterable is List) {
+    } else if (iterable is List) {
       return _listEquality;
     } else {
       return _iterableEquality;

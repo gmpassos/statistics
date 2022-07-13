@@ -1505,6 +1505,14 @@ class _DynamicIntBig extends DynamicInt {
 
 extension DynamicIntOnNumExtension on num {
   DynamicInt toDynamicInt() => DynamicInt.fromInt(toInt());
+
+  DynamicNumber<dynamic> toDynamicNumber() {
+    if (this is int) {
+      return DynamicInt.fromInt(toInt());
+    } else {
+      return Decimal.fromNum(this);
+    }
+  }
 }
 
 extension DynamicIntOnIntExtension on int {

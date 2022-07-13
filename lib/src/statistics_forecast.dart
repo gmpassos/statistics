@@ -303,11 +303,11 @@ class ForecastObservation<T, V> {
   /// ID of the observation.
   ///
   /// It's the [opID] prefixed with the [phase] (if the [phase] is not empty).
-  String get id => _id ??= phase.isNotEmpty ? phase + '.' + opID : opID;
+  String get id => _id ??= phase.isNotEmpty ? '$phase.$opID' : opID;
 
   @override
   String toString() {
-    var phaseStr = phase.isNotEmpty ? phase + '.' : '';
+    var phaseStr = phase.isNotEmpty ? '$phase.' : '';
     return '$phaseStr${operation.id}($source) -> $value';
   }
 }

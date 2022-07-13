@@ -105,6 +105,9 @@ void main() {
           equals(123.1.toDynamicInt()));
       expect(DynamicNumber.fromDouble(123.1).toDecimal(),
           equals(123.1.toDecimal()));
+
+      expect([10, 20, 30].toDynamicIntList().standardDeviation.toDouble(),
+          equals(8.164965809277259));
     });
   });
 
@@ -281,6 +284,23 @@ void main() {
           DynamicInt.parse('1234567890123456789012345678901234567890')
               .bitLength,
           equals(130));
+
+      expect((DynamicInt.fromInt(32) << 1).toStringStandard(), equals('64'));
+      expect((DynamicInt.fromInt(32) << 24).toStringStandard(),
+          equals('536870912'));
+      expect((DynamicInt.fromInt(32) << 100).toStringStandard(),
+          equals('40564819207303340847894502572032'));
+
+      expect((DynamicInt.fromInt(32) >> 1).toStringStandard(), equals('16'));
+      expect((DynamicInt.fromInt(536870912) >> 24).toStringStandard(),
+          equals('32'));
+      expect(
+          (DynamicInt.from('40564819207303340847894502572032')! >> 100)
+              .toStringStandard(),
+          equals('32'));
+
+      expect((DynamicInt.fromInt(9007199254740991) >> 24).toStringStandard(),
+          equals('536870911'));
     });
 
     test('parse', () {

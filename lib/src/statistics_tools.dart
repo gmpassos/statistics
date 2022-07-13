@@ -207,7 +207,7 @@ class Chronometer implements Comparable<Chronometer> {
     var totalOperation = this.totalOperation;
 
     var timeToCompleteStr = totalOperation != null
-        ? ' · ETOC: ' + timeToComplete().toStringUnit(decimal: true)
+        ? ' · ETOC: ${timeToComplete().toStringUnit(decimal: true)}'
         : '';
 
     var opsRatio = totalOperation != null
@@ -217,11 +217,7 @@ class Chronometer implements Comparable<Chronometer> {
     var opsFails =
         failedOperations != 0 ? ' (fails: $failedOperationsAsString)' : '';
 
-    return '$name{ ${elapsedTime.toStringUnit(decimal: true)}'
-            ' · hertz: $hertzAsString'
-            ' · ops: $operationsAsString$opsRatio$opsFails' +
-        timeToCompleteStr +
-        '$timeStr }';
+    return '$name{ ${elapsedTime.toStringUnit(decimal: true)} · hertz: $hertzAsString · ops: $operationsAsString$opsRatio$opsFails$timeToCompleteStr$timeStr }';
   }
 
   Chronometer operator +(Chronometer other) {

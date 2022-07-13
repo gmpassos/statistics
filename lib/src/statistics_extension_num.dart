@@ -5,6 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:intl/intl.dart';
 
 import 'statistics_base.dart';
+import 'statistics_dynamic_int.dart';
+import 'statistics_decimal.dart';
 
 /// extension for `Iterable<N>` (`N` extends `num`).
 extension IterableNExtension<N extends num> on Iterable<N> {
@@ -42,6 +44,13 @@ extension IterableNumExtension on Iterable<num> {
 
   /// Maps this numeric collection to a `List<double>`.
   List<double> toDoublesList() => mapToList((e) => e.toDouble());
+
+  /// Maps this numeric collection to a `List<DynamicInt>`.
+  List<DynamicInt> toDynamicIntList() =>
+      mapToList((e) => DynamicInt.fromNum(e));
+
+  /// Maps this numeric collection to a `List<Decimal>`.
+  List<Decimal> toDecimalList() => mapToList((e) => Decimal.fromNum(e));
 
   /// Maps this numeric collection to a `List<String>`.
   List<String> toStringsList() => mapToList((e) => e.toString());
@@ -316,6 +325,16 @@ extension IterableDoubleExtension on Iterable<double> {
 
   /// Maps this numeric collection to a `List<double>`.
   List<double> toDoublesList() => toList();
+
+  /// Maps this numeric collection to a `List<BigInt>`.
+  List<BigInt> toBigIntList() => mapToList((e) => BigInt.from(e));
+
+  /// Maps this numeric collection to a `List<DynamicInt>`.
+  List<DynamicInt> toDynamicIntList() =>
+      mapToList((e) => DynamicInt.fromNum(e));
+
+  /// Maps this numeric collection to a `List<Decimal>`.
+  List<Decimal> toDecimalList() => mapToList((e) => Decimal.fromDouble(e));
 
   /// Maps this numeric collection to a `List<String>`.
   List<String> toStringsList() => mapToList((e) => e.toString());
@@ -598,6 +617,16 @@ extension IterableIntExtension on Iterable<int> {
 
   /// Maps this numeric collection to a `List<double>`.
   List<double> toDoublesList() => mapToList((e) => e.toDouble());
+
+  /// Maps this numeric collection to a `List<BigInt>`.
+  List<BigInt> toBigIntList() => mapToList((e) => BigInt.from(e));
+
+  /// Maps this numeric collection to a `List<DynamicInt>`.
+  List<DynamicInt> toDynamicIntList() =>
+      mapToList((e) => DynamicInt.fromInt(e));
+
+  /// Maps this numeric collection to a `List<Decimal>`.
+  List<Decimal> toDecimalList() => mapToList((e) => Decimal.fromInt(e));
 
   /// Maps this numeric collection to a `List<String>`.
   List<String> toStringsList() => mapToList((e) => e.toString());

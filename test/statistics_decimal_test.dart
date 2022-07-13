@@ -146,6 +146,26 @@ void main() {
           Decimal.fromDouble(1234567890123456.0, precision: 2)
               .toString(thousands: true),
           equals('1,234,567,890,123,456.00'));
+
+      expect((Decimal.fromInt(32) << 1).toStringStandard(), equals('64'));
+      expect(
+          (Decimal.fromInt(32) << 24).toStringStandard(), equals('536870912'));
+      expect((Decimal.fromInt(32) << 100).toStringStandard(),
+          equals('40564819207303340847894502572032'));
+
+      expect((Decimal.fromInt(32) >> 1).toStringStandard(), equals('16'));
+      expect(
+          (Decimal.fromInt(536870912) >> 24).toStringStandard(), equals('32'));
+      expect(
+          (Decimal.from('40564819207303340847894502572032')! >> 100)
+              .toStringStandard(),
+          equals('32'));
+
+      expect((Decimal.fromInt(9007199254740991) >> 24).toStringStandard(),
+          equals('536870911'));
+
+      expect([10, 20, 30].toDecimalList().standardDeviation.toDouble(),
+          equals(8.164965809277259));
     });
 
     test('equalsInt/BigInt', () {
@@ -873,7 +893,7 @@ void main() {
 
         const s = '1234567890123';
         var decimal = Decimal.parse('$s.$s');
-        var exp = s + s.substring(0, i) + '.' + s.substring(i);
+        var exp = '$s${s.substring(0, i)}.${s.substring(i)}';
 
         expect((decimal * Decimal.fromInt(b)).toString(thousands: false),
             equals(exp));

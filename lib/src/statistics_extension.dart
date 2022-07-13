@@ -417,8 +417,15 @@ class RangeSelectionByIndex<T> implements RangeSelection<T> {
     var start = this.start;
     var end = this.end;
 
-    if (start < 0) start = 0;
-    if (end > l.length) end = l.length;
+    if (start < 0) {
+      if (end < 0) return <T>[];
+
+      start = 0;
+    }
+
+    if (end < 0 || end > l.length) {
+      end = l.length;
+    }
 
     return l.sublist(start, end);
   }
@@ -442,62 +449,143 @@ class RangeSelectionByValue<T> implements RangeSelection<T> {
   bool isGreaterThanStart(T value, {Comparator<T>? compare}) {
     compare ??= (dynamic a, T b) => a!.compareTo(b!) as int;
 
-    var cmp = compare(start!, value);
+    final start = this.start;
+    if (start == null) {
+      return true;
+    }
+
+    return _isGreaterThanStartImpl(start, value, compare);
+  }
+
+  bool _isGreaterThanStartImpl(T start, T value, Comparator<T> compare) {
+    var cmp = compare(start, value);
     return startExclusive ? cmp < 0 : cmp <= 0;
   }
 
   bool isLesserThanEnd(T value, {Comparator<T>? compare}) {
     compare ??= (dynamic a, T b) => a!.compareTo(b!) as int;
 
-    var cmp = compare(end!, value);
+    final end = this.end;
+    if (end == null) {
+      return true;
+    }
+
+    return _isLesserThanEndImpl(end, value, compare);
+  }
+
+  bool _isLesserThanEndImpl(T end, T value, Comparator<T> compare) {
+    var cmp = compare(end, value);
     return endExclusive ? cmp > 0 : cmp >= 0;
   }
 
-  bool isValueInRange(T value, {Comparator<T>? compare}) =>
-      isValid &&
-      isGreaterThanStart(value, compare: compare) &&
-      isLesserThanEnd(value, compare: compare);
+  bool isValueInRange(T value, {Comparator<T>? compare}) {
+    compare ??= (dynamic a, T b) => a!.compareTo(b!) as int;
+
+    var start = this.start;
+    var end = this.end;
+
+    if (start != null) {
+      if (end != null) {
+        return _isGreaterThanStartImpl(start, value, compare) &&
+            _isLesserThanEndImpl(end, value, compare);
+      } else {
+        return _isGreaterThanStartImpl(start, value, compare);
+      }
+    } else if (end != null) {
+      return _isLesserThanEndImpl(end, value, compare);
+    }
+
+    return false;
+  }
 
   @override
   List<T> select(List<T> l, {Comparator<T>? compare}) {
-    var start = this.start!;
-    var end = this.end!;
+    if (l.isEmpty) return <T>[];
 
-    compare ??= l.comparator(compare: compare, sample: start);
+    compare ??= l.comparator(compare: compare, sample: start ?? end);
 
-    var startIdx = l.searchInsertSortedIndex(start, compare: compare);
-    var endIdx = l.searchInsertSortedIndex(end, compare: compare);
+    if (l.isSorted(compare)) {
+      return _selectSorted(l, compare);
+    } else {
+      return _selectUnsorted(l, compare);
+    }
+  }
 
+  List<T> _selectUnsorted(List<T> l, Comparator<T> compare) {
+    var start = this.start;
+    var end = this.end;
+
+    if (start != null) {
+      if (end != null) {
+        return l
+            .where((v) =>
+                _isGreaterThanStartImpl(start, v, compare) &&
+                _isLesserThanEndImpl(end, v, compare))
+            .toList();
+      } else {
+        return l
+            .where((v) => _isGreaterThanStartImpl(start, v, compare))
+            .toList();
+      }
+    } else if (end != null) {
+      return l.where((v) => _isLesserThanEndImpl(end, v, compare)).toList();
+    } else {
+      return <T>[];
+    }
+  }
+
+  List<T> _selectSorted(List<T> l, Comparator<T> compare) {
     var length = l.length;
 
-    while (startIdx > 0) {
-      var val = l[startIdx];
-      var prev = l[startIdx - 1];
-      if (compare(val, prev) == 0) {
-        startIdx--;
-      } else {
-        break;
+    var start = this.start;
+    var end = this.end;
+
+    var startIdx = 0;
+
+    if (start != null) {
+      if (!_isGreaterThanStartImpl(start, l.last, compare)) return <T>[];
+
+      startIdx = l.searchInsertSortedIndex(start, compare: compare);
+
+      while (startIdx > 0) {
+        var val = l[startIdx];
+        var prev = l[startIdx - 1];
+        if (compare(val, prev) == 0) {
+          startIdx--;
+        } else {
+          break;
+        }
       }
     }
 
-    if (endIdx > 0 && endIdx < length) {
-      var val = l[endIdx];
-      if (compare(val, end) > 0) {
-        endIdx--;
+    var lengthM1 = length - 1;
+
+    var endIdx = lengthM1;
+
+    if (end != null) {
+      if (!_isLesserThanEndImpl(end, l.first, compare)) return <T>[];
+
+      endIdx = l.searchInsertSortedIndex(end, compare: compare);
+
+      if (endIdx > 0 && endIdx < length) {
+        var val = l[endIdx];
+        if (compare(val, end) > 0) {
+          endIdx--;
+        }
+      }
+
+      while (endIdx < lengthM1) {
+        var val = l[endIdx];
+        var next = l[endIdx + 1];
+        if (compare(val, next) == 0) {
+          endIdx++;
+        } else {
+          break;
+        }
       }
     }
 
-    while (endIdx < length - 1) {
-      var val = l[endIdx];
-      var next = l[endIdx + 1];
-      if (compare(val, next) == 0) {
-        endIdx++;
-      } else {
-        break;
-      }
-    }
-
-    if (startExclusive) {
+    if (startExclusive && start != null) {
       while (startIdx < length) {
         var val = l[startIdx];
         if (compare(val, start) == 0) {
@@ -514,7 +602,7 @@ class RangeSelectionByValue<T> implements RangeSelection<T> {
       endIdx = startIdx;
     }
 
-    if (endExclusive) {
+    if (endExclusive && end != null) {
       while (endIdx > 0 && endIdx < length) {
         var val = l[endIdx];
         if (compare(val, end) == 0) {
@@ -1101,7 +1189,7 @@ extension IterableMapExtension<K, V> on Iterable<Map<K, V>> {
     var map = <V, List<Map<K, V>>>{};
 
     for (var e in this) {
-      var g = (e[key] ?? defaultKeyValue)!;
+      var g = (e[key] ?? defaultKeyValue) as V;
       var list = map.putIfAbsent(g, () => <Map<K, V>>[]);
       list.add(e);
     }
@@ -1241,7 +1329,7 @@ extension IterableIterableExtension<T> on Iterable<Iterable<T>> {
   }
 }
 
-typedef _StringFilter = String Function(String line);
+typedef StringFilterFunction = String Function(String line);
 
 RegExp _regexpLineBreak = RegExp(r'[\r\n]');
 
@@ -1261,7 +1349,7 @@ extension StringExtension on String {
       {RegExp? lineDelimiter,
       bool trimLines = true,
       bool removeEmptyLines = true,
-      _StringFilter? filter}) {
+      StringFilterFunction? filter}) {
     var lines = split(lineDelimiter ?? _regexpLineBreak);
 
     return lines.filterLines(
@@ -1580,7 +1668,7 @@ extension IterableStringExtension on Iterable<String> {
       {RegExp? lineDelimiter,
       bool trimLines = true,
       bool removeEmptyLines = true,
-      _StringFilter? filter}) {
+      StringFilterFunction? filter}) {
     var resolvedLineDelimiter = lineDelimiter ?? _regexpLineBreak;
     var lines = expand((e) => e.split(resolvedLineDelimiter));
 
@@ -1593,7 +1681,7 @@ extension IterableStringExtension on Iterable<String> {
   List<String> filterLines(
       {bool trimLines = true,
       bool removeEmptyLines = true,
-      _StringFilter? filter}) {
+      StringFilterFunction? filter}) {
     var lines = this;
 
     if (trimLines) {

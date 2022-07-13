@@ -515,7 +515,7 @@ class Decimal implements DynamicNumber<Decimal> {
   String get wholePartAsString {
     var n = wholePart;
     if (isNegative && !n.isNegative) {
-      return '-' + n.toString();
+      return '-$n';
     } else {
       return n.toString();
     }
@@ -717,7 +717,7 @@ class Decimal implements DynamicNumber<Decimal> {
   @override
   String toStringStandard() {
     if (precision == 0) {
-      return _n.toStringStandard() + '.0';
+      return '${_n.toStringStandard()}.0';
     } else {
       return format(thousands: false, decimal: true);
     }

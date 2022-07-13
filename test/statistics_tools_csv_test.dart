@@ -105,24 +105,24 @@ void main() {
       expect(
           csv1,
           equals('mean,standardDeviation,length,min,max,sum,squaresSum\n'
-              '20,21.602468994692867,3,10,30,60,1400\n'
-              '40,40.824829046386306,3,30,50,120,5000\n'));
+              '20,8.16496580927726,3,10,30,60,1400\n'
+              '40,8.16496580927726,3,30,50,120,5000\n'));
 
       var csv2 = list2.generateCSV(decimalPrecision: 2);
 
       expect(
           csv2,
           equals('mean,standardDeviation,length,min,max,sum,squaresSum\n'
-              '20,21.60,3,10,30,60,1400\n'
-              '40,40.82,3,30,50,120,5000\n'));
+              '20,8.16,3,10,30,60,1400\n'
+              '40,8.16,3,30,50,120,5000\n'));
 
       var csv3 = list2.generateCSV(decimalPrecision: 0);
 
       expect(
           csv3,
           equals('mean,standardDeviation,length,min,max,sum,squaresSum\n'
-              '20,21,3,10,30,60,1400\n'
-              '40,40,3,30,50,120,5000\n'));
+              '20,8,3,10,30,60,1400\n'
+              '40,8,3,30,50,120,5000\n'));
 
       var csv4 =
           list2.generateCSV(decimalPrecision: 2, commaAsDecimalSeparator: true);
@@ -130,8 +130,8 @@ void main() {
       expect(
           csv4,
           equals('mean,standardDeviation,length,min,max,sum,squaresSum\n'
-              '20,"21,60",3,10,30,60,1400\n'
-              '40,"40,82",3,30,50,120,5000\n'));
+              '20,"8,16",3,10,30,60,1400\n'
+              '40,"8,16",3,30,50,120,5000\n'));
 
       var csv5 =
           list2.generateCSV(valueNormalizer: (v) => v is num ? v * 2 : v!);
@@ -139,8 +139,8 @@ void main() {
       expect(
           csv5.replaceAll('.0,', ',').replaceAll('.0\n', '\n'),
           equals('mean,standardDeviation,length,min,max,sum,squaresSum\n'
-              '40,43.20493798938573,6,20,60,120,2800\n'
-              '80,81.64965809277261,6,60,100,240,10000\n'));
+              '40,16.32993161855452,6,20,60,120,2800\n'
+              '80,16.32993161855452,6,60,100,240,10000\n'));
 
       expect(list2.csvFileName('test', 'list'),
           matches(RegExp(r'^test--list--\d+\.csv$')));

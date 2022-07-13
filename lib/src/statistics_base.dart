@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
+import 'package:data_serializer/data_serializer.dart';
 
+import 'statistics_decimal.dart';
+import 'statistics_dynamic_int.dart';
 import 'statistics_extension_num.dart';
 
 /// Parses [o] as `double`. If can't parse returns [def].
@@ -292,8 +295,25 @@ class Statistics<N extends num> extends DataEntry {
             squaresSum?.toBigInt() ??
             ((standardDeviation! * standardDeviation) * length).toBigInt(),
         mean = mean ?? (sum! / length),
-        standardDeviation =
-            standardDeviation ?? math.sqrt(squaresSum! / length);
+        standardDeviation = standardDeviation ??
+            _computeStandardDeviation(
+                sum, squaresSum, sumBigInt, squaresSumBigInt, length);
+
+  static double _computeStandardDeviation(num? sum, num? squaresSum,
+      BigInt? sumBigInt, BigInt? squaresSumBigInt, num length) {
+    if (sumBigInt != null || squaresSumBigInt != null) {
+      sumBigInt ??= sum!.toBigInt();
+      squaresSumBigInt ??= squaresSum!.toBigInt();
+
+      return StandardDeviationComputerBigInt._compute(
+          sumBigInt, squaresSumBigInt, length);
+    } else {
+      sum ??= sumBigInt!.toInt();
+      squaresSum ??= squaresSumBigInt!.toInt();
+
+      return StandardDeviationComputerNum._compute(sum, squaresSum, length);
+    }
+  }
 
   factory Statistics._empty(Iterable<N> list) {
     var zero = list.castElement(0);
@@ -386,7 +406,11 @@ class Statistics<N extends num> extends DataEntry {
       var lengthBigInt = length.toBigInt();
 
       mean = sumBigInt / lengthBigInt;
-      standardDeviation = math.sqrt(squaresSumBigInt / lengthBigInt);
+
+      standardDeviation = math.sqrt(
+              ((squaresSumBigInt * lengthBigInt) - (sumBigInt * sumBigInt)) /
+                  lengthBigInt) /
+          math.sqrt(length);
     } else {
       sum = first;
       squaresSum = first * first;
@@ -402,7 +426,8 @@ class Statistics<N extends num> extends DataEntry {
 
       mean = sum / length;
 
-      standardDeviation = math.sqrt(squaresSum / length);
+      standardDeviation =
+          math.sqrt((squaresSum - (sum * (sum / length))) / length);
     }
 
     Statistics<N>? lowerStatistics;
@@ -615,8 +640,12 @@ class Statistics<N extends num> extends DataEntry {
       sum: sum + other.sum,
       squaresSum: squaresSum + other.squaresSum,
       mean: (sum + other.sum) / (length + other.length),
-      standardDeviation:
-          math.sqrt((squaresSum + other.squaresSum) / (length + other.length)),
+      standardDeviation: _computeStandardDeviation(
+          null,
+          null,
+          sumBigInt + other.sumBigInt,
+          squaresSumBigInt + other.squaresSumBigInt,
+          length + other.length),
     );
   }
 
@@ -728,4 +757,386 @@ class Pair<T> implements Comparable<Pair<T>> {
   String toString() {
     return '($a , $b)';
   }
+}
+
+/// Computes the standard deviation of a set online,
+/// by [add]ing each element one by one,
+/// without the need to have a [List] with all the elements.
+abstract class StandardDeviationComputer<N, D> {
+  /// Returns the length of the computed set. Is incremented by [add].
+  int get length;
+
+  /// Returns `true` if the computation set is empty.
+  bool get isEmpty;
+
+  /// Alias to ![isEmpty].
+  bool get isNotEmpty;
+
+  /// The sum of the computed set. Is incremented by [add].
+  N get sum;
+
+  /// Casts [sum] to [double].
+  double get sumAsDouble;
+
+  /// The sum of the squares of the computed set. Is incremented by [add].
+  N get squaresSum;
+
+  /// Casts [squaresSum] to [double].
+  double get squaresSumAsDouble;
+
+  /// Resets the computation.
+  StandardDeviationComputer reset();
+
+  /// Adds a number [n] ([num]) to the computation.
+  StandardDeviationComputer add(num n);
+
+  /// [add]s all the [ns] elements ([num]).
+  StandardDeviationComputer addAll(Iterable<num> ns);
+
+  /// Adds a number [n] ([BigInt]) to the computation.
+  StandardDeviationComputer addBigInt(BigInt n);
+
+  /// [add]s all the [ns] elements ([BigInt]).
+  StandardDeviationComputer addAllBigInt(Iterable<BigInt> ns);
+
+  /// Adds a number [n] ([DynamicNumber]) to the computation.
+  StandardDeviationComputer addDynamicNumber(DynamicNumber<dynamic> n);
+
+  /// [add]s all the [ns] elements ([DynamicNumber]).
+  StandardDeviationComputer addAllDynamicNumber(
+      Iterable<DynamicNumber<dynamic>> ns);
+
+  /// The standard deviation of the current set.
+  D get standardDeviation;
+
+  /// Casts [standardDeviation] to [double].
+  double get standardDeviationAsDouble;
+}
+
+/// [StandardDeviationComputer] implementation for [num].
+class StandardDeviationComputerNum
+    implements StandardDeviationComputer<num, double> {
+  int _length = 0;
+
+  @override
+  int get length => _length;
+
+  @override
+  bool get isEmpty => _length == 0;
+
+  @override
+  bool get isNotEmpty => !isEmpty;
+
+  num _sum = 0;
+
+  @override
+  num get sum => _sum;
+
+  num _squaresSum = 0;
+
+  @override
+  num get squaresSum => _squaresSum;
+
+  @override
+  double get sumAsDouble => sum.toDouble();
+
+  @override
+  double get squaresSumAsDouble => squaresSum.toDouble();
+
+  @override
+  StandardDeviationComputerNum reset() {
+    _length = 0;
+    _sum = 0;
+    _squaresSum = 0;
+
+    _standardDeviation = null;
+
+    return this;
+  }
+
+  /// Adds a number [n] to the computation.
+  @override
+  StandardDeviationComputerNum add(num n) {
+    _length++;
+    _sum += n;
+    _squaresSum += n * n;
+
+    _standardDeviation = null;
+
+    return this;
+  }
+
+  @override
+  StandardDeviationComputer addBigInt(BigInt n) {
+    if (!n.isSafeInteger) {
+      throw ArgumentError("Not a safe `int`: $n");
+    }
+    return add(n.toInt());
+  }
+
+  @override
+  StandardDeviationComputer addDynamicNumber(DynamicNumber<dynamic> n) =>
+      add(n.toNum());
+
+  @override
+  StandardDeviationComputerNum addAll(Iterable<num> ns) {
+    for (var n in ns) {
+      add(n);
+    }
+    return this;
+  }
+
+  @override
+  StandardDeviationComputer addAllBigInt(Iterable<BigInt> ns) {
+    for (var n in ns) {
+      addBigInt(n);
+    }
+    return this;
+  }
+
+  @override
+  StandardDeviationComputer addAllDynamicNumber(
+      Iterable<DynamicNumber<dynamic>> ns) {
+    for (var n in ns) {
+      addDynamicNumber(n);
+    }
+    return this;
+  }
+
+  double? _standardDeviation;
+
+  @override
+  double get standardDeviation =>
+      _standardDeviation ??= _standardDeviationImpl();
+
+  double _standardDeviationImpl() {
+    if (isEmpty) return 0.0;
+    return _compute(_sum, _squaresSum, _length);
+  }
+
+  static double _compute(num sum, num squaresSum, num length) {
+    return math.sqrt((squaresSum - (sum * (sum / length))) / length);
+  }
+
+  @override
+  double get standardDeviationAsDouble => standardDeviation;
+}
+
+/// [StandardDeviationComputer] implementation for [BigInt].
+class StandardDeviationComputerBigInt
+    implements StandardDeviationComputer<BigInt, double> {
+  int _length = 0;
+
+  @override
+  int get length => _length;
+
+  @override
+  bool get isEmpty => _length == 0;
+
+  @override
+  bool get isNotEmpty => !isEmpty;
+
+  BigInt _sum = BigInt.zero;
+
+  @override
+  BigInt get sum => _sum;
+
+  BigInt _squaresSum = BigInt.zero;
+
+  @override
+  BigInt get squaresSum => _squaresSum;
+
+  @override
+  double get sumAsDouble => sum.toDouble();
+
+  @override
+  double get squaresSumAsDouble => squaresSum.toDouble();
+
+  @override
+  StandardDeviationComputerBigInt reset() {
+    _length = 0;
+    _sum = BigInt.zero;
+    _squaresSum = BigInt.zero;
+
+    _standardDeviation = null;
+
+    return this;
+  }
+
+  @override
+  StandardDeviationComputerBigInt add(num n) => addBigInt(BigInt.from(n));
+
+  @override
+  StandardDeviationComputerBigInt addBigInt(BigInt n) {
+    _length++;
+    _sum += n;
+    _squaresSum += n * n;
+
+    _standardDeviation = null;
+
+    return this;
+  }
+
+  @override
+  StandardDeviationComputer addDynamicNumber(DynamicNumber<dynamic> n) =>
+      add(n.toNum());
+
+  @override
+  StandardDeviationComputerBigInt addAll(Iterable<num> ns) {
+    for (var n in ns) {
+      add(n);
+    }
+    return this;
+  }
+
+  @override
+  StandardDeviationComputerBigInt addAllBigInt(Iterable<BigInt> ns) {
+    for (var n in ns) {
+      addBigInt(n);
+    }
+    return this;
+  }
+
+  @override
+  StandardDeviationComputer addAllDynamicNumber(
+      Iterable<DynamicNumber<dynamic>> ns) {
+    for (var n in ns) {
+      addDynamicNumber(n);
+    }
+    return this;
+  }
+
+  double? _standardDeviation;
+
+  @override
+  double get standardDeviation =>
+      _standardDeviation ??= _standardDeviationImpl();
+
+  double _standardDeviationImpl() {
+    if (isEmpty) return 0.0;
+    return _compute(_sum, _squaresSum, _length);
+  }
+
+  static double _compute(BigInt sum, BigInt squaresSum, num length) {
+    var lengthBigInt = length.toBigInt();
+    return math
+            .sqrt(((squaresSum * lengthBigInt) - (sum * sum)) / lengthBigInt) /
+        math.sqrt(length);
+  }
+
+  @override
+  double get standardDeviationAsDouble => standardDeviation.toDouble();
+}
+
+/// [StandardDeviationComputer] implementation for [DynamicNumber].
+class StandardDeviationComputerDynamicNumber
+    implements StandardDeviationComputer<DynamicNumber<dynamic>, Decimal> {
+  int _length = 0;
+
+  @override
+  int get length => _length;
+
+  @override
+  bool get isEmpty => _length == 0;
+
+  @override
+  bool get isNotEmpty => !isEmpty;
+
+  DynamicNumber<dynamic> _sum = DynamicInt.zero;
+
+  @override
+  DynamicNumber<dynamic> get sum => _sum;
+
+  DynamicNumber<dynamic> _squaresSum = DynamicInt.zero;
+
+  @override
+  DynamicNumber<dynamic> get squaresSum => _squaresSum;
+
+  @override
+  double get sumAsDouble => sum.toDouble();
+
+  @override
+  double get squaresSumAsDouble => squaresSum.toDouble();
+
+  @override
+  StandardDeviationComputerDynamicNumber reset() {
+    _length = 0;
+    _sum = DynamicInt.zero;
+    _squaresSum = DynamicInt.zero;
+
+    _standardDeviation = null;
+
+    return this;
+  }
+
+  @override
+  StandardDeviationComputerDynamicNumber add(num n) =>
+      addDynamicNumber(n.toDynamicNumber());
+
+  @override
+  StandardDeviationComputerDynamicNumber addBigInt(BigInt n) =>
+      addDynamicNumber(n.toDynamicInt());
+
+  @override
+  StandardDeviationComputerDynamicNumber addDynamicNumber(
+      DynamicNumber<dynamic> n) {
+    _length++;
+    _sum += n as DynamicNumber;
+    _squaresSum += n * n;
+
+    _standardDeviation = null;
+
+    return this;
+  }
+
+  @override
+  StandardDeviationComputerDynamicNumber addAll(Iterable<num> ns) {
+    for (var n in ns) {
+      add(n);
+    }
+    return this;
+  }
+
+  @override
+  StandardDeviationComputerDynamicNumber addAllBigInt(Iterable<BigInt> ns) {
+    for (var n in ns) {
+      addBigInt(n);
+    }
+    return this;
+  }
+
+  @override
+  StandardDeviationComputerDynamicNumber addAllDynamicNumber(
+      Iterable<DynamicNumber<dynamic>> ns) {
+    for (var n in ns) {
+      addDynamicNumber(n);
+    }
+    return this;
+  }
+
+  Decimal? _standardDeviation;
+
+  @override
+  Decimal get standardDeviation =>
+      _standardDeviation ??= _standardDeviationImpl();
+
+  Decimal _standardDeviationImpl() {
+    if (isEmpty) return Decimal.zero;
+    return _compute(_sum, _squaresSum, _length);
+  }
+
+  static Decimal _compute(DynamicNumber<dynamic> sum,
+      DynamicNumber<dynamic> squaresSum, num length) {
+    var lengthDN = length.toDynamicInt();
+    var a = squaresSum * lengthDN;
+    var b = sum.square;
+    var c = (a - b) / lengthDN;
+    var d = c.squareRoot;
+    var e = lengthDN.squareRoot;
+
+    return d / e;
+  }
+
+  @override
+  double get standardDeviationAsDouble => standardDeviation.toDouble();
 }

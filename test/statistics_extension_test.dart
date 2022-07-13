@@ -4,6 +4,65 @@ import 'package:statistics/statistics.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('RangeSelection', () {
+    test('RangeSelectionByIndex', () {
+      var sel1 = RangeSelectionByIndex(2, 4);
+      var sel2 = RangeSelectionByIndex(-1, 4);
+      var sel3 = RangeSelectionByIndex(2, -1);
+      var sel4 = RangeSelectionByIndex(-1, -1);
+
+      var l = [8, 9, 10, 11, 15, 16, 19, 20, 21, 22];
+
+      expect(sel1.select(l), equals([10, 11]));
+      expect(sel2.select(l), equals([8, 9, 10, 11]));
+      expect(sel3.select(l), equals([10, 11, 15, 16, 19, 20, 21, 22]));
+      expect(sel4.select(l), equals([]));
+    });
+
+    test('RangeSelectionByValue (sorted)', () {
+      var sel1 = RangeSelectionByValue(10, false, 20, false);
+      var sel2 = RangeSelectionByValue(10, true, 20, false);
+      var sel3 = RangeSelectionByValue(10, false, 20, true);
+      var sel4 = RangeSelectionByValue(10, true, 20, true);
+      var sel5 = RangeSelectionByValue(10, false, null, false);
+      var sel6 = RangeSelectionByValue(null, false, 20, false);
+
+      var l = [8, 9, 10, 11, 15, 16, 19, 20, 21, 22];
+
+      expect(sel1.select(l), equals([10, 11, 15, 16, 19, 20]));
+      expect(sel2.select(l), equals([11, 15, 16, 19, 20]));
+      expect(sel3.select(l), equals([10, 11, 15, 16, 19]));
+      expect(sel4.select(l), equals([11, 15, 16, 19]));
+      expect(sel5.select(l), equals([10, 11, 15, 16, 19, 20, 21, 22]));
+      expect(sel6.select(l), equals([8, 9, 10, 11, 15, 16, 19, 20]));
+
+      expect(sel1.select(<int>[]), isEmpty);
+    });
+
+    test('RangeSelectionByValue (unsorted)', () {
+      var sel1 = RangeSelectionByValue(10, false, 20, false);
+      var sel2 = RangeSelectionByValue(10, true, 20, false);
+      var sel3 = RangeSelectionByValue(10, false, 20, true);
+      var sel4 = RangeSelectionByValue(10, true, 20, true);
+      var sel5 = RangeSelectionByValue(10, false, null, false);
+      var sel6 = RangeSelectionByValue(null, false, 20, false);
+
+      var l = [8, 9, 10, 11, 15, 16, 19, 20, 21, 22];
+      l.shuffle(Random(123));
+
+      expect(l.isSorted, isFalse);
+
+      expect(sel1.select(l)..sort(), equals([10, 11, 15, 16, 19, 20]));
+      expect(sel2.select(l)..sort(), equals([11, 15, 16, 19, 20]));
+      expect(sel3.select(l)..sort(), equals([10, 11, 15, 16, 19]));
+      expect(sel4.select(l)..sort(), equals([11, 15, 16, 19]));
+      expect(sel5.select(l)..sort(), equals([10, 11, 15, 16, 19, 20, 21, 22]));
+      expect(sel6.select(l)..sort(), equals([8, 9, 10, 11, 15, 16, 19, 20]));
+
+      expect(sel1.select(<int>[]), isEmpty);
+    });
+  });
+
   group('extension', () {
     setUp(() {});
 

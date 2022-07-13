@@ -1,3 +1,17 @@
+## 1.0.21
+
+- Added `StandardDeviationComputer`:
+  - `StandardDeviationComputerNum`
+  - `StandardDeviationComputerBigInt`
+  - `StandardDeviationComputerDynamicNumber`
+- Fix standard deviation online calculation.
+- sdk: '>=2.14.0 <3.0.0'
+- collection: ^1.16.0
+- lints: ^2.0.0
+- test: ^1.21.4
+- dependency_validator: ^3.2.2
+- coverage: ^1.2.0
+
 ## 1.0.20
 
 - Added `Decimal.tryParse` and `DynamicInt.tryParse`.
