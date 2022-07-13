@@ -30,7 +30,7 @@ jobs:
       - name: Run tests (Chrome)
         run: dart test --platform chrome
       - name: dartdoc
-        run: dartdoc --no-generate-docs
+        run: dart doc --dry-run
       - name: Generate coverage report
         run: |
           dart pub global activate coverage
