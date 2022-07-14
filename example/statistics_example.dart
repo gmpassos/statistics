@@ -54,12 +54,12 @@ void main() {
 // Statistics.max: 30
 // Statistics.min: 10
 // Statistics.mean: 21.25
-// Statistics.standardDeviation: 22.5
+// Statistics.standardDeviation: 7.39509972887452
 // Statistics.sum: 85.0
 // Statistics.center: 25
 // Statistics.median: 22.5 -> 20.0 , 25
 // Statistics.squaresSum: 2025.0
-// Statistics: {~21.25 +-22.5 [10..(25)..30] #4}
+// Statistics: {~21.25 +-7.3950 [10..(25)..30] #4}
 // ---
 // CSV:
 // #,a,b
