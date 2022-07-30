@@ -108,6 +108,15 @@ void main() {
         expect(v.isNumericOrDynamicNumberValue, isFalse);
         expect(v.isDynamicNumberValue, isFalse);
       }
+
+      {
+        String? v = 'a';
+
+        expect(v.whenNull('b'), equals('a'));
+
+        v = null;
+        expect(v.whenNull('b'), equals('b'));
+      }
     });
   });
 
