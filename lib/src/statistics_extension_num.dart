@@ -8,6 +8,50 @@ import 'statistics_base.dart';
 import 'statistics_dynamic_int.dart';
 import 'statistics_decimal.dart';
 
+/// Extension for [Type].
+extension NumericTypeExtension on Type {
+  /// Returns `true` if `this` [Type] is an [int], [double], [num] or [BigInt].
+  bool get isNumericType {
+    var self = this;
+    return self == int || self == double || self == num || self == BigInt;
+  }
+
+  /// Returns `true` if `this` [Type] is an [int], [double], [num], [BigInt] or a [DynamicNumber]
+  /// See [isNumericType] and [isDynamicNumberType].
+  bool get isNumericOrDynamicNumberType => isNumericType || isDynamicNumberType;
+
+  /// Returns `true` if `this` [Type] is a [DynamicNumber], [DynamicInt] or [Decimal].
+  bool get isDynamicNumberType {
+    var self = this;
+    return self == DynamicNumber || self == DynamicInt || self == Decimal;
+  }
+}
+
+/// Extension for [Object] nullable.
+extension NumberObjectExtension on Object? {
+  /// Returns `true` if `this` object is a number ([num] or [BigInt]).
+  bool get isNumericValue {
+    var self = this;
+    return self is num || self is BigInt;
+  }
+
+  /// Returns `true` if `this` object is a number ([num], [BigInt] or [DynamicNumber]).
+  /// See [isNumericValue] and [isDynamicNumberValue].
+  bool get isNumericOrDynamicNumberValue =>
+      isNumericValue || isDynamicNumberValue;
+
+  /// Returns `true` if `this` object is a [DynamicNumber].
+  bool get isDynamicNumberValue => this is DynamicNumber;
+
+  /// Returns [defaultValue] if `this == null`.
+  T whenNull<T>(T defaultValue) {
+    if (this == null) {
+      return defaultValue;
+    }
+    return this as T;
+  }
+}
+
 /// extension for `Iterable<N>` (`N` extends `num`).
 extension IterableNExtension<N extends num> on Iterable<N> {
   bool get castsToDouble => N == double;

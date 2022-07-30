@@ -1,3 +1,10 @@
+## 1.0.22
+
+- Added extension `NumericTypeExtension`:
+  - Methods: `isNumericType`, `isNumericOrDynamicNumberType`, `isDynamicNumberType`.
+- Added extension `NumericTypeExtension`:
+  - Methods: `isNumericValue`, `isNumericOrDynamicNumberValue`, `isDynamicNumberValue`, `whenNull`.
+
 ## 1.0.21
 
 - Added `StandardDeviationComputer`:

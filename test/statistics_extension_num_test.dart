@@ -5,6 +5,112 @@ import 'package:statistics/statistics.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('NumericTypeExtension', () {
+    test('basic', () {
+      {
+        var t = int;
+        expect(t.isNumericType, isTrue);
+        expect(t.isNumericOrDynamicNumberType, isTrue);
+        expect(t.isDynamicNumberType, isFalse);
+      }
+
+      {
+        var t = double;
+        expect(t.isNumericType, isTrue);
+        expect(t.isNumericOrDynamicNumberType, isTrue);
+        expect(t.isDynamicNumberType, isFalse);
+      }
+
+      {
+        var t = num;
+        expect(t.isNumericType, isTrue);
+        expect(t.isNumericOrDynamicNumberType, isTrue);
+        expect(t.isDynamicNumberType, isFalse);
+      }
+
+      {
+        var t = BigInt;
+        expect(t.isNumericType, isTrue);
+        expect(t.isNumericOrDynamicNumberType, isTrue);
+        expect(t.isDynamicNumberType, isFalse);
+      }
+
+      {
+        var t = DynamicInt;
+        expect(t.isNumericType, isFalse);
+        expect(t.isNumericOrDynamicNumberType, isTrue);
+        expect(t.isDynamicNumberType, isTrue);
+      }
+
+      {
+        var t = Decimal;
+        expect(t.isNumericType, isFalse);
+        expect(t.isNumericOrDynamicNumberType, isTrue);
+        expect(t.isDynamicNumberType, isTrue);
+      }
+
+      {
+        var t = DynamicNumber;
+        expect(t.isNumericType, isFalse);
+        expect(t.isNumericOrDynamicNumberType, isTrue);
+        expect(t.isDynamicNumberType, isTrue);
+      }
+
+      {
+        var t = String;
+        expect(t.isNumericType, isFalse);
+        expect(t.isNumericOrDynamicNumberType, isFalse);
+        expect(t.isDynamicNumberType, isFalse);
+      }
+    });
+  });
+
+  group('NumberObjectExtension', () {
+    test('basic', () {
+      {
+        var v = 123;
+        expect(v.isNumericValue, isTrue);
+        expect(v.isNumericOrDynamicNumberValue, isTrue);
+        expect(v.isDynamicNumberValue, isFalse);
+      }
+
+      {
+        var v = 12.3;
+        expect(v.isNumericValue, isTrue);
+        expect(v.isNumericOrDynamicNumberValue, isTrue);
+        expect(v.isDynamicNumberValue, isFalse);
+      }
+
+      {
+        var v = BigInt.from(100);
+        expect(v.isNumericValue, isTrue);
+        expect(v.isNumericOrDynamicNumberValue, isTrue);
+        expect(v.isDynamicNumberValue, isFalse);
+      }
+
+      {
+        var v = DynamicInt.fromInt(123);
+        expect(v.isNumericValue, isFalse);
+        expect(v.isNumericOrDynamicNumberValue, isTrue);
+        expect(v.isDynamicNumberValue, isTrue);
+      }
+
+      {
+        var v = Decimal.fromDouble(12.3);
+        expect(v.isNumericValue, isFalse);
+        expect(v.isNumericOrDynamicNumberValue, isTrue);
+        expect(v.isDynamicNumberValue, isTrue);
+      }
+
+      {
+        var v = 'abc';
+        expect(v.isNumericValue, isFalse);
+        expect(v.isNumericOrDynamicNumberValue, isFalse);
+        expect(v.isDynamicNumberValue, isFalse);
+      }
+    });
+  });
+
   group('int', () {
     setUp(() {});
 
