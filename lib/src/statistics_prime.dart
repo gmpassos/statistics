@@ -3,7 +3,33 @@ import 'package:statistics/statistics.dart';
 
 /// Utils for prime numbers.
 class PrimeUtils {
-  static final List<int> _knownPrimes = <int>[2, 3, 5, 7, 11, 13];
+  static final List<int> _knownPrimes = <int>[
+    2,
+    3,
+    5,
+    7,
+    11,
+    13,
+    17,
+    19,
+    23,
+    29,
+    31,
+    37,
+    41,
+    43,
+    47,
+    53,
+    59,
+    61,
+    67,
+    71,
+    73,
+    79,
+    83,
+    89,
+    97
+  ];
 
   /// A list of known primes.
   /// Used to compute if a number is prime or not.
@@ -151,7 +177,7 @@ extension PrimeDynamicNumberExtension on DynamicNumber<dynamic> {
   }
 
   /// Returns [val] when this number [isPrime] otherwise returns [def].
-  T? whenPrime<T>(int n, T val, [T? def]) {
+  T? whenPrime<T>(T val, [T? def]) {
     if (isPrime) {
       return val;
     } else {

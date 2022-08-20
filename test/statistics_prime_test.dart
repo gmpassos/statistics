@@ -209,6 +209,40 @@ void main() {
   group('Prime', () {
     setUp(() {});
 
+    test('basic', () {
+      expect(PrimeUtils.lastKnownPrime, equals(PrimeUtils.knownPrimes.last));
+
+      expect(11.whenPrime('p', 'n'), equals('p'));
+      expect(12.whenPrime('p', 'n'), equals('n'));
+
+      expect(11.toDynamicInt().whenPrime('p', 'n'), equals('p'));
+      expect(12.toDynamicInt().whenPrime('p', 'n'), equals('n'));
+
+      expect(11.toDecimal().whenPrime('p', 'n'), equals('p'));
+      expect(12.toDecimal().whenPrime('p', 'n'), equals('n'));
+      expect(11.0.toDecimal().whenPrime('p', 'n'), equals('p'));
+      expect(11.5.toDecimal().whenPrime('p', 'n'), equals('n'));
+
+      print('PrimeUtils.knownPrimesLength: ${PrimeUtils.knownPrimesLength}');
+      PrimeUtils.contractKnownPrimes(25);
+      expect(PrimeUtils.lastKnownPrime, equals(97));
+
+      {
+        var np = 97 + 2;
+        expect((np).toDynamicInt().whenPrime('p', 'n'), equals('n'),
+            reason: 'n: $np');
+      }
+
+      {
+        var np = 97 + 4;
+        expect((np).toDynamicInt().whenPrime('p', 'n'), equals('p'),
+            reason: 'n: $np');
+      }
+
+      PrimeUtils.contractKnownPrimes(6);
+      expect(PrimeUtils.lastKnownPrime, equals(13));
+    });
+
     test('PrimeUtils.generatePrimes', () {
       expect(PrimeUtils.generatePrimes(-1), isEmpty);
       expect(PrimeUtils.generatePrimes(0), isEmpty);
@@ -314,9 +348,14 @@ void main() {
 
       print('PrimeUtils.knownPrimesLength: ${PrimeUtils.knownPrimesLength}');
       PrimeUtils.expandKnownPrimes(10000);
-      print('PrimeUtils.knownPrimesLength: ${PrimeUtils.knownPrimesLength}');
 
+      print('PrimeUtils.knownPrimesLength: ${PrimeUtils.knownPrimesLength}');
       expect(PrimeUtils.knownPrimesLength, greaterThanOrEqualTo(10000));
+
+      PrimeUtils.contractKnownPrimes(9000);
+
+      print('PrimeUtils.knownPrimesLength: ${PrimeUtils.knownPrimesLength}');
+      expect(PrimeUtils.knownPrimesLength, greaterThanOrEqualTo(9000));
 
       var mersennePrim3 =
           2.toDynamicInt().powerInt(61).toDynamicInt().subtractInt(1);
