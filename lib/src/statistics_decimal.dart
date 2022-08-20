@@ -364,6 +364,14 @@ class Decimal implements DynamicNumber<Decimal> {
     return Decimal.tryParse(o.toString(), precision: precision);
   }
 
+  @override
+  bool get isWholeNumber {
+    if (precision == 0) return true;
+    var c = compactedPrecision;
+    var isWhole = c.precision == 0;
+    return isWhole;
+  }
+
   /// Returns `this` instance with a new [precision]. Returns the same instance
   /// if [precision] is the same of the current precision.
   Decimal withPrecision(int precision) {
@@ -601,6 +609,16 @@ class Decimal implements DynamicNumber<Decimal> {
 
   @override
   bool get isOne => _n.equalsDynamicInt(_scale);
+
+  /// Returns `true` if and only if this [Decimal] [isWholeNumber] and is odd.
+  /// - Note: that only whole numbers can be even or odd.
+  @override
+  bool get isOdd => isWholeNumber && _n.isOdd;
+
+  /// Returns `true` if and only if this [Decimal] [isWholeNumber] and is even.
+  /// - Note: that only whole numbers can be even or odd.
+  @override
+  bool get isEven => isWholeNumber && _n.isEven;
 
   @override
   bool get isBigInt => false;

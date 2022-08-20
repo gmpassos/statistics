@@ -130,6 +130,9 @@ abstract class DynamicNumber<T extends DynamicNumber<T>>
     return DynamicInt.tryParse(s);
   }
 
+  /// Returns `true` if this is a whole number.
+  bool get isWholeNumber;
+
   /// Returns the sign of this number. See [int.sign].
   int get sign;
 
@@ -146,6 +149,14 @@ abstract class DynamicNumber<T extends DynamicNumber<T>>
 
   /// Returns `true` if this number is one.
   bool get isOne;
+
+  /// Returns `true` if and only if this number is odd.
+  /// - Note: that only whole numbers can be even or odd.
+  bool get isOdd;
+
+  /// Returns `true` if and only if this number is even.
+  /// - Note: that only whole numbers can be even or odd.
+  bool get isEven;
 
   /// Returns this number as [int].
   ///
@@ -495,6 +506,9 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
   }
 
   @override
+  bool get isWholeNumber => true;
+
+  @override
   int get sign;
 
   @override
@@ -504,9 +518,11 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
   bool get isPositive => sign == 1;
 
   /// Returns true if and only if this integer is odd.
+  @override
   bool get isOdd;
 
   /// Returns true if and only if this integer is even.
+  @override
   bool get isEven => !isOdd;
 
   @override

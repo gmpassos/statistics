@@ -120,8 +120,47 @@ void main() {
     });
   });
 
+  group('int/double/num', () {
+    setUp(() {});
+
+    test('isWholeNumber', () {
+      expect((123).isWholeNumber, isTrue);
+      expect((123.0).isWholeNumber, isTrue);
+      expect((123.1).isWholeNumber, isFalse);
+
+      num n = 123;
+      expect(n.isWholeNumber, isTrue);
+
+      n = 123.1;
+      expect(n.isWholeNumber, isFalse);
+
+      n = 123.0;
+      expect(n.isWholeNumber, isTrue);
+    });
+
+    test('compactType', () {
+      expect((123).compactType(), allOf(equals(123), isA<int>()));
+      expect((123.0).compactType(), allOf(equals(123), isA<int>()));
+      expect((123.1).compactType(), allOf(equals(123.1), isA<double>()));
+
+      num n = 123;
+      expect(n.compactType(), allOf(equals(123), isA<int>()));
+
+      n = 123.1;
+      expect(n.compactType(), allOf(equals(123.1), isA<double>()));
+
+      n = 123.0;
+      expect(n.compactType(), allOf(equals(123), isA<int>()));
+    });
+  });
+
   group('int', () {
     setUp(() {});
+
+    test('toBigInt', () {
+      expect(123.isWholeNumber, isTrue);
+      expect(-123.toBigInt(), equals(BigInt.from(-123)));
+    });
 
     test('toBigInt', () {
       expect(123.toBigInt(), equals(BigInt.from(123)));

@@ -1,3 +1,10 @@
+## 1.0.23
+
+- `DynamicNumber`, `DynamicInt`, `Decimal`:
+  - Added `isWholeNumber`, `isOdd`, `isEven`.
+- Added prime numbers support:
+  - `PrimeUtils`, `PrimeIntExtension`, `PrimeDynamicNumberExtension`, `PrimeDecimalExtension`, `PrimeDynamicIntExtension`.
+
 ## 1.0.22
 
 - Added extension `NumericTypeExtension`:

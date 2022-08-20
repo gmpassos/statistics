@@ -978,6 +978,28 @@ extension NumExtension on num {
       return this > -zeroTolerance ? 0 : -1;
     }
   }
+
+  /// Returns `true` if this [double] is a whole number.
+  bool get isWholeNumber {
+    var self = this;
+    if (self is int) {
+      return self.isWholeNumber;
+    } else if (self is double) {
+      return self.isWholeNumber;
+    } else {
+      return false;
+    }
+  }
+
+  /// Returns an [int] for this [num] if [isWholeNumber] otherwise returns `this`.
+  num compactType() {
+    var self = this;
+    if (self is double) {
+      return self.compactType();
+    } else {
+      return this;
+    }
+  }
 }
 
 /// extension for `double`.
@@ -1055,6 +1077,21 @@ extension DoubleExtension on double {
   /// - [suffix] the percentage suffix. Default: `%`
   String toPercentage({int fractionDigits = 2, String suffix = '%'}) =>
       (this * 100).toStringAsFixed(fractionDigits) + suffix;
+
+  /// Returns `true` if this [double] is a whole number.
+  bool get isWholeNumber {
+    var n = toInt();
+    return this == n;
+  }
+
+  /// Returns an [int] for this [double] if [isWholeNumber] otherwise returns `this`.
+  num compactType() {
+    if (isWholeNumber) {
+      return toInt();
+    } else {
+      return this;
+    }
+  }
 }
 
 /// extension for `int`.
@@ -1075,6 +1112,9 @@ extension IntExtension on int {
 
   /// Formats this `int` to a [String] with thousands separator.
   String get thousands => _numberFormat.format(this);
+
+  /// Returns `true` for [int] numbers.
+  bool get isWholeNumber => true;
 }
 
 /// extension for [BigInt].
