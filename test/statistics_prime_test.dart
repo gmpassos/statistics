@@ -357,18 +357,42 @@ void main() {
       print('PrimeUtils.knownPrimesLength: ${PrimeUtils.knownPrimesLength}');
       expect(PrimeUtils.knownPrimesLength, greaterThanOrEqualTo(9000));
 
-      var mersennePrim3 =
-          2.toDynamicInt().powerInt(61).toDynamicInt().subtractInt(1);
-      print('mersennePrim3: $mersennePrim3');
+      void testMersennePrime(int mersennePower) {
+        var initTime = DateTime.now();
 
-      expect(mersennePrim3.isPrime, isTrue,
-          reason: "`$mersennePrim3`is a Mersenne prime!");
+        var mersennePrime = 2
+            .toDynamicInt()
+            .powerInt(mersennePower)
+            .toDynamicInt()
+            .subtractInt(1);
 
-      expect(mersennePrim3.subtractInt(1).isPrime, isFalse,
-          reason: "`$mersennePrim3 - 1`is NOT prime!");
+        var s = '(2^$mersennePower - 1 = $mersennePrime)';
 
-      expect(mersennePrim3.subtractInt(2).isPrime, isFalse,
-          reason: "`$mersennePrim3 - 2`is NOT prime!");
+        print('mersennePrime: $s');
+
+        expect(mersennePrime.isPrime, isTrue,
+            reason: "`$s`is a Mersenne prime!");
+
+        expect(mersennePrime.subtractInt(1).isPrime, isFalse,
+            reason: "`$s - 1`is NOT prime!");
+
+        expect(mersennePrime.subtractInt(2).isPrime, isFalse,
+            reason: "`$s - 2`is NOT prime!");
+
+        var time = DateTime.now().difference(initTime);
+
+        print('mersennePrime time: ${time.inMilliseconds}ms');
+      }
+
+      testMersennePrime(7);
+      testMersennePrime(13);
+      testMersennePrime(17);
+      testMersennePrime(19);
+      testMersennePrime(31);
+
+      if (DataSerializerPlatform.instance.supportsFullInt64) {
+        testMersennePrime(61);
+      }
     });
   });
 }

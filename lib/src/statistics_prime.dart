@@ -214,21 +214,46 @@ extension PrimeDynamicIntExtension on DynamicInt {
 
     var b = n.squareRoot.toDynamicInt();
 
-    var itr = PrimeUtils.knownPrimesIterator;
-    itr.moveNext(); // it's never empty.
+    // Faster:
+    if (b.isSafeInteger) {
+      var bI = b.toInt();
 
-    var p = itr.current.toDynamicInt();
-    if (n.moduloDynamicInt(p).isZero) return false;
+      var itr = PrimeUtils.knownPrimesIterator;
+      itr.moveNext(); // it's never empty.
 
-    while (itr.moveNext()) {
-      p = itr.current.toDynamicInt();
-      if (p > b) break;
+      var p = itr.current;
+      if (n.moduloInt(p).isZero) return false;
 
-      if (n.moduloDynamicInt(p).isZero) return false;
+      while (itr.moveNext()) {
+        p = itr.current;
+        if (p > bI) break;
+
+        if (n.moduloInt(p).isZero) return false;
+      }
+
+      for (p = p + 2; p <= bI; p += 2) {
+        if (n.moduloInt(p).isZero) return false;
+      }
     }
+    // For a very big `n`.
+    // Only using `DynamicInt` (slower):
+    else {
+      var itr = PrimeUtils.knownPrimesIterator;
+      itr.moveNext(); // it's never empty.
 
-    for (p = p.sumInt(2); p <= b; p = p.sumInt(2)) {
+      var p = itr.current.toDynamicInt();
       if (n.moduloDynamicInt(p).isZero) return false;
+
+      while (itr.moveNext()) {
+        p = itr.current.toDynamicInt();
+        if (p > b) break;
+
+        if (n.moduloDynamicInt(p).isZero) return false;
+      }
+
+      for (p = p.sumInt(2); p <= b; p = p.sumInt(2)) {
+        if (n.moduloDynamicInt(p).isZero) return false;
+      }
     }
 
     return true;
