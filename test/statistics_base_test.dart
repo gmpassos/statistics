@@ -509,7 +509,7 @@ void main() {
   });
 
   group('StandardDeviation', () {
-    _testStandardDeviationComputer<N, D>(StandardDeviationComputer stdv) {
+    testStandardDeviationComputer<N, D>(StandardDeviationComputer stdv) {
       expect(stdv.addAll([10, 20, 30]).standardDeviationAsDouble,
           equals(8.16496580927726));
       expect(stdv.isEmpty, isFalse);
@@ -548,17 +548,17 @@ void main() {
 
     test('num', () {
       var stdv = StandardDeviationComputerNum();
-      _testStandardDeviationComputer(stdv);
+      testStandardDeviationComputer(stdv);
     });
 
     test('BigInt', () {
       var stdv = StandardDeviationComputerBigInt();
-      _testStandardDeviationComputer(stdv);
+      testStandardDeviationComputer(stdv);
     });
 
     test('DynamicNumber', () {
       var stdv = StandardDeviationComputerDynamicNumber();
-      _testStandardDeviationComputer(stdv);
+      testStandardDeviationComputer(stdv);
     });
   });
 }
