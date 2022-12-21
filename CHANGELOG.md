@@ -1,3 +1,10 @@
+## 1.0.24
+
+- intl: ^0.18.0
+- lints: ^2.0.1
+- test: ^1.22.1
+- coverage: ^1.6.1
+
 ## 1.0.23
 
 - `DynamicNumber`, `DynamicInt`, `Decimal`:
