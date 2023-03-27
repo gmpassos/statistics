@@ -466,6 +466,38 @@ class Decimal implements DynamicNumber<Decimal> {
   Decimal get compactedPrecision =>
       _compactedPrecision ??= withPrecision(precisionNeeded);
 
+  /// Ensures that [precision] is not gresater than [maximumPrecision].
+  /// Returns [withPrecision]`(maximumPrecision)` if needed.
+  Decimal withMaximumPrecision(int maximumPrecision) {
+    if (precision > maximumPrecision) {
+      return withPrecision(maximumPrecision);
+    } else {
+      return this;
+    }
+  }
+
+  /// Ensures that [precision] is not less than [minimumPrecision].
+  /// Returns [withPrecision]`(minimumPrecision)` if needed.
+  Decimal withMinimumPrecision(int minimumPrecision) {
+    if (precision < minimumPrecision) {
+      return withPrecision(minimumPrecision);
+    } else {
+      return this;
+    }
+  }
+
+  /// Clips the [precision] in range [minimumPrecision] .. [maximumPrecision] (inclusive).
+  /// Returns [withPrecision] if needed.
+  Decimal clipPrecision(int minimumPrecision, int maximumPrecision) {
+    if (precision < minimumPrecision) {
+      return withPrecision(minimumPrecision);
+    } else if (precision > maximumPrecision) {
+      return withPrecision(maximumPrecision);
+    } else {
+      return this;
+    }
+  }
+
   /// Returns this instance using the higher precision between `this` and [other].
   ///
   /// See [withPrecision].

@@ -1489,6 +1489,36 @@ void main() {
       expect(<Decimal>[1.toDecimal(), -2.toDecimal(), 3.toDecimal()].abs,
           equals([1, 2, 3].asDecimal));
     });
+
+    test('withMaximumPrecision/withMinimumPrecision/clipPrecision', () {
+      var d1 = Decimal.parse('12.3456');
+      expect(d1.precision, equals(4));
+      expect(d1.toString(), equals('12.3456'));
+
+      var d2 = d1.withMaximumPrecision(5);
+      expect(d2.precision, equals(4));
+      expect(d2.toString(), equals('12.3456'));
+
+      var d3 = d1.withMaximumPrecision(3);
+      expect(d3.precision, equals(3));
+      expect(d3.toString(), equals('12.345'));
+
+      var d4 = d1.withMinimumPrecision(6);
+      expect(d4.precision, equals(6));
+      expect(d4.toString(), equals('12.345600'));
+
+      var d5 = d1.clipPrecision(2, 6);
+      expect(d5.precision, equals(4));
+      expect(d5.toString(), equals('12.3456'));
+
+      var d6 = d1.clipPrecision(5, 6);
+      expect(d6.precision, equals(5));
+      expect(d6.toString(), equals('12.34560'));
+
+      var d7 = d1.clipPrecision(0, 2);
+      expect(d7.precision, equals(2));
+      expect(d7.toString(), equals('12.34'));
+    });
   });
 }
 
