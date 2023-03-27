@@ -1,3 +1,11 @@
+## 1.0.25
+
+- `Decimal`:
+  - Added `withMaximumPrecision`, `withMinimumPrecision` and `clipPrecision`.
+- collection: ^1.17.0
+- test: ^1.24.0
+- coverage: ^1.6.3
+
 ## 1.0.24
 
 - intl: ^0.18.0
