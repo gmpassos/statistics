@@ -1,3 +1,11 @@
+## 1.0.26
+
+- Fix `IterableNumExtension.standardDeviation`.
+
+- sdk: '>=2.14.0 <4.0.0'
+- intl: ^0.18.1
+- dependency_validator: ^3.2.3
+
 ## 1.0.25
 
 - `Decimal`:

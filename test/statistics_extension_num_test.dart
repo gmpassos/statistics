@@ -784,8 +784,8 @@ void main() {
     test('standardDeviation', () {
       expect(<num>[].standardDeviation, equals(0));
       expect(<num>[0.0].standardDeviation, equals(0));
-      expect(<num>[10].standardDeviation, equals(10));
-      expect(<num>[10, 20.0].standardDeviation, equals(7.905694150420948));
+      expect(<num>[10].standardDeviation, equals(0));
+      expect(<num>[10, 20.0].standardDeviation, equals(5.0));
       expect(<num>[10.0, 20, 30.0].standardDeviation, equals(8.16496580927726));
     });
 

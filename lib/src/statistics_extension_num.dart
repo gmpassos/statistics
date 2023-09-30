@@ -148,7 +148,7 @@ extension IterableNumExtension on Iterable<num> {
 
     var average = mean;
 
-    var first = itr.current;
+    var first = itr.current - average;
     var total = first * first;
 
     while (itr.moveNext()) {
