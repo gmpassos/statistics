@@ -81,8 +81,8 @@ void main() {
     test('standardDeviation', () {
       expect(<int>[].standardDeviation, equals(0));
       expect([0].standardDeviation, equals(0));
-      expect([10].standardDeviation, equals(10));
-      expect([10, 20].standardDeviation, equals(7.905694150420948));
+      expect([10].standardDeviation, equals(0));
+      expect([10, 20].standardDeviation, equals(5));
       expect([10, 20, 30].standardDeviation, equals(8.16496580927726));
     });
 
@@ -274,7 +274,7 @@ void main() {
       expect(
           chronometer.toString(),
           matches(RegExp(
-              r'^test\{ [\d.]+ \w+ · hertz: [\d.]+ Hz · ops: [\d,]+ » [\d.]+\% · ETOC: [\d.]+ \w+ · start: [\d-]+ [\d:.-]+ \.\. \d+\.\d+ \}$')));
+              r'^test\{ [\d.]+ \w+ · hertz: [\d.]+ Hz · ops: [\d,]+ » [\d.]+% · ETOC: [\d.]+ \w+ · start: [\d-]+ [\d:.-]+ \.\. \d+\.\d+ \}$')));
 
       var chronometer2 = Chronometer('test2');
 
