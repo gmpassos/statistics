@@ -439,7 +439,7 @@ extension IterableDoubleExtension on Iterable<double> {
 
     var average = mean;
 
-    var first = itr.current;
+    var first = itr.current - average;
     var total = first * first;
 
     while (itr.moveNext()) {
@@ -731,7 +731,7 @@ extension IterableIntExtension on Iterable<int> {
 
     var average = mean;
 
-    var first = itr.current;
+    var first = itr.current - average;
     var total = (first * first).toDouble();
 
     while (itr.moveNext()) {

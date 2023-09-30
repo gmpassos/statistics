@@ -1610,7 +1610,7 @@ extension DynamicIntOnIterableDynamicNumberExtension
 
     var average = mean;
 
-    var first = itr.current;
+    var first = itr.current - average;
     var total = first * first;
 
     while (itr.moveNext()) {
@@ -1690,7 +1690,7 @@ extension DynamicIntOnIterableDynamicIntExtension on Iterable<DynamicInt> {
 
     var average = mean;
 
-    var first = itr.current;
+    var first = itr.current - average;
     var total = first * first;
 
     while (itr.moveNext()) {

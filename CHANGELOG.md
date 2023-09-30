@@ -1,6 +1,10 @@
 ## 1.0.26
 
-- Fix `IterableNumExtension.standardDeviation`.
+- Fix:
+  - `IterableNumExtension.standardDeviation`.
+  - `IterableDoubleExtension.standardDeviation`.
+  - `DecimalOnIterableDecimalExtension.standardDeviation`.
+  - `DynamicIntOnIterableDynamicNumberExtension.standardDeviation`.
 
 - sdk: '>=2.14.0 <4.0.0'
 - intl: ^0.18.1

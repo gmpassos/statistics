@@ -266,8 +266,8 @@ void main() {
     test('standardDeviation', () {
       expect(<int>[].standardDeviation, equals(0));
       expect([0].standardDeviation, equals(0));
-      expect([10].standardDeviation, equals(10));
-      expect([10, 20].standardDeviation, equals(7.905694150420948));
+      expect([10].standardDeviation, equals(0));
+      expect([10, 20].standardDeviation, equals(5));
       expect(<int>[10, 20, 30].standardDeviation, equals(8.16496580927726));
     });
 
@@ -551,8 +551,8 @@ void main() {
     test('standardDeviation', () {
       expect(<double>[].standardDeviation, equals(0));
       expect(<double>[0.0].standardDeviation, equals(0));
-      expect(<double>[10.0].standardDeviation, equals(10));
-      expect(<double>[10.0, 20.0].standardDeviation, equals(7.905694150420948));
+      expect(<double>[10.0].standardDeviation, equals(0));
+      expect(<double>[10.0, 20.0].standardDeviation, equals(5));
       expect(<double>[10.0, 20.0, 30.0].standardDeviation,
           equals(8.16496580927726));
     });
