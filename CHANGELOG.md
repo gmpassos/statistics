@@ -1,3 +1,15 @@
+## 1.1.0
+
+- sdk: '>=3.3.0 <4.0.0'
+
+- intl: ^0.19.0
+- collection: ^1.18.0
+- data_serializer: ^1.1.0
+
+- lints: ^3.0.0
+- test: ^1.25.2
+- coverage: ^1.7.2
+
 ## 1.0.26
 
 - Fix:
