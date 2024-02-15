@@ -23,7 +23,7 @@ class ValidationError implements Exception {
 }
 
 /// An interface for objects that can be validated.
-abstract class Validatable {
+mixin Validatable {
   /// Validates the instance. Returns the invalid [Object] or `null` when valid.
   Object? validate();
 
@@ -39,7 +39,7 @@ abstract class Validatable {
   }
 }
 
-abstract class Freezeable {
+mixin Freezeable {
   void checkNotFrozen() {
     if (isFrozen) {
       throw ValidationError("$runtimeType already frozen!");
@@ -517,7 +517,7 @@ extension BayesValueSignalExtension on BayesValueSignal {
 }
 
 /// A value in a [BayesianNetwork].
-class BayesValue extends Validatable implements Comparable<BayesValue> {
+class BayesValue with Validatable implements Comparable<BayesValue> {
   /// Name of the value.
   final String name;
 
@@ -655,7 +655,7 @@ class BayesEvent implements Comparable<BayesEvent> {
   String toJson() => '${node.name}=${value.name}';
 }
 
-abstract class BayesNode extends Validatable with Freezeable {
+abstract class BayesNode with Validatable, Freezeable {
   /// The network of this element.
   final BayesianNetwork network;
 
@@ -2217,7 +2217,7 @@ abstract class BayesAnalyser {
 
 /// A [BayesianNetwork] analyser using the "Variable Elimination" method.
 class BayesAnalyserVariableElimination extends BayesAnalyser {
-  BayesAnalyserVariableElimination(BayesianNetwork network) : super(network);
+  BayesAnalyserVariableElimination(super.network);
 
   @override
   Answer infer(String targetVariable, String selectedVariables,
@@ -3032,12 +3032,11 @@ class ObservedEventProbabilities {
 class ObservedDependencyEvent extends ObservedEvent {
   final List<String> _dependentVariables;
 
-  ObservedDependencyEvent._(
-      Iterable<String> dependentVariables, Iterable values,
-      {required NetworkCache? networkCache})
+  ObservedDependencyEvent._(Iterable<String> dependentVariables, super.values,
+      {required super.networkCache})
       : _dependentVariables =
             _resolveDependentVariables(dependentVariables, networkCache),
-        super._(values, networkCache: networkCache) {
+        super._() {
     _check();
   }
 
@@ -3049,11 +3048,11 @@ class ObservedDependencyEvent extends ObservedEvent {
   }
 
   ObservedDependencyEvent.withValues(
-      Iterable<String> dependentVariables, Iterable<ObservedEventValue> values,
-      {required NetworkCache? networkCache})
+      Iterable<String> dependentVariables, super.values,
+      {required super.networkCache})
       : _dependentVariables =
             _resolveDependentVariables(dependentVariables, networkCache),
-        super.withValues(values, networkCache: networkCache) {
+        super.withValues() {
     _check();
   }
 

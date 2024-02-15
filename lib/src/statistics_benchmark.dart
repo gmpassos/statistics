@@ -35,7 +35,7 @@ BenchmarkResult<R> benchmark<R>(String name, int loops, BenchMarkFunction<R> f,
 class BenchmarkResult<R> extends Chronometer {
   late R _result;
 
-  BenchmarkResult(String name) : super(name);
+  BenchmarkResult(super.name);
 
   R get result => _result;
 

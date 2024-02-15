@@ -205,7 +205,7 @@ extension SeriesMapExtension<E> on Map<String, List<E>?> {
           e ??= nullValue;
           e ??= (nullValue = _toDefault())!;
 
-          var v = valueNormalizer(e);
+          var v = valueNormalizer(e as E);
 
           line.write(separator);
           line.write(v);
