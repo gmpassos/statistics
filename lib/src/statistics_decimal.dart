@@ -1418,6 +1418,12 @@ class Decimal implements DynamicNumber<Decimal> {
   DynamicInt operator ~() => ~toDynamicInt();
 
   @override
+  Decimal get sin => Decimal.fromDouble(math.sin(toDouble()));
+
+  @override
+  Decimal get cos => Decimal.fromDouble(math.cos(toDouble()));
+
+  @override
   Decimal get square => this * this;
 
   @override

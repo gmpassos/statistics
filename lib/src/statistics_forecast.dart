@@ -168,7 +168,7 @@ abstract class EventForecaster<T, V, F> {
         if (dependencyNotificationRatio >= 1 ||
             _random.nextDouble() < dependencyNotificationRatio) {
           var dependentObservations =
-              combination.map((id) => observationsByID[id]).whereNotNull();
+              combination.map((id) => observationsByID[id]).nonNulls;
 
           _notifyConclusion(source, dependentObservations, event, value,
               dependency: true);

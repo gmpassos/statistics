@@ -1,3 +1,11 @@
+## 1.1.1
+
+- `DynamicNumber`:
+  - Added `sin` and `cos`.
+
+- test: ^1.25.8
+- coverage: ^1.8.0
+
 ## 1.1.0
 
 - sdk: '>=3.3.0 <4.0.0'

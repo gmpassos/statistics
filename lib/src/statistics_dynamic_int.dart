@@ -313,6 +313,12 @@ abstract class DynamicNumber<T extends DynamicNumber<T>>
   /// Euclidean modulo for [DynamicInt] [n2].
   T moduloDynamicInt(DynamicInt n2);
 
+  /// The sine of this number.
+  Decimal get sin;
+
+  /// The cosine of this number.
+  Decimal get cos;
+
   /// The square of this number.
   T get square;
 
@@ -814,6 +820,12 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
 
   @override
   DynamicInt moduloDynamicInt(DynamicInt other);
+
+  @override
+  Decimal get sin => Decimal.fromDouble(math.sin(toInt()));
+
+  @override
+  Decimal get cos => Decimal.fromDouble(math.cos(toInt()));
 
   @override
   DynamicInt get square => (this * this).toDynamicInt();
