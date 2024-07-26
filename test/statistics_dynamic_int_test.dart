@@ -1218,6 +1218,30 @@ void main() {
           equals('3.0'));
     });
 
+    test('sin', () {
+      expect(DynamicInt.fromInt(1).sin,
+          equals(Decimal.fromDouble(0.8414709848078965)));
+      expect(DynamicInt.fromInt(-1).sin,
+          equals(Decimal.fromDouble(-0.8414709848078965)));
+
+      expect(DynamicInt.fromInt(10).sin,
+          equals(Decimal.fromDouble(-0.5440211108893699)));
+      expect(DynamicInt.fromInt(-10).sin,
+          equals(Decimal.fromDouble(0.5440211108893699)));
+    });
+
+    test('cos', () {
+      expect(DynamicInt.fromInt(1).cos,
+          equals(Decimal.fromDouble(0.5403023058681398)));
+      expect(DynamicInt.fromInt(-1).cos,
+          equals(Decimal.fromDouble(0.5403023058681398)));
+
+      expect(DynamicInt.fromInt(10).cos,
+          equals(Decimal.fromDouble(-0.8390715290764524)));
+      expect(DynamicInt.fromInt(-10).cos,
+          equals(Decimal.fromDouble(-0.8390715290764524)));
+    });
+
     test('square', () {
       expect(1.toDynamicInt().square.toString(), equals('1'));
       expect(10.toDynamicInt().square.toString(), equals('100'));

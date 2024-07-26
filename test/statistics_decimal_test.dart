@@ -1259,6 +1259,30 @@ void main() {
           (~Decimal.parse('-1.00', precision: 2)).toHex(), equals('00000000'));
     });
 
+    test('sin', () {
+      expect(Decimal.fromInt(1).sin,
+          equals(Decimal.fromDouble(0.8414709848078965)));
+      expect(Decimal.fromInt(-1).sin,
+          equals(Decimal.fromDouble(-0.8414709848078965)));
+
+      expect(Decimal.fromInt(10).sin,
+          equals(Decimal.fromDouble(-0.5440211108893699)));
+      expect(Decimal.fromInt(-10).sin,
+          equals(Decimal.fromDouble(0.5440211108893699)));
+    });
+
+    test('cos', () {
+      expect(Decimal.fromInt(1).cos,
+          equals(Decimal.fromDouble(0.5403023058681398)));
+      expect(Decimal.fromInt(-1).cos,
+          equals(Decimal.fromDouble(0.5403023058681398)));
+
+      expect(Decimal.fromInt(10).cos,
+          equals(Decimal.fromDouble(-0.8390715290764524)));
+      expect(Decimal.fromInt(-10).cos,
+          equals(Decimal.fromDouble(-0.8390715290764524)));
+    });
+
     test('square', () {
       expect(Decimal.parse('0').square.toString(), equals('0.0'));
       expect(Decimal.parse('1').square.toString(), equals('1.0'));
