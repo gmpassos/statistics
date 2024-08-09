@@ -1,3 +1,8 @@
+## 1.1.2
+
+- data_serializer: ^1.2.0
+- coverage: ^1.9.0
+
 ## 1.1.1
 
 - `DynamicNumber`:
