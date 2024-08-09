@@ -1,5 +1,7 @@
 ## 1.1.2
 
+- sdk: '>=3.4.0 <4.0.0'
+
 - data_serializer: ^1.2.0
 - coverage: ^1.9.0
 
