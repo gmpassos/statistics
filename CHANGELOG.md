@@ -1,3 +1,8 @@
+## 1.1.3
+
+- `Decimal`:
+  - `_divideOperationByDynamicIntImpl2`: fix operation with therms of different signals (`-/+` or `+/-`). 
+
 ## 1.1.2
 
 - sdk: '>=3.4.0 <4.0.0'

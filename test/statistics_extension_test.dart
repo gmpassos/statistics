@@ -170,6 +170,9 @@ void main() {
       expect(['10', '30', '30', '30'].toDistinctList(),
           allOf(isA<List<String>>(), equals(['10', '30'])));
 
+      expect(['30', '20', '30', '30'].toDistinctList(),
+          allOf(isA<List<String>>(), equals(['30', '20'])));
+
       expect(['10', '10', '20', '30', '40', '50'].toDistinctList(),
           allOf(isA<List<String>>(), equals(['10', '20', '30', '40', '50'])));
 

@@ -1183,11 +1183,20 @@ class Decimal implements DynamicNumber<Decimal> {
       var r2 = r.multiplyDynamicInt(r2Scale);
       var r2Div = r2 ~/ n;
 
-      while (r2Precision < 15 && (r2Div.multiplyDynamicInt(n)) < r2) {
-        r2 = r2.multiplyDynamicInt(r2Scale);
-        r2Div = r2 ~/ n;
-        r2Precision *= 2;
-        r2Scale = r2Scale.multiplyDynamicInt(r2Scale);
+      if (r2.isNegative) {
+        while (r2Precision < 15 && r2Div.multiplyDynamicInt(n) > r2) {
+          r2 = r2.multiplyDynamicInt(r2Scale);
+          r2Div = r2 ~/ n;
+          r2Precision *= 2;
+          r2Scale = r2Scale.multiplyDynamicInt(r2Scale);
+        }
+      } else {
+        while (r2Precision < 15 && r2Div.multiplyDynamicInt(n) < r2) {
+          r2 = r2.multiplyDynamicInt(r2Scale);
+          r2Div = r2 ~/ n;
+          r2Precision *= 2;
+          r2Scale = r2Scale.multiplyDynamicInt(r2Scale);
+        }
       }
 
       d = d.multiplyDynamicInt(r2Scale).sumDynamicInt(r2Div);
