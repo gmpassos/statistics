@@ -326,8 +326,9 @@ extension ListExtension<T> on List<T> {
               return <T>[a, b, c];
             }
           } else if (c == d) {
+            assert(a != c);
             if (a == b) {
-              return a == c ? <T>[a] : <T>[a, c];
+              return <T>[a, c];
             } else {
               return <T>[a, b, c];
             }

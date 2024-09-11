@@ -1163,6 +1163,18 @@ void main() {
           (1000000.toDecimal().divideBigIntAsDecimal(2.toBigInt()))
               .toStringStandard(),
           equals('500000.0'));
+
+      expect(Decimal.parse('500.0') / Decimal.parse('55597.463309718'),
+          equals(Decimal.parse('0.008993216061219')));
+
+      expect(Decimal.parse('-500.0') / Decimal.parse('-55597.463309718'),
+          equals(Decimal.parse('0.008993216061219')));
+
+      expect(Decimal.parse('-500.0') / Decimal.parse('55597.463309718'),
+          equals(Decimal.parse('-0.008993216061219')));
+
+      expect(Decimal.parse('500.0') / Decimal.parse('-55597.463309718'),
+          equals(Decimal.parse('-0.008993216061219')));
     });
 
     test('operation %', () {
