@@ -1,3 +1,16 @@
+## 1.2.0
+
+- sdk: '>=3.6.0 <4.0.0'
+
+- intl: ^0.20.2
+- collection: ^1.19.0
+- data_serializer: ^1.2.1
+
+- lints: ^5.1.1
+- test: ^1.25.15
+- dependency_validator: ^3.2.3
+- coverage: ^1.11.1
+
 ## 1.1.3
 
 - `Decimal`:

@@ -112,13 +112,13 @@ extension ListExtension<T> on List<T> {
   /// Retain in `this` [List] all the elements contained in [other].
   void retainAll(Iterable other) => retainWhere((e) => other.contains(e));
 
-  /// Returns this instance as a [List]<double>.
+  /// Returns this instance as a [List]`<double>`.
   /// If needed creates a new instance, calling [parseDouble] for each element.
   List<double> asDoubles() => this is List<double>
       ? this as List<double>
       : map((v) => parseDouble(v)!).toList();
 
-  /// Returns this instance as a [List]<int>.
+  /// Returns this instance as a [List]`<int>`.
   /// If needed creates a new instance, calling [parseInt] for each element.
   List<int> asInts() =>
       this is List<int> ? this as List<int> : map((v) => parseInt(v)!).toList();
@@ -718,7 +718,7 @@ extension IterableExtension<T> on Iterable<T> {
         return MapEntry(k, v);
       }));
 
-  /// Returns a [List]<String>. If this instance is not already a [List]<String>,
+  /// Returns a [List]`<String>`. If this instance is not already a [List]`<String>`,
   /// creates a new instance, calling [toString] for each element.
   List<String> toStringsList() {
     if (this is List<String>) {

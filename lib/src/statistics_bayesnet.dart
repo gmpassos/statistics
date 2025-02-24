@@ -497,8 +497,6 @@ extension BayesValueSignalExtension on BayesValueSignal {
         return 'negative';
       case BayesValueSignal.unknown:
         return 'unknown';
-      default:
-        throw StateError('Unknown enum: $this');
     }
   }
 
@@ -510,8 +508,6 @@ extension BayesValueSignalExtension on BayesValueSignal {
         return '-';
       case BayesValueSignal.unknown:
         return '';
-      default:
-        throw StateError('Unknown enum: $this');
     }
   }
 }

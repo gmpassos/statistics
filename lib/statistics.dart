@@ -1,5 +1,5 @@
 /// Statistics library.
-library statistics;
+library;
 
 export 'package:data_serializer/data_serializer.dart';
 

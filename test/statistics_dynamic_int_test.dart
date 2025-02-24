@@ -1,4 +1,6 @@
 @Tags(['num'])
+library;
+
 import 'package:statistics/statistics.dart';
 import 'package:test/test.dart';
 

@@ -1,4 +1,6 @@
 @Tags(['num', 'decimal'])
+library;
+
 import 'dart:math' as math;
 
 import 'package:statistics/statistics.dart';

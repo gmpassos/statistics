@@ -254,8 +254,6 @@ extension UnitLengthExtension on UnitLength {
           }
           break;
         }
-      default:
-        break;
     }
 
     throw StateError('Unknown conversion: $this -> $targetUnit');
@@ -316,8 +314,6 @@ extension UnitLengthExtension on UnitLength {
         return 'inch';
       case UnitLength.mi:
         return 'mile';
-      default:
-        throw StateError('Unknown Unit: $this');
     }
   }
 
@@ -342,8 +338,6 @@ extension UnitLengthExtension on UnitLength {
         return 'in';
       case UnitLength.mi:
         return 'mi';
-      default:
-        throw StateError('Unknown Unit: $this');
     }
   }
 }
