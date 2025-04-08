@@ -320,6 +320,54 @@ void main() {
       expect(statisticsDecimal.toString(precision: 0),
           equals('{~25 +-11 [10..(30)..40] #4}'));
 
+      ///////
+
+      expect(statistics.cast<int>(), isA<Statistics<int>>());
+      expect(statistics.cast<int>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statistics.cast<double>(), isA<Statistics<double>>());
+      expect(statistics.cast<double>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsBigInt.cast<int>(), isA<Statistics<int>>());
+      expect(statisticsBigInt.cast<int>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      ///////
+
+      expect(statisticsDynamicInt.cast<int>(), isA<Statistics<int>>());
+      expect(statisticsDynamicInt.cast<int>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDynamicInt.castDynamicNumber<DynamicInt>(),
+          isA<StatisticsDynamicNumber<DynamicInt>>());
+      expect(statisticsDynamicInt.castDynamicNumber<DynamicInt>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDynamicInt.castDynamicNumber<Decimal>(),
+          isA<StatisticsDynamicNumber<Decimal>>());
+      expect(statisticsDynamicInt.castDynamicNumber<Decimal>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      ///////
+
+      expect(statisticsDecimal.cast<int>(), isA<Statistics<int>>());
+      expect(statisticsDecimal.cast<int>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDecimal.castDynamicNumber<DynamicInt>(),
+          isA<StatisticsDynamicNumber<DynamicInt>>());
+      expect(statisticsDecimal.castDynamicNumber<DynamicInt>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDecimal.castDynamicNumber<Decimal>(),
+          isA<StatisticsDynamicNumber<Decimal>>());
+      expect(statisticsDecimal.castDynamicNumber<Decimal>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      ///////
+
       expect(data.statisticsWithData.data, equals(data));
       expect(dataBigInt.statisticsWithData.data, equals(dataBigInt));
       expect(dataDynamicInt.statisticsWithData.data, equals(dataDynamicInt));

@@ -1335,6 +1335,53 @@ class StatisticsDynamicNumber<N extends DynamicNumber<N>> extends DataEntry {
     return statistics;
   }
 
+  /// Casts this instance to `StatisticsDynamicNumber<T>`.
+  StatisticsDynamicNumber<T> castDynamicNumber<T extends DynamicNumber<T>>() {
+    if (T == DynamicInt) {
+      if (this is StatisticsDynamicNumber<T>) {
+        return this as StatisticsDynamicNumber<T>;
+      }
+
+      return StatisticsDynamicNumber<DynamicInt>(
+        length,
+        min.toDynamicInt(),
+        max.toDynamicInt(),
+        medianLow: medianLow.toDynamicInt(),
+        medianHigh: medianHigh.toDynamicInt(),
+        mean: mean,
+        standardDeviation: standardDeviation,
+        sum: sum.toDynamicInt(),
+        squaresSum: squaresSum.toDynamicInt(),
+        lowerStatistics: lowerStatistics?.castDynamicNumber<T>()
+            as StatisticsDynamicNumber<DynamicInt>?,
+        upperStatistics: upperStatistics?.castDynamicNumber<T>()
+            as StatisticsDynamicNumber<DynamicInt>?,
+      ) as StatisticsDynamicNumber<T>;
+    } else if (T == Decimal) {
+      if (this is StatisticsDynamicNumber<T>) {
+        return this as StatisticsDynamicNumber<T>;
+      }
+
+      return StatisticsDynamicNumber<Decimal>(
+        length,
+        min.toDecimal(),
+        max.toDecimal(),
+        medianLow: medianLow.toDecimal(),
+        medianHigh: medianHigh.toDecimal(),
+        mean: mean,
+        standardDeviation: standardDeviation,
+        sum: sum.toDecimal(),
+        squaresSum: squaresSum.toDecimal(),
+        lowerStatistics: lowerStatistics?.castDynamicNumber<T>()
+            as StatisticsDynamicNumber<Decimal>?,
+        upperStatistics: upperStatistics?.castDynamicNumber<T>()
+            as StatisticsDynamicNumber<Decimal>?,
+      ) as StatisticsDynamicNumber<T>;
+    } else {
+      return this as StatisticsDynamicNumber<T>;
+    }
+  }
+
   /// Casts this instance to `Statistics<T>`.
   Statistics<T> cast<T extends num>() {
     if (T == int) {
