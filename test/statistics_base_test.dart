@@ -340,6 +340,10 @@ void main() {
       expect(statisticsDynamicInt.cast<int>().toString(),
           equals('{~25 +-11.1803 [10..(30)..40] #4}'));
 
+      expect(statisticsDynamicInt.cast<double>(), isA<Statistics<double>>());
+      expect(statisticsDynamicInt.cast<double>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
       expect(statisticsDynamicInt.castDynamicNumber<DynamicInt>(),
           isA<StatisticsDynamicNumber<DynamicInt>>());
       expect(statisticsDynamicInt.castDynamicNumber<DynamicInt>().toString(),
@@ -354,6 +358,10 @@ void main() {
 
       expect(statisticsDecimal.cast<int>(), isA<Statistics<int>>());
       expect(statisticsDecimal.cast<int>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDecimal.cast<double>(), isA<Statistics<double>>());
+      expect(statisticsDecimal.cast<double>().toString(),
           equals('{~25 +-11.1803 [10..(30)..40] #4}'));
 
       expect(statisticsDecimal.castDynamicNumber<DynamicInt>(),
