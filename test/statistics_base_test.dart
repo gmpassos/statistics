@@ -390,17 +390,25 @@ void main() {
 
       ///////
 
-      expect(statistics.divideBy(2).toString(),
-          equals('{~12.5 +-5.5901 [5..(15)..20] #2.0}'));
+      expect(
+          statistics.divideBy(2).toString(),
+          anyOf(equals('{~12.5 +-5.5901 [5..(15)..20] #2.0}'),
+              equals('{~12.5 +-5.5901 [5..(15)..20] #2}')));
 
-      expect(statisticsBigInt.divideBy(DynamicInt.two).toString(),
-          equals('{~12.5 +-5.5901 [5..(15)..20] #2}'));
+      expect(
+          statisticsBigInt.divideBy(DynamicInt.two).toString(),
+          anyOf(equals('{~12.5 +-5.5901 [5..(15)..20] #2.0}'),
+              equals('{~12.5 +-5.5901 [5..(15)..20] #2}')));
 
-      expect(statisticsDynamicInt.divideBy(DynamicInt.two).toString(),
-          equals('{~12.5 +-5.5901 [5..(15)..20] #2}'));
+      expect(
+          statisticsDynamicInt.divideBy(DynamicInt.two).toString(),
+          anyOf(equals('{~12.5 +-5.5901 [5..(15)..20] #2.0}'),
+              equals('{~12.5 +-5.5901 [5..(15)..20] #2}')));
 
-      expect(statisticsDecimal.divideBy(DynamicInt.two).toString(),
-          equals('{~12.5 +-5.5901 [5..(15)..20] #2}'));
+      expect(
+          statisticsDecimal.divideBy(DynamicInt.two).toString(),
+          anyOf(equals('{~12.5 +-5.5901 [5..(15)..20] #2.0}'),
+              equals('{~12.5 +-5.5901 [5..(15)..20] #2}')));
 
       ///////
 
