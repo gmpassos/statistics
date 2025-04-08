@@ -306,7 +306,8 @@ class Statistics<N extends num> extends DataEntry {
       squaresSumBigInt ??= squaresSum!.toBigInt();
 
       return StandardDeviationComputerBigInt._compute(
-          sumBigInt, squaresSumBigInt, length);
+              sumBigInt, squaresSumBigInt, length.toInt())
+          .toDouble();
     } else {
       sum ??= sumBigInt!.toInt();
       squaresSum ??= squaresSumBigInt!.toInt();
@@ -646,6 +647,444 @@ class Statistics<N extends num> extends DataEntry {
           sumBigInt + other.sumBigInt,
           squaresSumBigInt + other.squaresSumBigInt,
           length + other.length),
+    );
+  }
+
+  @override
+  List<String> getDataFields() => [
+        'mean',
+        'standardDeviation',
+        'length',
+        'min',
+        'max',
+        'sum',
+        'squaresSum'
+      ];
+
+  @override
+  List getDataValues() =>
+      [mean, standardDeviation, length, min, max, sum, squaresSum];
+}
+
+/// A statistics summary of a [BigInt] numeric collection.
+/// See [Statistics].
+class StatisticsBigInt extends DataEntry {
+  /// The length/size of the numeric collection.
+  int length;
+
+  /// Returns `true` if [length] == `0`.
+  bool get isEmpty => length == 0;
+
+  /// Returns `true` if [length] != `0`.
+  bool get isNotEmpty => !isEmpty;
+
+  /// The minimal value of the numeric collection.
+  BigInt min;
+
+  /// The maximum value of the numeric collection.
+  BigInt max;
+
+  /// The center value of the numeric collection.
+  /// (Equivalent to [medianHigh]).
+  BigInt get center => medianHigh;
+
+  /// The center value index of the numeric collection: ([length] ~/ `2`)
+  /// (Equivalent to [medianHighIndex]).
+  int get centerIndex => medianHighIndex;
+
+  /// The lower median value. See [median].
+  BigInt medianLow;
+
+  /// The [medianLow] value index.
+  int get medianLowIndex =>
+      length % 2 == 0 ? medianHighIndex - 1 : medianHighIndex;
+
+  /// The higher median value. See [median].
+  BigInt medianHigh;
+
+  /// The [medianHigh] value index.
+  int get medianHighIndex => length ~/ 2;
+
+  /// The median value. Also the average between [medianLow] and [medianHigh].
+  ///
+  /// - For sets of odd size the median is a single value, that separates the
+  ///   higher half from the lower half of the set. (In this case [medianLow] and [medianHigh] are the same value).
+  /// - For sets of even size the median is the average of a pair of values, the [medianLow] and
+  ///   [medianHigh] values.
+  Decimal get median {
+    final medianHigh = this.medianHigh;
+    // To avoid any unnecessary calculation:
+    if (medianLow == medianHigh) {
+      return medianHigh.toDecimal();
+    }
+
+    var median =
+        (medianLow + medianHigh).toDynamicInt().divideBigInt(BigInt.two);
+    return median.toDecimal();
+  }
+
+  /// The total sum of the numeric collection.
+  BigInt sum;
+
+  /// The total sum of squares of the numeric collection.
+  BigInt squaresSum;
+
+  /// Returns the mean/average of the numeric collection.
+  Decimal mean;
+
+  /// The standard deviation of the numeric collection.
+  Decimal standardDeviation;
+
+  /// Returns the computed [Statistics] of the lower part of the numeric collection, from index `0` (inclusive) to [centerIndex] (exclusive).
+  StatisticsBigInt? lowerStatistics;
+
+  /// Returns the computed [Statistics] of the upper part of the numeric collection, from index [centerIndex] (inclusive) to [length] (exclusive).
+  StatisticsBigInt? upperStatistics;
+
+  StatisticsBigInt(
+    this.length,
+    this.min,
+    this.max, {
+    BigInt? medianLow,
+    required this.medianHigh,
+    Decimal? mean,
+    Decimal? standardDeviation,
+    BigInt? sum,
+    BigInt? squaresSum,
+    this.lowerStatistics,
+    this.upperStatistics,
+  })  : medianLow = medianLow ?? medianHigh,
+        sum = sum ?? mean!.multiplyInt(length).toBigInt(),
+        squaresSum = squaresSum ??
+            standardDeviation!
+                .multiplyDecimal(standardDeviation)
+                .multiplyInt(length),
+        mean = mean ?? sum!.toDecimal().multiplyInt(length),
+        standardDeviation = standardDeviation ??
+            _computeStandardDeviation(sum, squaresSum, length);
+
+  static Decimal _computeStandardDeviation(
+      BigInt? sum, BigInt? squaresSum, int length) {
+    return StandardDeviationComputerBigInt._compute(sum!, squaresSum!, length);
+  }
+
+  factory StatisticsBigInt._empty(Iterable<BigInt> list) {
+    var zero = BigInt.zero;
+    return StatisticsBigInt(0, zero, zero,
+        medianHigh: zero, sum: zero, squaresSum: zero);
+  }
+
+  factory StatisticsBigInt._single(BigInt n) {
+    var nDecimal = n.toDecimal();
+    return StatisticsBigInt(1, n, n,
+        medianHigh: n,
+        sum: n,
+        squaresSum: n * n,
+        mean: nDecimal,
+        standardDeviation: Decimal.zero);
+  }
+
+  /// Computes a [Statistics] summary from [data].
+  ///
+  /// - [alreadySortedData] if `true` will avoid sorting of [data].
+  ///   This allows some usage optimization, do not pass an inconsistent value.
+  /// - [computeLowerAndUpper] if `true` will compute [lowerStatistics] and [upperStatistics].
+  /// - [keepData] if `true` will keep a copy of [data] at [data].
+  /// - [useBigIntToCompute] if `true` will force use of [BigInt] for internal computation to avoid overflow.
+  factory StatisticsBigInt.compute(Iterable<BigInt> data,
+      {bool alreadySortedData = false,
+      bool computeLowerAndUpper = true,
+      bool keepData = false,
+      bool useBigIntToCompute = false}) {
+    var length = data.length;
+    if (length == 0) {
+      var statistics = StatisticsBigInt._empty(data);
+      if (keepData) {
+        statistics.data = data.toList();
+      }
+      return statistics;
+    }
+
+    if (length == 1) {
+      var statistics = StatisticsBigInt._single(data.first);
+      if (keepData) {
+        statistics.data = data.toList();
+      }
+      return statistics;
+    }
+
+    var listSorted = data.toList();
+    if (!alreadySortedData) {
+      listSorted.sort();
+    }
+
+    var first = listSorted.first;
+    var min = first;
+    var max = listSorted.last;
+
+    var evenSet = length % 2 == 0;
+    var medianHighIndex = length ~/ 2;
+    var medianHigh = listSorted[medianHighIndex];
+    var medianLow = evenSet ? listSorted[medianHighIndex - 1] : medianHigh;
+
+    if (alreadySortedData) {
+      if (min > max || medianLow > medianHigh) {
+        throw ArgumentError(
+            "Inconsistent argument 'alreadySortedData': min:$min > max:$max ; medianLow:$medianLow > medianHigh:$medianHigh");
+      }
+    }
+
+    BigInt sum;
+    BigInt squaresSum;
+
+    Decimal mean;
+    Decimal standardDeviation;
+
+    if (true) {
+      sum = first;
+      squaresSum = first * first;
+
+      for (var i = 1; i < length; ++i) {
+        var n = listSorted[i];
+        var nBigInt = n;
+        sum += nBigInt;
+        squaresSum += nBigInt * nBigInt;
+      }
+
+      mean = sum.toDecimal().divideInt(length);
+
+      standardDeviation = _computeStandardDeviation(sum, squaresSum, length);
+    }
+
+    StatisticsBigInt? lowerStatistics;
+    StatisticsBigInt? upperStatistics;
+
+    if (computeLowerAndUpper) {
+      List<BigInt> lower;
+      List<BigInt> upper;
+
+      if (evenSet) {
+        lower = listSorted.sublist(0, medianHighIndex);
+        upper = listSorted.sublist(medianHighIndex);
+      } else {
+        lower = listSorted.sublist(0, medianHighIndex + 1);
+        upper = listSorted.sublist(medianHighIndex);
+      }
+
+      lowerStatistics = StatisticsBigInt.compute(lower,
+          computeLowerAndUpper: false, keepData: false);
+      upperStatistics = StatisticsBigInt.compute(upper,
+          computeLowerAndUpper: false, keepData: false);
+    }
+
+    var statistics = StatisticsBigInt(
+      length,
+      min,
+      max,
+      medianLow: medianLow,
+      medianHigh: medianHigh,
+      sum: sum,
+      squaresSum: squaresSum,
+      mean: mean,
+      standardDeviation: standardDeviation,
+      lowerStatistics: lowerStatistics,
+      upperStatistics: upperStatistics,
+    );
+
+    if (keepData) {
+      statistics.data = data.toList();
+    }
+
+    return statistics;
+  }
+
+  /// Casts this instance to `Statistics<T>`.
+  Statistics<T> cast<T extends num>() {
+    if (T == int) {
+      if (this is Statistics<T>) {
+        return this as Statistics<T>;
+      }
+
+      return Statistics<int>(
+        length,
+        min.toInt(),
+        max.toInt(),
+        medianLow: medianLow.toInt(),
+        medianHigh: medianHigh.toInt(),
+        mean: mean.toDouble(),
+        standardDeviation: standardDeviation.toDouble(),
+        sum: sum.toInt(),
+        squaresSum: squaresSum.toInt(),
+        lowerStatistics: lowerStatistics?.cast<int>(),
+        upperStatistics: upperStatistics?.cast<int>(),
+      ) as Statistics<T>;
+    } else if (T == double) {
+      if (this is Statistics<T>) {
+        return this as Statistics<T>;
+      }
+
+      return Statistics<double>(
+        length,
+        min.toDouble(),
+        max.toDouble(),
+        medianLow: medianLow.toDouble(),
+        medianHigh: medianHigh.toDouble(),
+        mean: mean.toDouble(),
+        standardDeviation: standardDeviation.toDouble(),
+        sum: sum.toDouble(),
+        squaresSum: squaresSum.toDouble(),
+        lowerStatistics: lowerStatistics?.cast<double>(),
+        upperStatistics: upperStatistics?.cast<double>(),
+      ) as Statistics<T>;
+    } else if (T == num) {
+      return Statistics<num>(
+        length,
+        min.toInt(),
+        max.toInt(),
+        medianLow: medianLow.toInt(),
+        medianHigh: medianHigh.toInt(),
+        mean: mean.toDouble(),
+        standardDeviation: standardDeviation.toDouble(),
+        sum: sum.toInt(),
+        squaresSum: squaresSum.toInt(),
+        lowerStatistics: lowerStatistics?.cast<num>(),
+        upperStatistics: upperStatistics?.cast<num>(),
+      ) as Statistics<T>;
+    } else {
+      return this as Statistics<T>;
+    }
+  }
+
+  List<BigInt>? data;
+
+  /// Returns `true` if [mean] is in range of [minMean] and [maxMean].
+  /// Also checks if [standardDeviation] is in range of [minDeviation] and [maxDeviation] (if passed).
+  bool isMeanInRange(DynamicNumber minMean, DynamicNumber maxMean,
+      [DynamicNumber? minDeviation, DynamicNumber? maxDeviation]) {
+    if (mean >= minMean && mean <= maxMean) {
+      if (minDeviation != null || maxDeviation != null) {
+        var stdv = standardDeviation;
+
+        if (minDeviation != null && stdv < minDeviation) return false;
+
+        if (maxDeviation != null && stdv > maxDeviation) return false;
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Returns the mean of [squares].
+  Decimal get squaresMean {
+    if (length == 0) return Decimal.zero;
+    return squaresSum.toDecimal().divideInt(length);
+  }
+
+  @override
+  String toString({int precision = 4}) {
+    if (length == 0) {
+      return '{empty}';
+    }
+
+    var minStr = formatDecimal(min, precision: precision);
+    var maxStr = formatDecimal(max, precision: precision);
+    var centerStr = formatDecimal(center, precision: precision);
+
+    var meanStr = formatDecimal(mean, precision: precision);
+    var standardDeviationStr =
+        formatDecimal(standardDeviation, precision: precision);
+
+    return '{~$meanStr +-$standardDeviationStr [$minStr..($centerStr)..$maxStr] #$length}';
+  }
+
+  /// Multiply this statistics fields by [n].
+  StatisticsBigInt multiplyBy(DynamicNumber n) {
+    return StatisticsBigInt(
+      n.multiplyInt(length).toInt(),
+      n.moduloBigInt(min).toBigInt(),
+      n.moduloBigInt(max).toBigInt(),
+      medianLow: n.moduloBigInt(medianLow).toBigInt(),
+      medianHigh: n.moduloBigInt(medianHigh).toBigInt(),
+      sum: n.moduloBigInt(sum).toBigInt(),
+      squaresSum: n.moduloBigInt(squaresSum).toBigInt(),
+      mean: n.multiplyDecimal(mean).toDecimal(),
+      standardDeviation: (standardDeviation * n),
+    );
+  }
+
+  /// Divide this statistics fields by [n].
+  StatisticsBigInt divideBy(DynamicNumber n) {
+    if (isEmpty) return this;
+
+    return StatisticsBigInt(
+      n.divideInt(length).toInt(),
+      n.divideBigInt(min).toBigInt(),
+      n.divideBigInt(max).toBigInt(),
+      medianLow: n.divideBigInt(medianLow).toBigInt(),
+      medianHigh: n.divideBigInt(medianHigh).toBigInt(),
+      sum: n.divideBigInt(sum).toBigInt(),
+      squaresSum: n.divideBigInt(squaresSum).toBigInt(),
+      mean: mean / n,
+      standardDeviation: (standardDeviation / n),
+    );
+  }
+
+  /// Sum this statistics fields with [other] fields.
+  StatisticsBigInt sumWith(StatisticsBigInt other) {
+    return StatisticsBigInt(
+      length + other.length,
+      min + other.min,
+      max + other.max,
+      medianLow: medianLow + other.medianLow,
+      medianHigh: medianHigh + other.medianHigh,
+      sum: sum + other.sum,
+      squaresSum: squaresSum + other.squaresSum,
+      mean: mean + other.mean,
+      standardDeviation: (standardDeviation + other.standardDeviation),
+    );
+  }
+
+  StatisticsBigInt operator /(StatisticsBigInt other) {
+    // TODO: use StatisticsDecimal
+    return StatisticsBigInt(
+      (length / other.length).toInt(),
+      (min.toDynamicInt() / other.min.toDynamicInt()).toBigInt(),
+      (max.toDynamicInt() / other.max.toDynamicInt()).toBigInt(),
+      medianLow: (medianLow.toDynamicInt() / other.medianLow.toDynamicInt())
+          .toBigInt(),
+      medianHigh: (medianHigh.toDynamicInt() / other.medianHigh.toDynamicInt())
+          .toBigInt(),
+      sum: (sum.toDynamicInt() / other.sum.toDynamicInt()).toBigInt(),
+      squaresSum: (squaresSum.toDynamicInt() / other.squaresSum.toDynamicInt())
+          .toBigInt(),
+      mean: mean / other.mean,
+      standardDeviation: (standardDeviation / other.standardDeviation),
+    );
+  }
+
+  StatisticsBigInt operator +(StatisticsBigInt other) {
+    return StatisticsBigInt(
+      length + other.length,
+      min.min(other.min),
+      max.max(other.max),
+      medianLow: (medianLow + other.medianLow)
+          .toDynamicInt()
+          .divideAsDynamicInt(DynamicInt.two)
+          .toBigInt(),
+      medianHigh: (medianHigh + other.medianHigh)
+          .toDynamicInt()
+          .divideAsDynamicInt(DynamicInt.two)
+          .toBigInt(),
+      sum: sum + other.sum,
+      squaresSum: squaresSum + other.squaresSum,
+      mean: (sum + other.sum)
+          .toDynamicInt()
+          .divideInt(length + other.length)
+          .toDecimal(),
+      standardDeviation: _computeStandardDeviation(sum + other.sum,
+          squaresSum + other.squaresSum, length + other.length),
     );
   }
 
@@ -1014,14 +1453,15 @@ class StandardDeviationComputerBigInt
 
   double _standardDeviationImpl() {
     if (isEmpty) return 0.0;
-    return _compute(_sum, _squaresSum, _length);
+    return _compute(_sum, _squaresSum, _length).toDouble();
   }
 
-  static double _compute(BigInt sum, BigInt squaresSum, num length) {
-    var lengthBigInt = length.toBigInt();
-    return math
-            .sqrt(((squaresSum * lengthBigInt) - (sum * sum)) / lengthBigInt) /
-        math.sqrt(length);
+  static Decimal _compute(BigInt sum, BigInt squaresSum, int length) {
+    if (length == 0) return Decimal.zero;
+
+    var a = ((squaresSum * length.toBigInt()) - (sum * sum)).toDecimal();
+    var x = a.divide(length);
+    return x.squareRoot / length.toDecimal().squareRoot;
   }
 
   @override

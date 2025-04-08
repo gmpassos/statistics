@@ -5,8 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:intl/intl.dart';
 
 import 'statistics_base.dart';
-import 'statistics_dynamic_int.dart';
 import 'statistics_decimal.dart';
+import 'statistics_dynamic_int.dart';
 
 /// Extension for [Type].
 extension NumericTypeExtension on Type {
@@ -116,6 +116,35 @@ extension IterableNumExtension on Iterable<num> {
     return total;
   }
 
+  /// Returns the [sum] of all elements in the iterable, along with an optional
+  /// `allEqualsTo` value that is set only if all elements are equal.
+  ///
+  /// If the iterable is empty, `sum` is `0.0` and `allEqualsTo` is `null`.
+  /// Otherwise, `sum` is the total of all elements, and `allEqualsTo` holds
+  /// the common value if all elements are the same; otherwise, it is `null`.
+  ({num sum, num? allEqualsTo}) get sum2 {
+    var itr = iterator;
+
+    if (!itr.moveNext()) {
+      return (sum: 0.0, allEqualsTo: null);
+    }
+
+    var first = itr.current;
+    var total = first;
+
+    var allEqualsTo = true;
+
+    while (itr.moveNext()) {
+      var current = itr.current;
+      total += current;
+      if (current != first) {
+        allEqualsTo = false;
+      }
+    }
+
+    return (sum: total, allEqualsTo: allEqualsTo ? first : null);
+  }
+
   /// Returns the sum of squares of this numeric collection.
   num get sumSquares {
     var itr = iterator;
@@ -136,7 +165,40 @@ extension IterableNumExtension on Iterable<num> {
   }
 
   /// Returns the mean/average of this numeric collection.
-  double get mean => sum / length;
+  double get mean {
+    var sumInfo = sum2;
+
+    var sum = sumInfo.sum;
+    var allEqualsTo = sumInfo.allEqualsTo;
+
+    if (allEqualsTo != null) {
+      return allEqualsTo.toDouble();
+    } else {
+      return sum / length;
+    }
+  }
+
+  /// Returns the mean (average) of this numeric collection, along with an optional
+  /// `allEqualsTo` value if all elements are the same.
+  ///
+  /// If all elements are equal, `mean` and `allEqualsTo` will both be set to that value,
+  /// avoiding floating-point precision issues. Otherwise, `mean` is computed normally,
+  /// and `allEqualsTo` is `null`.
+  ({double mean, num? allEqualsTo}) get mean2 {
+    var sumInfo = sum2;
+
+    var sum = sumInfo.sum;
+    var allEqualsTo = sumInfo.allEqualsTo;
+
+    // If all elements are the same,
+    // avoid any floating-point precision issues when summing:
+    if (allEqualsTo != null) {
+      return (mean: allEqualsTo.toDouble(), allEqualsTo: allEqualsTo);
+    } else {
+      var mean = sum / length;
+      return (mean: mean, allEqualsTo: null);
+    }
+  }
 
   /// Returns the standard deviation of this numeric collection.
   double get standardDeviation {
@@ -146,7 +208,14 @@ extension IterableNumExtension on Iterable<num> {
       return 0.0;
     }
 
-    var average = mean;
+    var meanInfo = mean2;
+
+    var average = meanInfo.mean;
+    var allEqualsTo = meanInfo.allEqualsTo;
+
+    if (allEqualsTo != null) {
+      return 0.0;
+    }
 
     var first = itr.current - average;
     var total = first * first;
@@ -391,6 +460,8 @@ extension IterableDoubleExtension on Iterable<double> {
       Statistics.compute(this, keepData: true);
 
   /// Returns the sum of this numeric collection.
+  ///
+  /// If the iterable is empty, `sum` is `0.0`.
   double get sum {
     var itr = iterator;
 
@@ -405,6 +476,35 @@ extension IterableDoubleExtension on Iterable<double> {
     }
 
     return total;
+  }
+
+  /// Returns the [sum] of all elements in the iterable, along with an optional
+  /// `allEqualsTo` value that is set only if all elements are equal.
+  ///
+  /// If the iterable is empty, `sum` is `0.0` and `allEqualsTo` is `null`.
+  /// Otherwise, `sum` is the total of all elements, and `allEqualsTo` holds
+  /// the common value if all elements are the same; otherwise, it is `null`.
+  ({double sum, double? allEqualsTo}) get sum2 {
+    var itr = iterator;
+
+    if (!itr.moveNext()) {
+      return (sum: 0.0, allEqualsTo: null);
+    }
+
+    var first = itr.current;
+    var total = first;
+
+    var allEquals = true;
+
+    while (itr.moveNext()) {
+      var current = itr.current;
+      total += current;
+      if (current != first) {
+        allEquals = false;
+      }
+    }
+
+    return (sum: total, allEqualsTo: allEquals ? first : null);
   }
 
   /// Returns the sum of squares of this numeric collection.
@@ -427,7 +527,42 @@ extension IterableDoubleExtension on Iterable<double> {
   }
 
   /// Returns the mean/average of this numeric collection.
-  double get mean => sum / length;
+  double get mean {
+    var sumInfo = sum2;
+
+    var sum = sumInfo.sum;
+    var allEqualsTo = sumInfo.allEqualsTo;
+
+    // If all elements are the same,
+    // avoid any floating-point precision issues when summing:
+    if (allEqualsTo != null) {
+      return allEqualsTo;
+    } else {
+      return sum / length;
+    }
+  }
+
+  /// Returns the mean (average) of this numeric collection, along with an optional
+  /// `allEqualsTo` value if all elements are the same.
+  ///
+  /// If all elements are equal, `mean` and `allEqualsTo` will both be set to that value,
+  /// avoiding floating-point precision issues. Otherwise, `mean` is computed normally,
+  /// and `allEqualsTo` is `null`.
+  ({double mean, double? allEqualsTo}) get mean2 {
+    var sumInfo = sum2;
+
+    var sum = sumInfo.sum;
+    var allEqualsTo = sumInfo.allEqualsTo;
+
+    // If all elements are the same,
+    // avoid any floating-point precision issues when summing:
+    if (allEqualsTo != null) {
+      return (mean: allEqualsTo, allEqualsTo: allEqualsTo);
+    } else {
+      var mean = sum / length;
+      return (mean: mean, allEqualsTo: null);
+    }
+  }
 
   /// Returns the standard deviation of this numeric collection.
   double get standardDeviation {
@@ -437,7 +572,14 @@ extension IterableDoubleExtension on Iterable<double> {
       return 0.0;
     }
 
-    var average = mean;
+    var meanInfo = mean2;
+
+    var average = meanInfo.mean;
+    var allEqualsTo = meanInfo.allEqualsTo;
+
+    if (allEqualsTo != null) {
+      return 0.0;
+    }
 
     var first = itr.current - average;
     var total = first * first;
@@ -699,6 +841,35 @@ extension IterableIntExtension on Iterable<int> {
     return total;
   }
 
+  /// Returns the [sum] of all elements in the iterable, along with an optional
+  /// `allEqualsTo` value that is set only if all elements are equal.
+  ///
+  /// If the iterable is empty, `sum` is `0.0` and `allEqualsTo` is `null`.
+  /// Otherwise, `sum` is the total of all elements, and `allEqualsTo` holds
+  /// the common value if all elements are the same; otherwise, it is `null`.
+  ({int sum, int? allEqualsTo}) get sum2 {
+    var itr = iterator;
+
+    if (!itr.moveNext()) {
+      return (sum: 0, allEqualsTo: null);
+    }
+
+    var first = itr.current;
+    var total = first;
+
+    var allEqualsTo = true;
+
+    while (itr.moveNext()) {
+      var current = itr.current;
+      total += current;
+      if (current != first) {
+        allEqualsTo = false;
+      }
+    }
+
+    return (sum: total, allEqualsTo: allEqualsTo ? first : null);
+  }
+
   /// Returns the sum of squares of this numeric collection.
   int get sumSquares {
     var itr = iterator;
@@ -719,7 +890,40 @@ extension IterableIntExtension on Iterable<int> {
   }
 
   /// Returns the mean/average of this numeric collection.
-  double get mean => sum / length;
+  double get mean {
+    var sumInfo = sum2;
+
+    var sum = sumInfo.sum;
+    var allEqualsTo = sumInfo.allEqualsTo;
+
+    if (allEqualsTo != null) {
+      return allEqualsTo.toDouble();
+    } else {
+      return sum / length;
+    }
+  }
+
+  /// Returns the mean (average) of this numeric collection, along with an optional
+  /// `allEqualsTo` value if all elements are the same.
+  ///
+  /// If all elements are equal, `mean` and `allEqualsTo` will both be set to that value,
+  /// avoiding floating-point precision issues. Otherwise, `mean` is computed normally,
+  /// and `allEqualsTo` is `null`.
+  ({double mean, int? allEqualsTo}) get mean2 {
+    var sumInfo = sum2;
+
+    var sum = sumInfo.sum;
+    var allEqualsTo = sumInfo.allEqualsTo;
+
+    // If all elements are the same,
+    // avoid any floating-point precision issues when summing:
+    if (allEqualsTo != null) {
+      return (mean: allEqualsTo.toDouble(), allEqualsTo: allEqualsTo);
+    } else {
+      var mean = sum / length;
+      return (mean: mean, allEqualsTo: null);
+    }
+  }
 
   /// Returns the standard deviation of this numeric collection.
   double get standardDeviation {
@@ -729,7 +933,14 @@ extension IterableIntExtension on Iterable<int> {
       return 0.0;
     }
 
-    var average = mean;
+    var meanInfo = mean2;
+
+    var average = meanInfo.mean;
+    var allEqualsTo = meanInfo.allEqualsTo;
+
+    if (allEqualsTo != null) {
+      return 0.0;
+    }
 
     var first = itr.current - average;
     var total = (first * first).toDouble();
@@ -939,6 +1150,369 @@ extension IterableIntExtension on Iterable<int> {
   }
 }
 
+/// extension for `Iterable<int>`.
+extension IterableBigIntExtension on Iterable<BigInt> {
+  /// Maps this numeric collection to a `List<T>` using [f] to map each element.
+  List<T> mapToList<T>(T Function(BigInt n) f) => map(f).toList();
+
+  /// Maps this numeric collection to a `Set<T>` using [f] to map each element.
+  Set<T> mapToSet<T>(T Function(BigInt n) f) => map(f).toSet();
+
+  /// Maps this numeric collection to a `List<int>`.
+  List<int> toIntsList() => mapToList((e) => e.toInt());
+
+  /// Maps this numeric collection to a `List<double>`.
+  List<double> toDoublesList() => mapToList((e) => e.toDouble());
+
+  /// Maps this numeric collection to a `List<BigInt>`.
+  List<BigInt> toBigIntList() => toList();
+
+  /// Maps this numeric collection to a `List<DynamicInt>`.
+  List<DynamicInt> toDynamicIntList() =>
+      mapToList((e) => DynamicInt.fromBigInt(e));
+
+  /// Maps this numeric collection to a `List<Decimal>`.
+  List<Decimal> toDecimalList() => mapToList((e) => Decimal.fromBigInt(e));
+
+  /// Maps this numeric collection to a `List<String>`.
+  List<String> toStringsList() => mapToList((e) => e.toString());
+
+  /// Returns a [Statistics] of this numeric collection.
+  StatisticsBigInt get statistics => StatisticsBigInt.compute(this);
+
+  /// Returns a [Statistics] of this numeric collection (with populated field [Statistics.data]).
+  StatisticsBigInt get statisticsWithData =>
+      StatisticsBigInt.compute(this, keepData: true);
+
+  /// Returns the sum of this numeric collection.
+  BigInt get sum {
+    var itr = iterator;
+
+    if (!itr.moveNext()) {
+      return BigInt.zero;
+    }
+
+    var total = itr.current;
+
+    while (itr.moveNext()) {
+      total += itr.current;
+    }
+
+    return total;
+  }
+
+  /// Returns the [sum] of all elements in the iterable, along with an optional
+  /// `allEqualsTo` value that is set only if all elements are equal.
+  ///
+  /// If the iterable is empty, `sum` is `0.0` and `allEqualsTo` is `null`.
+  /// Otherwise, `sum` is the total of all elements, and `allEqualsTo` holds
+  /// the common value if all elements are the same; otherwise, it is `null`.
+  ({BigInt sum, BigInt? allEqualsTo}) get sum2 {
+    var itr = iterator;
+
+    if (!itr.moveNext()) {
+      return (sum: BigInt.zero, allEqualsTo: null);
+    }
+
+    var first = itr.current;
+    var total = first;
+
+    var allEqualsTo = true;
+
+    while (itr.moveNext()) {
+      var current = itr.current;
+      total += current;
+      if (current != first) {
+        allEqualsTo = false;
+      }
+    }
+
+    return (sum: total, allEqualsTo: allEqualsTo ? first : null);
+  }
+
+  /// Returns the sum of squares of this numeric collection.
+  BigInt get sumSquares {
+    var itr = iterator;
+
+    if (!itr.moveNext()) {
+      return BigInt.zero;
+    }
+
+    var first = itr.current;
+    var total = first * first;
+
+    while (itr.moveNext()) {
+      var n = itr.current;
+      total += n * n;
+    }
+
+    return total;
+  }
+
+  /// Returns the mean/average of this numeric collection.
+  Decimal get mean {
+    var sumInfo = sum2;
+
+    var sum = sumInfo.sum;
+    var allEqualsTo = sumInfo.allEqualsTo;
+
+    if (allEqualsTo != null) {
+      return allEqualsTo.toDecimal();
+    } else {
+      return sum.toDynamicInt().divideIntAsDecimal(length);
+    }
+  }
+
+  /// Returns the mean (average) of this numeric collection, along with an optional
+  /// `allEqualsTo` value if all elements are the same.
+  ///
+  /// If all elements are equal, `mean` and `allEqualsTo` will both be set to that value,
+  /// avoiding floating-point precision issues. Otherwise, `mean` is computed normally,
+  /// and `allEqualsTo` is `null`.
+  ({Decimal mean, BigInt? allEqualsTo}) get mean2 {
+    var sumInfo = sum2;
+
+    var sum = sumInfo.sum;
+    var allEqualsTo = sumInfo.allEqualsTo;
+
+    if (allEqualsTo != null) {
+      return (mean: allEqualsTo.toDecimal(), allEqualsTo: allEqualsTo);
+    } else {
+      var mean = sum.toDynamicInt().divideIntAsDecimal(length);
+      return (mean: mean, allEqualsTo: null);
+    }
+  }
+
+  /// Returns the standard deviation of this numeric collection.
+  Decimal get standardDeviation {
+    var itr = iterator;
+
+    if (!itr.moveNext()) {
+      return Decimal.zero;
+    }
+
+    var meanInfo = mean2;
+
+    var average = meanInfo.mean;
+    var allEqualsTo = meanInfo.allEqualsTo;
+
+    if (allEqualsTo != null) {
+      return Decimal.zero;
+    }
+
+    var first = itr.current.toDynamicInt() - average;
+    var total = (first * first);
+
+    while (itr.moveNext()) {
+      var n = itr.current.toDynamicInt() - average;
+      total += (n * n).toDynamicInt();
+    }
+
+    var deviation = (total / length.toDynamicInt()).squareRoot;
+
+    return deviation;
+  }
+
+  /// Returns `true` if this numeric collection is sorted.
+  bool get isSorted {
+    var itr = iterator;
+
+    if (!itr.moveNext()) {
+      return false;
+    }
+
+    var prev = itr.current;
+
+    while (itr.moveNext()) {
+      var n = itr.current;
+      if (n < prev) return false;
+      prev = n;
+    }
+
+    return true;
+  }
+
+  /// Returns a sorted `List<int>` of this numeric collection.
+  /// If this instance is already sorted and already a `List<int>`,
+  /// returns `this` instance.
+  List<BigInt> asSortedList() {
+    List<BigInt> list;
+    if (this is List<BigInt> && isSorted) {
+      list = this as List<BigInt>;
+    } else {
+      list = toList();
+      list.sort();
+    }
+    return list;
+  }
+
+  /// Return the median (middle value) of this numeric collection.
+  /// If [data] is empty, returns `null`.
+  Decimal? get median {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+
+    if (n % 2 == 1) {
+      return data[halfN].toDecimal();
+    } else {
+      return (data[halfN - 1] + data[halfN]).toDynamicInt() / DynamicInt.two;
+    }
+  }
+
+  /// Return the low median (middle value) this collection.
+  /// If [data] is empty, returns `null`.
+  BigInt? get medianLow {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+
+    if (n % 2 == 1) {
+      return data[halfN];
+    } else {
+      return data[halfN - 1];
+    }
+  }
+
+  /// Return the low median (middle value) this collection.
+  /// If [data] is empty, returns `null`.
+  BigInt? get medianHigh {
+    var data = asSortedList();
+
+    var n = data.length;
+    if (n < 1) {
+      return null;
+    }
+
+    var halfN = (n ~/ 2);
+    return data[halfN];
+  }
+
+  /// Returns the mean/average of squares of this numeric collection.
+  Decimal get squaresMean =>
+      sumSquares.toDynamicInt().divideIntAsDecimal(length);
+
+  /// Returns the squares of this numeric collection.
+  List<BigInt> get square => map((n) => n * n).toList();
+
+  /// Returns the square roots of this numeric collection.
+  List<Decimal> get squareRoot =>
+      map((n) => n.toDynamicInt().squareRoot).toList();
+
+  /// Returns the absolute values of this numeric collection.
+  List<BigInt> get abs => map((n) => n.abs()).toList();
+
+  /// Returns the moving average of [samplesSize] of this numeric collection.
+  List<Decimal> movingAverage(int samplesSize) {
+    var length = this.length;
+    if (length == 0) return <Decimal>[];
+
+    if (samplesSize >= length) return <Decimal>[mean];
+
+    var list = this is List<BigInt> ? (this as List<BigInt>) : toList();
+
+    var movingAverage = <Decimal>[];
+    for (var i = 0; i < length; ++i) {
+      var end = i + samplesSize;
+      if (end > length) break;
+
+      BigInt total = BigInt.zero;
+      for (var j = i; j < end; ++j) {
+        var e = list[j];
+        total += e;
+      }
+
+      var average = total.toDynamicInt().divideIntAsDecimal(samplesSize);
+      movingAverage.add(average);
+    }
+
+    return movingAverage;
+  }
+
+  /// Merges this numeric collection with [other] using the [merge] function.
+  List<BigInt> merge(
+          Iterable<BigInt> other, BigInt Function(BigInt a, BigInt b) merger) =>
+      mergeTo<BigInt>(other, merger, <BigInt>[]);
+
+  /// Merges this numeric collection with [other] using the [merge] function to [destiny].
+  List<R> mergeTo<R>(Iterable<BigInt> other,
+      R Function(BigInt a, BigInt b) merger, List<R> destiny) {
+    var itr1 = iterator;
+    if (!itr1.moveNext()) {
+      return destiny;
+    }
+
+    var itr2 = other.iterator;
+    if (!itr2.moveNext()) {
+      return destiny;
+    }
+
+    do {
+      var n1 = itr1.current;
+      var n2 = itr2.current;
+      var d = merger(n1, n2);
+      destiny.add(d);
+    } while (itr1.moveNext() && itr2.moveNext());
+
+    return destiny;
+  }
+
+  /// Subtracts elements of `this` instance with [other] instance elements.
+  List<BigInt> operator -(Iterable<BigInt> other) =>
+      merge(other, (a, b) => a - b);
+
+  /// Multiplies elements of `this` instance with [other] instance elements.
+  List<BigInt> operator *(Iterable<BigInt> other) =>
+      merge(other, (a, b) => a * b);
+
+  /// Divides elements of `this` instance with [other] instance elements.
+  List<Decimal> operator /(Iterable<BigInt> other) => mergeTo(
+      other, (a, b) => a.toDynamicInt().divideBigIntAsDecimal(b), <Decimal>[]);
+
+  /// Divides (as `int`) elements of `this` instance with [other] instance elements.
+  List<BigInt> operator ~/(List<BigInt> other) =>
+      mergeTo(other, (a, b) => a ~/ b, <BigInt>[]);
+
+  static final ListEquality<BigInt> _listEquality = ListEquality<BigInt>();
+
+  /// Returns `true` if [other] values are all equals, regarding the [tolerance].
+  bool equalsValues(List<BigInt> other, {num tolerance = 0}) {
+    if (tolerance != 0) {
+      var length = this.length;
+      if (length != other.length) return false;
+
+      tolerance = tolerance.abs();
+
+      var list = this is List<BigInt> ? (this as List<BigInt>) : toList();
+
+      for (var i = 0; i < length; ++i) {
+        var a = list[i];
+        var b = other[i];
+        var diff = (a - b).abs();
+
+        if (diff.toDouble() > tolerance) {
+          return false;
+        }
+      }
+
+      return true;
+    } else {
+      var list = this is List<BigInt> ? (this as List<BigInt>) : toList();
+      return _listEquality.equals(list, other);
+    }
+  }
+}
+
 /// extension for `num`.
 extension NumExtension on num {
   /// Cast this number to [N], where [N] extends [num].
@@ -1119,6 +1693,10 @@ extension IntExtension on int {
 
 /// extension for [BigInt].
 extension BigIntExtension on BigInt {
+  BigInt min(BigInt other) => this <= other ? this : other;
+
+  BigInt max(BigInt other) => this >= other ? this : other;
+
   String get thousands => toInt().thousands;
 }
 
