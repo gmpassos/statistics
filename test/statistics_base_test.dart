@@ -376,6 +376,34 @@ void main() {
 
       ///////
 
+      expect(statistics.multiplyBy(2).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsBigInt.multiplyBy(DynamicInt.two).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsDynamicInt.multiplyBy(DynamicInt.two).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsDecimal.multiplyBy(DynamicInt.two).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      ///////
+
+      expect(statistics.divideBy(2).toString(),
+          equals('{~12.5 +-5.5901 [5..(15)..20] #2.0}'));
+
+      expect(statisticsBigInt.divideBy(DynamicInt.two).toString(),
+          equals('{~12.5 +-5.5901 [5..(15)..20] #2}'));
+
+      expect(statisticsDynamicInt.divideBy(DynamicInt.two).toString(),
+          equals('{~12.5 +-5.5901 [5..(15)..20] #2}'));
+
+      expect(statisticsDecimal.divideBy(DynamicInt.two).toString(),
+          equals('{~12.5 +-5.5901 [5..(15)..20] #2}'));
+
+      ///////
+
       expect(data.statisticsWithData.data, equals(data));
       expect(dataBigInt.statisticsWithData.data, equals(dataBigInt));
       expect(dataDynamicInt.statisticsWithData.data, equals(dataDynamicInt));

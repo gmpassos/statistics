@@ -1018,13 +1018,13 @@ class StatisticsBigInt extends DataEntry {
     if (isEmpty) return this;
 
     return StatisticsBigInt(
-      n.divideInt(length).toInt(),
-      n.divideBigInt(min).toBigInt(),
-      n.divideBigInt(max).toBigInt(),
-      medianLow: n.divideBigInt(medianLow).toBigInt(),
-      medianHigh: n.divideBigInt(medianHigh).toBigInt(),
-      sum: n.divideBigInt(sum).toBigInt(),
-      squaresSum: n.divideBigInt(squaresSum).toBigInt(),
+      (length.toDynamicInt() / n).toInt(),
+      (min.toDynamicInt() / n).toBigInt(),
+      (max.toDynamicInt() / n).toBigInt(),
+      medianLow: (medianLow.toDynamicInt() / n).toBigInt(),
+      medianHigh: (medianHigh.toDynamicInt() / n).toBigInt(),
+      sum: (sum.toDynamicInt() / n).toBigInt(),
+      squaresSum: (squaresSum.toDynamicInt() / n).toBigInt(),
       mean: mean / n,
       standardDeviation: (standardDeviation / n),
     );
@@ -1503,13 +1503,13 @@ class StatisticsDynamicNumber<N extends DynamicNumber<N>> extends DataEntry {
     if (isEmpty) return this;
 
     return StatisticsDynamicNumber<N>(
-      n.divideInt(length).toInt(),
-      (n / min).cast<N>(),
-      (n / max).cast<N>(),
-      medianLow: (n / medianLow).cast<N>(),
-      medianHigh: (n / medianHigh).cast<N>(),
-      sum: (n / sum).cast<N>(),
-      squaresSum: (n / squaresSum).cast<N>(),
+      (length.toDynamicInt() / n).toInt(),
+      (min / n).cast<N>(),
+      (max / n).cast<N>(),
+      medianLow: (medianLow / n).cast<N>(),
+      medianHigh: (medianHigh / n).cast<N>(),
+      sum: (sum / n).cast<N>(),
+      squaresSum: (squaresSum / n).cast<N>(),
       mean: mean / n,
       standardDeviation: (standardDeviation / n),
     );
