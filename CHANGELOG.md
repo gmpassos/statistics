@@ -1,6 +1,9 @@
 ## 1.2.1
 
-- New `StatisticsBigInt`.
+- `DynamicNumber`:
+  - Added `min`, `max` and `cast<N>()`.
+
+- New `StatisticsBigInt` and `StatisticsDynamicNumber`.
 - New `IterableBigIntExtension`.
 
 - Numeric extensions:
