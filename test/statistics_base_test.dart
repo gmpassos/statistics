@@ -334,6 +334,10 @@ void main() {
       expect(statisticsBigInt.cast<int>().toString(),
           equals('{~25 +-11.1803 [10..(30)..40] #4}'));
 
+      expect(statisticsBigInt.cast<double>(), isA<Statistics<double>>());
+      expect(statisticsBigInt.cast<double>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
       ///////
 
       expect(statisticsDynamicInt.cast<int>(), isA<Statistics<int>>());
@@ -386,6 +390,20 @@ void main() {
           equals('{~50 +-22.3606 [20..(60)..80] #8}'));
 
       expect(statisticsDecimal.multiplyBy(DynamicInt.two).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      ///////
+
+      expect(statistics.sumWith(statistics).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsBigInt.sumWith(statisticsBigInt).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsDynamicInt.sumWith(statisticsDynamicInt).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsDecimal.sumWith(statisticsDecimal).toString(),
           equals('{~50 +-22.3606 [20..(60)..80] #8}'));
 
       ///////
