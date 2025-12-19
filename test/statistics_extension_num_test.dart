@@ -265,6 +265,12 @@ void main() {
       expect([10].sumSquares, equals(100));
       expect([10, 20].sumSquares, equals(500));
       expect([10, 20, 30].sumSquares, equals(1400));
+
+      expect(<BigInt>[].sumSquares, equals(0.toBigInt()));
+      expect([0].toBigIntList().sumSquares, equals(0.toBigInt()));
+      expect([10].toBigIntList().sumSquares, equals(100.toBigInt()));
+      expect([10, 20].toBigIntList().sumSquares, equals(500.toBigInt()));
+      expect([10, 20, 30].toBigIntList().sumSquares, equals(1400.toBigInt()));
     });
 
     test('square', () {
@@ -273,8 +279,15 @@ void main() {
       expect([10].square, equals([100]));
       expect([10, 20].square, equals([100, 400]));
       expect([10, 20, 30].square, equals([100, 400, 900]));
-
       expect(11.square, equals(121));
+
+      expect(<BigInt>[].square, isEmpty);
+      expect([0].toBigIntList().square, equals([0].toBigIntList()));
+      expect([10].toBigIntList().square, equals([100].toBigIntList()));
+      expect([10, 20].toBigIntList().square, equals([100, 400].toBigIntList()));
+      expect([10, 20, 30].toBigIntList().square,
+          equals([100, 400, 900].toBigIntList()));
+      expect(11.toBigInt().square, equals(121.toBigInt()));
     });
 
     test('squareRoot', () {
@@ -283,8 +296,16 @@ void main() {
       expect([9].squareRoot, equals([3]));
       expect([100, 121].squareRoot, equals([10, 11]));
       expect([10000, 400, 900].squareRoot, equals([100, 20, 30]));
-
       expect(100.squareRoot, equals(10));
+
+      expect(<BigInt>[].squareRoot, isEmpty);
+      expect([0].toBigIntList().squareRoot, equals([0].toDecimalList()));
+      expect([9].toBigIntList().squareRoot, equals([3].toDecimalList()));
+      expect([100, 121].toBigIntList().squareRoot,
+          equals([10, 11].toDecimalList()));
+      expect([10000, 400, 900].toBigIntList().squareRoot,
+          equals([100, 20, 30].toDecimalList()));
+      expect(100.toBigInt().squareRoot, equals(10.toDecimal()));
     });
 
     test('squaresMean', () {
@@ -301,6 +322,15 @@ void main() {
       expect([10].standardDeviation, equals(0));
       expect([10, 20].standardDeviation, equals(5));
       expect(<int>[10, 20, 30].standardDeviation, equals(8.16496580927726));
+
+      expect(<BigInt>[].standardDeviation, equals(0.toDecimal()));
+      expect([0].toBigIntList().standardDeviation, equals(0.toDecimal()));
+      expect([10].toBigIntList().standardDeviation, equals(0.toDecimal()));
+      expect([10, 20].toBigIntList().standardDeviation, equals(5.toDecimal()));
+      expect(
+          <int>[10, 20, 30].toBigIntList().standardDeviation,
+          equals(Decimal.parse(
+              '8.1649658092772603232417973443810078085370640848527572334065506955')));
     });
 
     test('median', () {
@@ -312,6 +342,15 @@ void main() {
       expect([30, 20, 10].median, equals(20));
       expect([5, 10, 20, 30].median, equals(15));
       expect([30, 20, 10, 5].median, equals(15));
+
+      expect(<BigInt>[].median, isNull);
+      expect([0].toBigIntList().median, equals(0.toDecimal()));
+      expect([10].toBigIntList().median, equals(10.toDecimal()));
+      expect([10, 20].toBigIntList().median, equals(15.toDecimal()));
+      expect([10, 20, 30].toBigIntList().median, equals(20.toDecimal()));
+      expect([30, 20, 10].toBigIntList().median, equals(20.toDecimal()));
+      expect([5, 10, 20, 30].toBigIntList().median, equals(15.toDecimal()));
+      expect([30, 20, 10, 5].toBigIntList().median, equals(15.toDecimal()));
     });
 
     test('medianLow', () {
@@ -323,6 +362,15 @@ void main() {
       expect([30, 20, 10].medianLow, equals(20));
       expect([5, 10, 20, 30].medianLow, equals(10));
       expect([30, 20, 10, 5].medianLow, equals(10));
+
+      expect(<BigInt>[].medianLow, isNull);
+      expect([0].toBigIntList().medianLow, equals(0.toBigInt()));
+      expect([10].toBigIntList().medianLow, equals(10.toBigInt()));
+      expect([10, 20].toBigIntList().medianLow, equals(10.toBigInt()));
+      expect([10, 20, 30].toBigIntList().medianLow, equals(20.toBigInt()));
+      expect([30, 20, 10].toBigIntList().medianLow, equals(20.toBigInt()));
+      expect([5, 10, 20, 30].toBigIntList().medianLow, equals(10.toBigInt()));
+      expect([30, 20, 10, 5].toBigIntList().medianLow, equals(10.toBigInt()));
     });
 
     test('medianHigh', () {
@@ -334,6 +382,15 @@ void main() {
       expect([30, 20, 10].medianHigh, equals(20));
       expect([5, 10, 20, 30].medianHigh, equals(20));
       expect([30, 20, 10, 5].medianHigh, equals(20));
+
+      expect(<BigInt>[].medianHigh, isNull);
+      expect([0].toBigIntList().medianHigh, equals(0.toBigInt()));
+      expect([10].toBigIntList().medianHigh, equals(10.toBigInt()));
+      expect([10, 20].toBigIntList().medianHigh, equals(20.toBigInt()));
+      expect([10, 20, 30].toBigIntList().medianHigh, equals(20.toBigInt()));
+      expect([30, 20, 10].toBigIntList().medianHigh, equals(20.toBigInt()));
+      expect([5, 10, 20, 30].toBigIntList().medianHigh, equals(20.toBigInt()));
+      expect([30, 20, 10, 5].toBigIntList().medianHigh, equals(20.toBigInt()));
     });
 
     test('abs', () {
@@ -342,6 +399,14 @@ void main() {
       expect([10].abs, equals([10]));
       expect([-10, 20].abs, equals([10, 20]));
       expect([10, -20, 30].abs, equals([10, 20, 30]));
+
+      expect(<BigInt>[].abs, isEmpty);
+      expect([0].toBigIntList().abs, equals([0.toBigInt()]));
+      expect([10].toBigIntList().abs, equals([10.toBigInt()]));
+      expect(
+          [-10, 20].toBigIntList().abs, equals([10.toBigInt(), 20.toBigInt()]));
+      expect([10, -20, 30].toBigIntList().abs,
+          equals([10.toBigInt(), 20.toBigInt(), 30.toBigInt()]));
     });
 
     test('movingAverage', () {
@@ -352,17 +417,50 @@ void main() {
       expect([10, -20, 30].movingAverage(3), equals([6.666666666666667]));
       expect([10, -20, 30, 40, 50, 60].movingAverage(3),
           equals([6.666666666666667, 16.666666666666668, 40.0, 50.0]));
+
+      expect(<BigInt>[].movingAverage(2), isEmpty);
+      expect([0].toBigIntList().movingAverage(2), equals([0.toDecimal()]));
+      expect([10].toBigIntList().movingAverage(3), equals([10.toDecimal()]));
+      expect(
+          [-10, 20].toBigIntList().movingAverage(3), equals([5.toDecimal()]));
+      expect([10, -20, 30].toBigIntList().movingAverage(3),
+          equals([6.666666666666667.toDecimal()]));
+      expect(
+          [10, -20, 30, 40, 50, 60].toBigIntList().movingAverage(3),
+          equals([
+            6.666666666666667.toDecimal(),
+            16.666666666666668.toDecimal(),
+            40.toDecimal(),
+            50.toDecimal(),
+          ]));
     });
 
     test('statistics', () {
       expect(<int>[10, 20, 30].statistics.mean, equals(20));
       expect(<int>[10, 20, 30].statisticsWithData.data, equals([10, 20, 30]));
+
+      expect(
+          [10, 20, 30].toBigIntList().statistics.mean, equals(20.toDecimal()));
+      expect([10, 20, 30].toBigIntList().statisticsWithData.data,
+          equals([10.toBigInt(), 20.toBigInt(), 30.toBigInt()]));
     });
 
     test('operator +', () {
       expect(<int>[] + <int>[], isEmpty);
       expect(<int>[10] + <int>[20], equals([10, 20]));
       expect(<int>[100, 200] + <int>[10, 20], equals([100, 200, 10, 20]));
+
+      expect(<BigInt>[] + <BigInt>[], isEmpty);
+      expect([10].toBigIntList() + [20].toBigIntList(),
+          equals([10.toBigInt(), 20.toBigInt()]));
+      expect(
+          [100, 200].toBigIntList() + [10, 20].toBigIntList(),
+          equals([
+            100.toBigInt(),
+            200.toBigInt(),
+            10.toBigInt(),
+            20.toBigInt(),
+          ]));
     });
 
     test('operator -', () {
@@ -371,6 +469,16 @@ void main() {
       expect(<int>[100, 200] - <int>[10, 20], equals([90, 180]));
       expect(<int>[100, 200, 300] - <int>[10, 20], equals([90, 180]));
       expect(<int>[100, 200, 300] - <int>[10, 20, 30], equals([90, 180, 270]));
+
+      expect(<BigInt>[] - <BigInt>[], isEmpty);
+      expect(
+          [10].toBigIntList() - [20].toBigIntList(), equals([-10.toBigInt()]));
+      expect([100, 200].toBigIntList() - [10, 20].toBigIntList(),
+          equals([90.toBigInt(), 180.toBigInt()]));
+      expect([100, 200, 300].toBigIntList() - [10, 20].toBigIntList(),
+          equals([90.toBigInt(), 180.toBigInt()]));
+      expect([100, 200, 300].toBigIntList() - [10, 20, 30].toBigIntList(),
+          equals([90.toBigInt(), 180.toBigInt(), 270.toBigInt()]));
     });
 
     test('operator *', () {
@@ -380,6 +488,16 @@ void main() {
       expect(<int>[100, 200, 300] * <int>[10, 20], equals([1000, 4000]));
       expect(
           <int>[100, 200, 300] * <int>[10, 20, 30], equals([1000, 4000, 9000]));
+
+      expect(<BigInt>[] * <BigInt>[], isEmpty);
+      expect(
+          [10].toBigIntList() * [20].toBigIntList(), equals([200.toBigInt()]));
+      expect([100, 200].toBigIntList() * [10, 20].toBigIntList(),
+          equals([1000.toBigInt(), 4000.toBigInt()]));
+      expect([100, 200, 300].toBigIntList() * [10, 20].toBigIntList(),
+          equals([1000.toBigInt(), 4000.toBigInt()]));
+      expect([100, 200, 300].toBigIntList() * [10, 20, 30].toBigIntList(),
+          equals([1000.toBigInt(), 4000.toBigInt(), 9000.toBigInt()]));
     });
 
     test('operator /', () {
@@ -389,6 +507,18 @@ void main() {
       expect(<int>[100, 200, 300] / <int>[10, 20], equals([10, 10]));
       expect(<int>[100, 200, 300] / <int>[10, 20, 30], equals([10, 10, 10]));
       expect(<int>[100, 200, 300] / <int>[40, 50, 30], equals([2.5, 4, 10]));
+
+      expect(<BigInt>[] / <BigInt>[], isEmpty);
+      expect(
+          [10].toBigIntList() / [20].toBigIntList(), equals([0.5.toDecimal()]));
+      expect([100, 200].toBigIntList() / [10, 20].toBigIntList(),
+          equals([10.toDecimal(), 10.toDecimal()]));
+      expect([100, 200, 300].toBigIntList() / [10, 20].toBigIntList(),
+          equals([10.toDecimal(), 10.toDecimal()]));
+      expect([100, 200, 300].toBigIntList() / [10, 20, 30].toBigIntList(),
+          equals([10.toDecimal(), 10.toDecimal(), 10.toDecimal()]));
+      expect([100, 200, 300].toBigIntList() / [40, 50, 30].toBigIntList(),
+          equals([2.5.toDecimal(), 4.toDecimal(), 10.toDecimal()]));
     });
 
     test('operator ~/', () {
@@ -398,9 +528,22 @@ void main() {
       expect(<int>[100, 200, 300] ~/ <int>[10, 20], equals([10, 10]));
       expect(<int>[100, 200, 300] ~/ <int>[10, 20, 30], equals([10, 10, 10]));
       expect(<int>[100, 200, 300] ~/ <int>[40, 50, 30], equals([2, 4, 10]));
+
+      expect(<BigInt>[] ~/ <BigInt>[], isEmpty);
+      expect(
+          [10].toBigIntList() ~/ [20].toBigIntList(), equals([0.toBigInt()]));
+      expect([100, 200].toBigIntList() ~/ [10, 20].toBigIntList(),
+          equals([10.toBigInt(), 10.toBigInt()]));
+      expect([100, 200, 300].toBigIntList() ~/ [10, 20].toBigIntList(),
+          equals([10.toBigInt(), 10.toBigInt()]));
+      expect([100, 200, 300].toBigIntList() ~/ [10, 20, 30].toBigIntList(),
+          equals([10.toBigInt(), 10.toBigInt(), 10.toBigInt()]));
+      expect([100, 200, 300].toBigIntList() ~/ [40, 50, 30].toBigIntList(),
+          equals([2.toBigInt(), 4.toBigInt(), 10.toBigInt()]));
     });
 
     test('isSorted', () {
+      // int
       expect(<int>[].isSorted, isFalse);
 
       expect(<int>[0].isSorted, isTrue);
@@ -410,9 +553,21 @@ void main() {
 
       expect(<int>[10, 5].isSorted, isFalse);
       expect(<int>[10, 200, 30].isSorted, isFalse);
+
+      // BigInt
+      expect(<BigInt>[].isSorted, isFalse);
+
+      expect([0].toBigIntList().isSorted, isTrue);
+      expect([10].toBigIntList().isSorted, isTrue);
+      expect([-10, 20].toBigIntList().isSorted, isTrue);
+      expect([10, 20, 30].toBigIntList().isSorted, isTrue);
+
+      expect([10, 5].toBigIntList().isSorted, isFalse);
+      expect([10, 200, 30].toBigIntList().isSorted, isFalse);
     });
 
     test('equalsValues', () {
+      // int
       expect(<int>[].equalsValues([]), isTrue);
       expect(<int>[].equalsValues([10]), isFalse);
 
@@ -426,6 +581,42 @@ void main() {
       expect(<int>[10, 20].equalsValues([10.0001, 20.001], tolerance: 0.01),
           isTrue);
       expect(<int>[10, 20].equalsValues([10.0001, 20.1], tolerance: 0.01),
+          isFalse);
+
+      // BigInt
+      expect(<BigInt>[].equalsValues([]), isTrue);
+      expect(<BigInt>[].equalsValues([10]), isFalse);
+
+      expect([10].toBigIntList().equalsValues([10]), isTrue);
+      expect(
+          [10]
+              .toBigIntList()
+              .equalsValues([10.toDecimal()], tolerance: 0.000001),
+          isTrue);
+      expect([10].toBigIntList().equalsValues([10.0001.toDecimal()]), isFalse);
+      expect(
+          [10].toBigIntList().equalsValues([10.toDecimal()], tolerance: 0.01),
+          isTrue);
+      expect(
+          [10]
+              .toBigIntList()
+              .equalsValues([10.0001.toDecimal()], tolerance: 0.01),
+          isTrue);
+      expect(
+          [10]
+              .toBigIntList()
+              .equalsValues([10.0001.toDecimal()], tolerance: 0.000001),
+          isFalse);
+
+      expect(
+          [10, 20].toBigIntList().equalsValues(
+              [10.0001.toDecimal(), 20.001.toDecimal()],
+              tolerance: 0.01),
+          isTrue);
+      expect(
+          [10, 20].toBigIntList().equalsValues(
+              [10.0001.toDecimal(), 20.1.toDecimal()],
+              tolerance: 0.01),
           isFalse);
     });
   });

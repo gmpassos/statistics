@@ -1515,8 +1515,18 @@ extension IterableBigIntExtension on Iterable<BigInt> {
             }
             continue;
           }
-        } else if (b is DynamicNumber) {
+        } else if (b is DynamicInt) {
           n = b.toBigInt();
+        } else if (b is Decimal) {
+          if (b.isDecimalPartZero) {
+            n = b.toBigInt();
+          } else {
+            var diff = b.subtractBigInt(a).abs();
+            if (diff.toDouble() > tolerance) {
+              return false;
+            }
+            continue;
+          }
         } else {
           return false;
         }
@@ -1746,10 +1756,20 @@ extension IntExtension on int {
 
 /// extension for [BigInt].
 extension BigIntExtension on BigInt {
+  /// Returns the square of `this` number.
+  BigInt get square => this * this;
+
+  /// Returns the square root of `this` number.
+  Decimal get squareRoot => toDynamicInt().squareRoot;
+
+  /// Returns `true` for [int] numbers.
+  bool get isWholeNumber => true;
+
   BigInt min(BigInt other) => this <= other ? this : other;
 
   BigInt max(BigInt other) => this >= other ? this : other;
 
+  /// Formats this `int` to a [String] with thousands separator.
   String get thousands => toInt().thousands;
 }
 
