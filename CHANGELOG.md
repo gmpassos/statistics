@@ -10,6 +10,9 @@
   - Added `sum2` and `mean2`: returns a record with extra parameter `allEqualsTo`.
   - `mean` and `standardDeviation` are computed in a way that minimizes floating-point precision errors.
 
+- `IterableExtension`:
+  - Added `counts`, `countsSorted` and `mostFrequent`.
+
 - `statistics_base_test.dart`: improved numeric tests. 
 
 ## 1.2.0

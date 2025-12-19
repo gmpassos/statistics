@@ -548,6 +548,56 @@ void main() {
       expect(comparator2(itr2.elementAt(1), itr2.elementAt(0)), equals(1));
     });
 
+    group('Iterable counts extensions', () {
+      test('counts() with empty iterable', () {
+        expect(<int>[].counts(), isEmpty);
+      });
+
+      test('counts() with single element', () {
+        expect([1].counts(), equals({1: 1}));
+      });
+
+      test('counts() with repeated elements', () {
+        expect(
+          [1, 2, 1, 3, 2, 1].counts(),
+          equals({1: 3, 2: 2, 3: 1}),
+        );
+      });
+
+      test('countsSorted() sorts by count ascending', () {
+        final result = [1, 2, 1, 3, 2, 1].countsSorted();
+
+        expect(
+          result.map((e) => (e.key, e.value)),
+          equals([
+            (3, 1),
+            (2, 2),
+            (1, 3),
+          ]),
+        );
+      });
+
+      test('countsSorted() with empty iterable', () {
+        expect(<int>[].countsSorted(), isEmpty);
+      });
+
+      test('mostFrequent() returns null for empty iterable', () {
+        expect(<int>[].mostFrequent(), isNull);
+      });
+
+      test('mostFrequent() returns the most frequent element', () {
+        expect([1, 2, 1, 3, 2, 1].mostFrequent(), equals(1));
+      });
+
+      test('mostFrequent() with tie returns one of the most frequent', () {
+        final value = [1, 2, 1, 2].mostFrequent();
+        expect(value, anyOf(1, 2));
+
+        final value2 = [2, 1, 2, 1].mostFrequent();
+        expect(value2, anyOf(1, 2));
+      });
+    });
+
     test('MapExtension<String,int>', () {
       var m = <String, int>{
         'a': 1,
