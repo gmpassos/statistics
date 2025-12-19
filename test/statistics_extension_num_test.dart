@@ -160,7 +160,7 @@ void main() {
     setUp(() {});
 
     test('toBigInt', () {
-      expect(123.isWholeNumber, isTrue);
+      expect(123.toBigInt().isWholeNumber, isTrue);
       expect(-123.toBigInt(), equals(BigInt.from(-123)));
     });
 
@@ -588,10 +588,17 @@ void main() {
       expect(<BigInt>[].equalsValues([10]), isFalse);
 
       expect([10].toBigIntList().equalsValues([10]), isTrue);
+      expect([10].toBigIntList().equalsValues([10.toDecimal()]), isTrue);
+      expect([10].toBigIntList().equalsValues([10.toDynamicInt()]), isTrue);
       expect(
           [10]
               .toBigIntList()
               .equalsValues([10.toDecimal()], tolerance: 0.000001),
+          isTrue);
+      expect(
+          [10]
+              .toBigIntList()
+              .equalsValues([10.toDynamicInt()], tolerance: 0.000001),
           isTrue);
       expect([10].toBigIntList().equalsValues([10.0001.toDecimal()]), isFalse);
       expect(
