@@ -669,6 +669,47 @@ void main() {
       expect(dataBigInt.statisticsWithData.data, equals(dataBigInt));
     });
 
+    test('num(3)', () {
+      var data = <num>[10, 20.2, 30];
+
+      var statistics = data.statistics;
+
+      expect(statistics.length, equals(3));
+      expect(statistics.isEmpty, isFalse);
+      expect(statistics.isNotEmpty, isTrue);
+
+      expect(statistics.sum, equals(60.2));
+      expect(statistics.mean, equals(20.066666666666666));
+      expect(statistics.standardDeviation, equals(8.165510122188053));
+      expect(statistics.squaresSum, equals(1408.04));
+      expect(statistics.squaresMean, equals(469.34666666666664));
+
+      expect(statistics.centerIndex, equals(1));
+      expect(statistics.center, equals(20.2));
+
+      expect(statistics.medianLow, equals(20.2));
+      expect(statistics.medianHigh, equals(20.2));
+      expect(statistics.median, equals(20.2));
+
+      expect(statistics.medianLowIndex, equals(1));
+      expect(statistics.medianHighIndex, equals(1));
+
+      expect(statistics.isMeanInRange(10, 30), isTrue);
+      expect(statistics.isMeanInRange(10, 30, 7, 9), isTrue);
+
+      expect(statistics.isMeanInRange(10, 19), isFalse);
+      expect(statistics.isMeanInRange(10, 30, 7, 8), isFalse);
+
+      expect(statistics.toString(),
+          equals('{~20.0666 +-8.1655 [10..(20.2)..30] #3}'));
+      expect(statistics.toString(precision: 0),
+          equals('{~20 +-8 [10..(20)..30] #3}'));
+      expect(statistics.toString(precision: 1),
+          equals('{~20.0 +-8.1 [10..(20.2)..30] #3}'));
+
+      expect(data.statisticsWithData.data, equals(data));
+    });
+
     test('useBigIntToCompute: true', () {
       var statistics =
           Statistics.compute([10, 20, 30], useBigIntToCompute: true);
