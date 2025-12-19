@@ -1045,19 +1045,15 @@ class StatisticsBigInt extends DataEntry {
     );
   }
 
-  StatisticsBigInt operator /(StatisticsBigInt other) {
-    // TODO: use StatisticsDecimal
-    return StatisticsBigInt(
+  StatisticsDynamicNumber<Decimal> operator /(StatisticsBigInt other) {
+    return StatisticsDynamicNumber(
       (length / other.length).toInt(),
-      (min.toDynamicInt() / other.min.toDynamicInt()).toBigInt(),
-      (max.toDynamicInt() / other.max.toDynamicInt()).toBigInt(),
-      medianLow: (medianLow.toDynamicInt() / other.medianLow.toDynamicInt())
-          .toBigInt(),
-      medianHigh: (medianHigh.toDynamicInt() / other.medianHigh.toDynamicInt())
-          .toBigInt(),
-      sum: (sum.toDynamicInt() / other.sum.toDynamicInt()).toBigInt(),
-      squaresSum: (squaresSum.toDynamicInt() / other.squaresSum.toDynamicInt())
-          .toBigInt(),
+      (min.toDynamicInt() / other.min.toDynamicInt()),
+      (max.toDynamicInt() / other.max.toDynamicInt()),
+      medianLow: (medianLow.toDynamicInt() / other.medianLow.toDynamicInt()),
+      medianHigh: (medianHigh.toDynamicInt() / other.medianHigh.toDynamicInt()),
+      sum: (sum.toDynamicInt() / other.sum.toDynamicInt()),
+      squaresSum: (squaresSum.toDynamicInt() / other.squaresSum.toDynamicInt()),
       mean: mean / other.mean,
       standardDeviation: (standardDeviation / other.standardDeviation),
     );
