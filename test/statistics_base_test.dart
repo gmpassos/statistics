@@ -434,6 +434,40 @@ void main() {
       expect(dataBigInt.statisticsWithData.data, equals(dataBigInt));
       expect(dataDynamicInt.statisticsWithData.data, equals(dataDynamicInt));
       expect(dataDecimal.statisticsWithData.data, equals(dataDecimal));
+
+      ///////
+
+      var statistics2 = statistics + statistics;
+      expect(
+          statistics2.toString(), equals('{~25 +-11.1803 [10..(30)..40] #8}'));
+
+      var statisticsBigInt2 = statisticsBigInt + statisticsBigInt;
+      expect(statisticsBigInt2.toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #8}'));
+
+      var statisticsDynamicInt2 = statisticsDynamicInt + statisticsDynamicInt;
+      expect(statisticsDynamicInt2.toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #8}'));
+
+      var statisticsDecimal2 = statisticsDecimal + statisticsDecimal;
+      expect(statisticsDecimal2.toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #8}'));
+
+      var statistics3 = statistics / statistics;
+      expect(
+          statistics3.toString(),
+          anyOf(equals('{~1 +-1 [1..(1)..1] #1.0}'),
+              equals('{~1 +-1 [1..(1)..1] #1}')));
+
+      var statisticsBigInt3 = statisticsBigInt / statisticsBigInt;
+      expect(statisticsBigInt3.toString(), equals('{~1 +-1 [1..(1)..1] #1}'));
+
+      var statisticsDynamicInt3 = statisticsDynamicInt / statisticsDynamicInt;
+      expect(
+          statisticsDynamicInt3.toString(), equals('{~1 +-1 [1..(1)..1] #1}'));
+
+      var statisticsDecimal3 = statisticsDecimal / statisticsDecimal;
+      expect(statisticsDecimal3.toString(), equals('{~1 +-1 [1..(1)..1] #1}'));
     });
 
     test('int(3)', () {
