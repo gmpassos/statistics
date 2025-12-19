@@ -862,6 +862,50 @@ void main() {
 
       expect(() => Statistics.compute([30, 20, 10], alreadySortedData: true),
           throwsArgumentError);
+
+      // BigInt:
+
+      expect(
+          () => StatisticsBigInt.compute([10, 20, 30].toBigIntList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsBigInt.compute([30, 20, 10].toBigIntList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsBigInt.compute([10, 20, 30].toBigIntList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsBigInt.compute([30, 20, 10].toBigIntList(),
+              alreadySortedData: true),
+          throwsArgumentError);
+
+      //
+
+      expect(
+          () => StatisticsDynamicNumber.compute([10, 20, 30].toDecimalList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsDynamicNumber.compute([30, 20, 10].toDecimalList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsDynamicNumber.compute([10, 20, 30].toDecimalList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsDynamicNumber.compute([30, 20, 10].toDecimalList(),
+              alreadySortedData: true),
+          throwsArgumentError);
     });
 
     test('multiplyBy', () {
