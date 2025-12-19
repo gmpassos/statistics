@@ -817,6 +817,33 @@ extension IterableExtension<T> on Iterable<T> {
   int computeHashcode() {
     return IterableEquality<T>().hash(this);
   }
+
+  /// Returns a map counting how many times each element appears in the iterable.
+  ///
+  /// Each key in the returned map is a distinct element from the iterable, and
+  /// the corresponding value is the number of occurrences of that element.
+  ///
+  /// If the iterable is empty, an empty map is returned.
+  Map<T, int> counts() {
+    var count = <T, int>{};
+    for (var e in this) {
+      var c = count[e] ?? 0;
+      count[e] = c + 1;
+    }
+    return count;
+  }
+
+  /// Returns the element counts sorted by occurrence count in ascending order.
+  /// See [counts].
+  List<MapEntry<T, int>> countsSorted() {
+    var counts = this.counts();
+    var entriesSorted =
+        counts.entries.sorted((a, b) => a.value.compareTo(b.value)).toList();
+    return entriesSorted;
+  }
+
+  /// Returns the element with the highest occurrence count, or `null` if empty.
+  T? mostFrequent() => countsSorted().lastOrNull?.key;
 }
 
 /// extension for `Map<K, Iterable<num>>`.

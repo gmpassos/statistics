@@ -245,6 +245,12 @@ abstract class DynamicNumber<T extends DynamicNumber<T>>
 
   DynamicNumber<dynamic> operator -(DynamicNumber<dynamic> other);
 
+  N min<N extends DynamicNumber<N>>(DynamicNumber other);
+
+  N max<N extends DynamicNumber<N>>(DynamicNumber other);
+
+  N cast<N extends DynamicNumber<N>>();
+
   T multiplyBigInt(BigInt n2);
 
   T multiplyInt(int n2);
@@ -678,6 +684,30 @@ abstract class DynamicInt implements DynamicNumber<DynamicInt> {
       return toBigInt() >= other.toBigInt();
     } else {
       return toInt() >= other.toInt();
+    }
+  }
+
+  @override
+  N min<N extends DynamicNumber<N>>(DynamicNumber other) {
+    return (this <= other ? this : other).cast<N>();
+  }
+
+  @override
+  N max<N extends DynamicNumber<N>>(DynamicNumber other) {
+    return (this >= other ? this : other).cast<N>();
+  }
+
+  @override
+  N cast<N extends DynamicNumber<N>>() {
+    var self = this;
+    if (self is N) {
+      return self as N;
+    } else if (N == DynamicInt) {
+      return toDynamicInt() as N;
+    } else if (N == Decimal) {
+      return toDecimal() as N;
+    } else {
+      throw TypeError();
     }
   }
 
@@ -1651,6 +1681,13 @@ extension DynamicIntOnIterableDynamicNumberExtension
 }
 
 extension DynamicIntOnIterableDynamicIntExtension on Iterable<DynamicInt> {
+  StatisticsDynamicNumber<DynamicInt> get statistics =>
+      StatisticsDynamicNumber<DynamicInt>.compute(this);
+
+  /// Returns a [Statistics] of this numeric collection (with populated field [StatisticsDynamicNumber.data]).
+  StatisticsDynamicNumber<DynamicInt> get statisticsWithData =>
+      StatisticsDynamicNumber<DynamicInt>.compute(this, keepData: true);
+
   Iterable<Decimal> get asDecimal => map((e) => e.toDecimal());
 
   /// Returns the sum of this numeric collection.

@@ -152,11 +152,30 @@ void main() {
 
     test('int(4)', () {
       var data = [10, 20, 30, 40];
+      var dataBigInt = data.toBigIntList();
+      var dataDynamicInt = data.toDynamicIntList();
+      var dataDecimal = data.toDecimalList();
+
       var statistics = data.statistics;
+      var statisticsBigInt = dataBigInt.statistics;
+      var statisticsDynamicInt = dataDynamicInt.statistics;
+      var statisticsDecimal = dataDecimal.statistics;
 
       expect(statistics.length, equals(4));
       expect(statistics.isEmpty, isFalse);
       expect(statistics.isNotEmpty, isTrue);
+
+      expect(statisticsBigInt.length, equals(4));
+      expect(statisticsBigInt.isEmpty, isFalse);
+      expect(statisticsBigInt.isNotEmpty, isTrue);
+
+      expect(statisticsDynamicInt.length, equals(4));
+      expect(statisticsDynamicInt.isEmpty, isFalse);
+      expect(statisticsDynamicInt.isNotEmpty, isTrue);
+
+      expect(statisticsDecimal.length, equals(4));
+      expect(statisticsDecimal.isEmpty, isFalse);
+      expect(statisticsDecimal.isNotEmpty, isTrue);
 
       expect(statistics.sum, equals(100));
       expect(statistics.mean, equals(25));
@@ -164,37 +183,400 @@ void main() {
       expect(statistics.squaresSum, equals(3000));
       expect(statistics.squaresMean, equals(750.0));
 
+      expect(statisticsBigInt.sum, equals(100.toBigInt()));
+      expect(statisticsBigInt.mean, equals(25.toDecimal()));
+      expect(statisticsBigInt.standardDeviation,
+          equals(Decimal.parse('11.180339887498948')));
+      expect(statisticsBigInt.squaresSum, equals(3000.toBigInt()));
+      expect(statisticsBigInt.squaresMean, equals(750.toDecimal()));
+
+      expect(statisticsDynamicInt.sum, equals(100.toDynamicInt()));
+      expect(statisticsDynamicInt.mean, equals(25.toDecimal()));
+      expect(statisticsDynamicInt.standardDeviation,
+          equals(Decimal.parse('11.180339887498948')));
+      expect(statisticsDynamicInt.squaresSum, equals(3000.toDynamicInt()));
+      expect(statisticsDynamicInt.squaresMean, equals(750.toDecimal()));
+
+      expect(statisticsDecimal.sum, equals(100.toDynamicInt()));
+      expect(statisticsDecimal.mean, equals(25.toDecimal()));
+      expect(statisticsDecimal.standardDeviation,
+          equals(Decimal.parse('11.180339887498948')));
+      expect(statisticsDecimal.squaresSum, equals(3000.toDynamicInt()));
+      expect(statisticsDecimal.squaresMean, equals(750.toDecimal()));
+
       expect(statistics.centerIndex, equals(2));
       expect(statistics.center, equals(30));
+
+      expect(statisticsBigInt.centerIndex, equals(2));
+      expect(statisticsBigInt.center, equals(30.toBigInt()));
+
+      expect(statisticsDynamicInt.centerIndex, equals(2));
+      expect(statisticsDynamicInt.center, equals(30.toDynamicInt()));
+
+      expect(statisticsDecimal.centerIndex, equals(2));
+      expect(statisticsDecimal.center, equals(30.toDynamicInt()));
 
       expect(statistics.medianLow, equals(20));
       expect(statistics.medianHigh, equals(30));
       expect(statistics.median, equals(25));
 
+      expect(statisticsBigInt.medianLow, equals(20.toBigInt()));
+      expect(statisticsBigInt.medianHigh, equals(30.toBigInt()));
+      expect(statisticsBigInt.median, equals(25.toDecimal()));
+
+      expect(statisticsDynamicInt.medianLow, equals(20.toDynamicInt()));
+      expect(statisticsDynamicInt.medianHigh, equals(30.toDynamicInt()));
+      expect(statisticsDynamicInt.median, equals(25.toDecimal()));
+
+      expect(statisticsDecimal.medianLow, equals(20.toDynamicInt()));
+      expect(statisticsDecimal.medianHigh, equals(30.toDynamicInt()));
+      expect(statisticsDecimal.median, equals(25.toDecimal()));
+
       expect(statistics.medianLowIndex, equals(1));
       expect(statistics.medianHighIndex, equals(2));
+
+      expect(statisticsBigInt.medianLowIndex, equals(1));
+      expect(statisticsBigInt.medianHighIndex, equals(2));
+
+      expect(statisticsDynamicInt.medianLowIndex, equals(1));
+      expect(statisticsDynamicInt.medianHighIndex, equals(2));
+
+      expect(statisticsDecimal.medianLowIndex, equals(1));
+      expect(statisticsDecimal.medianHighIndex, equals(2));
 
       expect(statistics.isMeanInRange(10, 30), isTrue);
       expect(statistics.isMeanInRange(10, 30, 11, 12), isTrue);
 
+      expect(
+          statisticsBigInt.isMeanInRange(10.toDynamicInt(), 30.toDynamicInt()),
+          isTrue);
+      expect(
+          statisticsBigInt.isMeanInRange(10.toDynamicInt(), 30.toDynamicInt(),
+              11.toDynamicInt(), 12.toDynamicInt()),
+          isTrue);
+
+      expect(
+          statisticsDynamicInt.isMeanInRange(
+              10.toDynamicInt(), 30.toDynamicInt()),
+          isTrue);
+      expect(
+          statisticsDynamicInt.isMeanInRange(10.toDynamicInt(),
+              30.toDynamicInt(), 11.toDynamicInt(), 12.toDynamicInt()),
+          isTrue);
+
+      expect(
+          statisticsDecimal.isMeanInRange(10.toDynamicInt(), 30.toDynamicInt()),
+          isTrue);
+      expect(
+          statisticsDecimal.isMeanInRange(10.toDynamicInt(), 30.toDynamicInt(),
+              11.toDynamicInt(), 12.toDynamicInt()),
+          isTrue);
+
       expect(statistics.isMeanInRange(10, 19), isFalse);
       expect(statistics.isMeanInRange(10, 30, 10, 11), isFalse);
+
+      expect(
+          statisticsBigInt.isMeanInRange(10.toDynamicInt(), 19.toDynamicInt()),
+          isFalse);
+      expect(
+          statisticsBigInt.isMeanInRange(10.toDynamicInt(), 30.toDynamicInt(),
+              10.toDynamicInt(), 11.toDynamicInt()),
+          isFalse);
+
+      expect(
+          statisticsDynamicInt.isMeanInRange(
+              10.toDynamicInt(), 19.toDynamicInt()),
+          isFalse);
+      expect(
+          statisticsDynamicInt.isMeanInRange(10.toDynamicInt(),
+              30.toDynamicInt(), 10.toDynamicInt(), 11.toDynamicInt()),
+          isFalse);
+
+      expect(
+          statisticsDecimal.isMeanInRange(10.toDynamicInt(), 19.toDynamicInt()),
+          isFalse);
+      expect(
+          statisticsDecimal.isMeanInRange(10.toDynamicInt(), 30.toDynamicInt(),
+              10.toDynamicInt(), 11.toDynamicInt()),
+          isFalse);
 
       expect(statistics.toString(precision: 2),
           equals('{~25 +-11.18 [10..(30)..40] #4}'));
       expect(statistics.toString(precision: 0),
           equals('{~25 +-11 [10..(30)..40] #4}'));
 
+      expect(statisticsBigInt.toString(precision: 2),
+          equals('{~25 +-11.18 [10..(30)..40] #4}'));
+      expect(statisticsBigInt.toString(precision: 0),
+          equals('{~25 +-11 [10..(30)..40] #4}'));
+
+      expect(statisticsDynamicInt.toString(precision: 2),
+          equals('{~25 +-11.18 [10..(30)..40] #4}'));
+      expect(statisticsDynamicInt.toString(precision: 0),
+          equals('{~25 +-11 [10..(30)..40] #4}'));
+
+      expect(statisticsDecimal.toString(precision: 2),
+          equals('{~25 +-11.18 [10..(30)..40] #4}'));
+      expect(statisticsDecimal.toString(precision: 0),
+          equals('{~25 +-11 [10..(30)..40] #4}'));
+
+      ///////
+
+      expect(statistics.cast<int>(), isA<Statistics<int>>());
+      expect(statistics.cast<int>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statistics.cast<double>(), isA<Statistics<double>>());
+      expect(statistics.cast<double>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsBigInt.cast<int>(), isA<Statistics<int>>());
+      expect(statisticsBigInt.cast<int>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsBigInt.cast<double>(), isA<Statistics<double>>());
+      expect(statisticsBigInt.cast<double>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsBigInt.cast<num>(), isA<Statistics<num>>());
+      expect(statisticsBigInt.cast<num>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      ///////
+
+      expect(statisticsDynamicInt.cast<int>(), isA<Statistics<int>>());
+      expect(statisticsDynamicInt.cast<int>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDynamicInt.cast<double>(), isA<Statistics<double>>());
+      expect(statisticsDynamicInt.cast<double>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDynamicInt.castDynamicNumber<DynamicInt>(),
+          isA<StatisticsDynamicNumber<DynamicInt>>());
+      expect(statisticsDynamicInt.castDynamicNumber<DynamicInt>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDynamicInt.castDynamicNumber<Decimal>(),
+          isA<StatisticsDynamicNumber<Decimal>>());
+      expect(statisticsDynamicInt.castDynamicNumber<Decimal>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      ///////
+
+      expect(statisticsDecimal.cast<int>(), isA<Statistics<int>>());
+      expect(statisticsDecimal.cast<int>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDecimal.cast<double>(), isA<Statistics<double>>());
+      expect(statisticsDecimal.cast<double>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDecimal.cast<num>(), isA<Statistics<num>>());
+      expect(statisticsDecimal.cast<num>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDecimal.castDynamicNumber<DynamicInt>(),
+          isA<StatisticsDynamicNumber<DynamicInt>>());
+      expect(statisticsDecimal.castDynamicNumber<DynamicInt>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      expect(statisticsDecimal.castDynamicNumber<Decimal>(),
+          isA<StatisticsDynamicNumber<Decimal>>());
+      expect(statisticsDecimal.castDynamicNumber<Decimal>().toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #4}'));
+
+      ///////
+
+      expect(
+          statistics.getDataFields(),
+          equals([
+            'mean',
+            'standardDeviation',
+            'length',
+            'min',
+            'max',
+            'sum',
+            'squaresSum'
+          ]));
+      expect(statistics.getDataValues(),
+          equals([25.0, 11.180339887498949, 4, 10, 40, 100, 3000]));
+
+      expect(
+          statisticsDecimal.getDataFields(),
+          equals([
+            'mean',
+            'standardDeviation',
+            'length',
+            'min',
+            'max',
+            'sum',
+            'squaresSum'
+          ]));
+      expect(
+          statisticsDecimal.getDataValues(),
+          equals([
+            25.toDecimal(),
+            Decimal.parse('11.180339887498948'),
+            4,
+            10.toDecimal(),
+            40.toDecimal(),
+            100.toDecimal(),
+            3000.toDecimal()
+          ]));
+
+      expect(
+          statisticsDynamicInt.getDataFields(),
+          equals([
+            'mean',
+            'standardDeviation',
+            'length',
+            'min',
+            'max',
+            'sum',
+            'squaresSum'
+          ]));
+      expect(
+          statisticsDynamicInt.getDataValues(),
+          equals([
+            25.toDecimal(),
+            Decimal.parse('11.180339887498948'),
+            4,
+            10.toDynamicInt(),
+            40.toDynamicInt(),
+            100.toDynamicInt(),
+            3000.toDynamicInt()
+          ]));
+
+      expect(
+          statisticsBigInt.getDataFields(),
+          equals([
+            'mean',
+            'standardDeviation',
+            'length',
+            'min',
+            'max',
+            'sum',
+            'squaresSum'
+          ]));
+      expect(
+          statisticsBigInt.getDataValues(),
+          equals([
+            25.toDecimal(),
+            Decimal.parse('11.180339887498948'),
+            4,
+            10.toBigInt(),
+            40.toBigInt(),
+            100.toBigInt(),
+            3000.toBigInt()
+          ]));
+
+      ///////
+
+      expect(statistics.multiplyBy(2).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsBigInt.multiplyBy(DynamicInt.two).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsDynamicInt.multiplyBy(DynamicInt.two).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsDecimal.multiplyBy(DynamicInt.two).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      ///////
+
+      expect(statistics.sumWith(statistics).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsBigInt.sumWith(statisticsBigInt).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsDynamicInt.sumWith(statisticsDynamicInt).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      expect(statisticsDecimal.sumWith(statisticsDecimal).toString(),
+          equals('{~50 +-22.3606 [20..(60)..80] #8}'));
+
+      ///////
+
+      expect(
+          statistics.divideBy(2).toString(),
+          anyOf(equals('{~12.5 +-5.5901 [5..(15)..20] #2.0}'),
+              equals('{~12.5 +-5.5901 [5..(15)..20] #2}')));
+
+      expect(
+          statisticsBigInt.divideBy(DynamicInt.two).toString(),
+          anyOf(equals('{~12.5 +-5.5901 [5..(15)..20] #2.0}'),
+              equals('{~12.5 +-5.5901 [5..(15)..20] #2}')));
+
+      expect(
+          statisticsDynamicInt.divideBy(DynamicInt.two).toString(),
+          anyOf(equals('{~12.5 +-5.5901 [5..(15)..20] #2.0}'),
+              equals('{~12.5 +-5.5901 [5..(15)..20] #2}')));
+
+      expect(
+          statisticsDecimal.divideBy(DynamicInt.two).toString(),
+          anyOf(equals('{~12.5 +-5.5901 [5..(15)..20] #2.0}'),
+              equals('{~12.5 +-5.5901 [5..(15)..20] #2}')));
+
+      ///////
+
       expect(data.statisticsWithData.data, equals(data));
+      expect(dataBigInt.statisticsWithData.data, equals(dataBigInt));
+      expect(dataDynamicInt.statisticsWithData.data, equals(dataDynamicInt));
+      expect(dataDecimal.statisticsWithData.data, equals(dataDecimal));
+
+      ///////
+
+      var statistics2 = statistics + statistics;
+      expect(
+          statistics2.toString(), equals('{~25 +-11.1803 [10..(30)..40] #8}'));
+
+      var statisticsBigInt2 = statisticsBigInt + statisticsBigInt;
+      expect(statisticsBigInt2.toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #8}'));
+
+      var statisticsDynamicInt2 = statisticsDynamicInt + statisticsDynamicInt;
+      expect(statisticsDynamicInt2.toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #8}'));
+
+      var statisticsDecimal2 = statisticsDecimal + statisticsDecimal;
+      expect(statisticsDecimal2.toString(),
+          equals('{~25 +-11.1803 [10..(30)..40] #8}'));
+
+      var statistics3 = statistics / statistics;
+      expect(
+          statistics3.toString(),
+          anyOf(equals('{~1 +-1 [1..(1)..1] #1.0}'),
+              equals('{~1 +-1 [1..(1)..1] #1}')));
+
+      var statisticsBigInt3 = statisticsBigInt / statisticsBigInt;
+      expect(statisticsBigInt3.toString(), equals('{~1 +-1 [1..(1)..1] #1}'));
+
+      var statisticsDynamicInt3 = statisticsDynamicInt / statisticsDynamicInt;
+      expect(
+          statisticsDynamicInt3.toString(), equals('{~1 +-1 [1..(1)..1] #1}'));
+
+      var statisticsDecimal3 = statisticsDecimal / statisticsDecimal;
+      expect(statisticsDecimal3.toString(), equals('{~1 +-1 [1..(1)..1] #1}'));
     });
 
     test('int(3)', () {
       var data = [10, 20, 30];
+      var dataBigInt = data.toBigIntList();
+
       var statistics = data.statistics;
+      var statisticsBigInt = dataBigInt.statistics;
 
       expect(statistics.length, equals(3));
       expect(statistics.isEmpty, isFalse);
       expect(statistics.isNotEmpty, isTrue);
+
+      expect(statisticsBigInt.length, equals(3));
+      expect(statisticsBigInt.isEmpty, isFalse);
+      expect(statisticsBigInt.isNotEmpty, isTrue);
 
       expect(statistics.sum, equals(60));
       expect(statistics.mean, equals(20));
@@ -202,12 +584,255 @@ void main() {
       expect(statistics.squaresSum, equals(1400));
       expect(statistics.squaresMean, equals(466.6666666666667));
 
+      expect(statisticsBigInt.sum, equals(60.toBigInt()));
+      expect(statisticsBigInt.mean, equals(20.toDecimal()));
+      expect(
+          statisticsBigInt.standardDeviation,
+          equals(
+              Decimal.parse('8.1649658092772614292692508470403064717305671')));
+      expect(statisticsBigInt.squaresSum, equals(1400.toBigInt()));
+      expect(statisticsBigInt.squaresMean,
+          equals(Decimal.parse('466.6666666666666666')));
+
       expect(statistics.centerIndex, equals(1));
       expect(statistics.center, equals(20));
+
+      expect(statisticsBigInt.centerIndex, equals(1));
+      expect(statisticsBigInt.center, equals(20.toBigInt()));
 
       expect(statistics.medianLow, equals(20));
       expect(statistics.medianHigh, equals(20));
       expect(statistics.median, equals(20));
+
+      expect(statisticsBigInt.medianLow, equals(20.toBigInt()));
+      expect(statisticsBigInt.medianHigh, equals(20.toBigInt()));
+      expect(statisticsBigInt.median, equals(20.toDecimal()));
+
+      expect(statistics.medianLowIndex, equals(1));
+      expect(statistics.medianHighIndex, equals(1));
+
+      expect(statisticsBigInt.medianLowIndex, equals(1));
+      expect(statisticsBigInt.medianHighIndex, equals(1));
+
+      expect(statistics.isMeanInRange(10, 30), isTrue);
+      expect(statistics.isMeanInRange(10, 30, 7, 9), isTrue);
+
+      expect(
+          statisticsBigInt.isMeanInRange(10.toDynamicInt(), 30.toDynamicInt()),
+          isTrue);
+      expect(
+          statisticsBigInt.isMeanInRange(10.toDynamicInt(), 30.toDynamicInt(),
+              7.toDynamicInt(), 9.toDynamicInt()),
+          isTrue);
+
+      expect(statistics.isMeanInRange(10, 19), isFalse);
+      expect(statistics.isMeanInRange(10, 30, 7, 8), isFalse);
+
+      expect(
+          statisticsBigInt.isMeanInRange(10.toDynamicInt(), 19.toDynamicInt()),
+          isFalse);
+      expect(
+          statisticsBigInt.isMeanInRange(10.toDynamicInt(), 30.toDynamicInt(),
+              7.toDynamicInt(), 8.toDynamicInt()),
+          isFalse);
+
+      expect(statistics.toString(), equals('{~20 +-8.1649 [10..(20)..30] #3}'));
+      expect(statistics.toString(precision: 0),
+          equals('{~20 +-8 [10..(20)..30] #3}'));
+
+      expect(statisticsBigInt.toString(),
+          equals('{~20 +-8.1649 [10..(20)..30] #3}'));
+      expect(statisticsBigInt.toString(precision: 0),
+          equals('{~20 +-8 [10..(20)..30] #3}'));
+
+      expect(data.statisticsWithData.data, equals(data));
+      expect(dataBigInt.statisticsWithData.data, equals(dataBigInt));
+    });
+
+    test('int(2)', () {
+      var data = [10, 20];
+      var dataBigInt = data.toBigIntList();
+
+      var statistics = data.statistics;
+      var statisticsBigInt = dataBigInt.statistics;
+
+      expect(statistics.length, equals(2));
+      expect(statistics.isEmpty, isFalse);
+      expect(statistics.isNotEmpty, isTrue);
+
+      expect(statisticsBigInt.length, equals(2));
+      expect(statisticsBigInt.isEmpty, isFalse);
+      expect(statisticsBigInt.isNotEmpty, isTrue);
+
+      expect(statistics.sum, equals(30));
+      expect(statistics.mean, equals(15));
+      expect(statistics.standardDeviation, equals(5.0));
+      expect(statistics.squaresSum, equals(500));
+      expect(statistics.squaresMean, equals(250.0));
+
+      expect(statisticsBigInt.sum, equals(30.toBigInt()));
+      expect(statisticsBigInt.mean, equals(15.toDecimal()));
+      expect(statisticsBigInt.standardDeviation, equals(Decimal.parse('5.0')));
+      expect(statisticsBigInt.squaresSum, equals(500.toBigInt()));
+      expect(statisticsBigInt.squaresMean, equals(Decimal.parse('250.0')));
+
+      expect(statistics.centerIndex, equals(1));
+      expect(statistics.center, equals(20));
+
+      expect(statisticsBigInt.centerIndex, equals(1));
+      expect(statisticsBigInt.center, equals(20.toBigInt()));
+
+      expect(statistics.medianLow, equals(10));
+      expect(statistics.medianHigh, equals(20));
+      expect(statistics.median, equals(15));
+
+      expect(statisticsBigInt.medianLow, equals(10.toBigInt()));
+      expect(statisticsBigInt.medianHigh, equals(20.toBigInt()));
+      expect(statisticsBigInt.median, equals(15.toDecimal()));
+
+      expect(statistics.medianLowIndex, equals(0));
+      expect(statistics.medianHighIndex, equals(1));
+
+      expect(statisticsBigInt.medianLowIndex, equals(0));
+      expect(statisticsBigInt.medianHighIndex, equals(1));
+
+      expect(data.statisticsWithData.data, equals(data));
+      expect(dataBigInt.statisticsWithData.data, equals(dataBigInt));
+
+      var statistics2 = statistics + statistics;
+      expect(statistics2.toString(), equals('{~15 +-5 [10..(20)..20] #4}'));
+
+      var statisticsBigInt2 = statisticsBigInt + statisticsBigInt;
+      expect(
+          statisticsBigInt2.toString(), equals('{~15 +-5 [10..(20)..20] #4}'));
+
+      var statistics3 = statistics / statistics;
+      expect(
+          statistics3.toString(),
+          anyOf(equals('{~1 +-1 [1..(1)..1] #1.0}'),
+              equals('{~1 +-1 [1..(1)..1] #1}')));
+
+      var statisticsBigInt3 = statisticsBigInt / statisticsBigInt;
+      expect(statisticsBigInt3.toString(), equals('{~1 +-1 [1..(1)..1] #1}'));
+    });
+
+    test('int(1)', () {
+      var data = [10];
+      var dataBigInt = data.toBigIntList();
+
+      var statistics = data.statistics;
+      var statisticsBigInt = dataBigInt.statistics;
+
+      expect(statistics.length, equals(1));
+      expect(statistics.isEmpty, isFalse);
+      expect(statistics.isNotEmpty, isTrue);
+
+      expect(statisticsBigInt.length, equals(1));
+      expect(statisticsBigInt.isEmpty, isFalse);
+      expect(statisticsBigInt.isNotEmpty, isTrue);
+
+      expect(statistics.sum, equals(10));
+      expect(statistics.mean, equals(10));
+      expect(statistics.standardDeviation, equals(0));
+      expect(statistics.squaresSum, equals(100));
+      expect(statistics.squaresMean, equals(100));
+
+      expect(statisticsBigInt.sum, equals(10.toBigInt()));
+      expect(statisticsBigInt.mean, equals(10.toDecimal()));
+      expect(statisticsBigInt.standardDeviation, equals(Decimal.zero));
+      expect(statisticsBigInt.squaresSum, equals(100.toBigInt()));
+      expect(statisticsBigInt.squaresMean, equals(100.toDecimal()));
+
+      expect(statistics.centerIndex, equals(0));
+      expect(statistics.center, equals(10));
+
+      expect(statisticsBigInt.centerIndex, equals(0));
+      expect(statisticsBigInt.center, equals(10.toBigInt()));
+
+      expect(statistics.medianLow, equals(10));
+      expect(statistics.medianHigh, equals(10));
+      expect(statistics.median, equals(10));
+
+      expect(statisticsBigInt.medianLow, equals(10.toBigInt()));
+      expect(statisticsBigInt.medianHigh, equals(10.toBigInt()));
+      expect(statisticsBigInt.median, equals(10.toDecimal()));
+
+      expect(statistics.medianLowIndex, equals(0));
+      expect(statistics.medianHighIndex, equals(0));
+
+      expect(statisticsBigInt.medianLowIndex, equals(0));
+      expect(statisticsBigInt.medianHighIndex, equals(0));
+
+      expect(data.statisticsWithData.data, equals(data));
+      expect(dataBigInt.statisticsWithData.data, equals(dataBigInt));
+    });
+
+    test('int(0)', () {
+      var data = <int>[];
+      var dataBigInt = data.toBigIntList();
+
+      var statistics = data.statistics;
+      var statisticsBigInt = dataBigInt.statistics;
+
+      expect(statistics.length, equals(0));
+      expect(statistics.isEmpty, isTrue);
+      expect(statistics.isNotEmpty, isFalse);
+
+      expect(statisticsBigInt.length, equals(0));
+      expect(statisticsBigInt.isEmpty, isTrue);
+      expect(statisticsBigInt.isNotEmpty, isFalse);
+
+      expect(statistics.sum, equals(0));
+      expect(statistics.mean, isNaN);
+      expect(statistics.standardDeviation, isNaN);
+      expect(statistics.squaresSum, equals(0));
+      expect(statistics.squaresMean, equals(isNaN));
+
+      expect(statisticsBigInt.sum, equals(0.toBigInt()));
+      expect(statisticsBigInt.mean, Decimal.zero);
+      expect(statisticsBigInt.standardDeviation, Decimal.zero);
+      expect(statisticsBigInt.squaresSum, equals(0.toBigInt()));
+      expect(statisticsBigInt.squaresMean, equals(Decimal.zero));
+
+      expect(statistics.centerIndex, equals(0));
+      expect(statistics.center, equals(0));
+
+      expect(statisticsBigInt.centerIndex, equals(0));
+      expect(statisticsBigInt.center, equals(0.toBigInt()));
+
+      expect(statistics.medianLow, equals(0));
+      expect(statistics.medianHigh, equals(0));
+      expect(statistics.median, equals(0));
+
+      expect(statisticsBigInt.medianLow, equals(0.toBigInt()));
+      expect(statisticsBigInt.medianHigh, equals(0.toBigInt()));
+      expect(statisticsBigInt.median, equals(Decimal.zero));
+
+      expect(data.statisticsWithData.data, equals(data));
+      expect(dataBigInt.statisticsWithData.data, equals(dataBigInt));
+    });
+
+    test('num(3)', () {
+      var data = <num>[10, 20.2, 30];
+
+      var statistics = data.statistics;
+
+      expect(statistics.length, equals(3));
+      expect(statistics.isEmpty, isFalse);
+      expect(statistics.isNotEmpty, isTrue);
+
+      expect(statistics.sum, equals(60.2));
+      expect(statistics.mean, equals(20.066666666666666));
+      expect(statistics.standardDeviation, equals(8.165510122188053));
+      expect(statistics.squaresSum, equals(1408.04));
+      expect(statistics.squaresMean, equals(469.34666666666664));
+
+      expect(statistics.centerIndex, equals(1));
+      expect(statistics.center, equals(20.2));
+
+      expect(statistics.medianLow, equals(20.2));
+      expect(statistics.medianHigh, equals(20.2));
+      expect(statistics.median, equals(20.2));
 
       expect(statistics.medianLowIndex, equals(1));
       expect(statistics.medianHighIndex, equals(1));
@@ -218,94 +843,17 @@ void main() {
       expect(statistics.isMeanInRange(10, 19), isFalse);
       expect(statistics.isMeanInRange(10, 30, 7, 8), isFalse);
 
-      expect(statistics.toString(), equals('{~20 +-8.1649 [10..(20)..30] #3}'));
+      expect(statistics.toString(),
+          equals('{~20.0666 +-8.1655 [10..(20.2)..30] #3}'));
       expect(statistics.toString(precision: 0),
           equals('{~20 +-8 [10..(20)..30] #3}'));
+      expect(statistics.toString(precision: 1),
+          equals('{~20.0 +-8.1 [10..(20.2)..30] #3}'));
 
       expect(data.statisticsWithData.data, equals(data));
     });
 
-    test('int(2)', () {
-      var data = [10, 20];
-      var statistics = data.statistics;
-
-      expect(statistics.length, equals(2));
-      expect(statistics.isEmpty, isFalse);
-      expect(statistics.isNotEmpty, isTrue);
-
-      expect(statistics.sum, equals(30));
-      expect(statistics.mean, equals(15));
-      expect(statistics.standardDeviation, equals(5.0));
-      expect(statistics.squaresSum, equals(500));
-      expect(statistics.squaresMean, equals(250.0));
-
-      expect(statistics.centerIndex, equals(1));
-      expect(statistics.center, equals(20));
-
-      expect(statistics.medianLow, equals(10));
-      expect(statistics.medianHigh, equals(20));
-      expect(statistics.median, equals(15));
-
-      expect(statistics.medianLowIndex, equals(0));
-      expect(statistics.medianHighIndex, equals(1));
-
-      expect(data.statisticsWithData.data, equals(data));
-    });
-
-    test('int(1)', () {
-      var data = [10];
-      var statistics = data.statistics;
-
-      expect(statistics.length, equals(1));
-      expect(statistics.isEmpty, isFalse);
-      expect(statistics.isNotEmpty, isTrue);
-
-      expect(statistics.sum, equals(10));
-      expect(statistics.mean, equals(10));
-      expect(statistics.standardDeviation, equals(0));
-      expect(statistics.squaresSum, equals(100));
-      expect(statistics.squaresMean, equals(100));
-
-      expect(statistics.centerIndex, equals(0));
-      expect(statistics.center, equals(10));
-
-      expect(statistics.centerIndex, equals(0));
-      expect(statistics.center, equals(10));
-
-      expect(statistics.medianLow, equals(10));
-      expect(statistics.medianHigh, equals(10));
-      expect(statistics.median, equals(10));
-
-      expect(statistics.medianLowIndex, equals(0));
-      expect(statistics.medianHighIndex, equals(0));
-
-      expect(data.statisticsWithData.data, equals(data));
-    });
-
-    test('int(0)', () {
-      var data = <int>[];
-      var statistics = data.statistics;
-
-      expect(statistics.length, equals(0));
-      expect(statistics.isEmpty, isTrue);
-      expect(statistics.isNotEmpty, isFalse);
-
-      expect(statistics.sum, equals(0));
-      expect(statistics.mean, isNaN);
-      expect(statistics.standardDeviation, isNaN);
-      expect(statistics.squaresSum, equals(0));
-      expect(statistics.squaresMean, equals(isNaN));
-
-      expect(statistics.centerIndex, equals(0));
-      expect(statistics.center, equals(0));
-
-      expect(statistics.medianLow, equals(0));
-      expect(statistics.medianHigh, equals(0));
-      expect(statistics.median, equals(0));
-      expect(data.statisticsWithData.data, equals(data));
-    });
-
-    test('BigInt', () {
+    test('useBigIntToCompute: true', () {
       var statistics =
           Statistics.compute([10, 20, 30], useBigIntToCompute: true);
 
@@ -320,7 +868,7 @@ void main() {
       expect(statistics.standardDeviation, equals(8.16496580927726));
     });
 
-    test('BigInt (maxSafeInt)', () {
+    test('useBigIntToCompute: true (maxSafeInt)', () {
       var statistics = Statistics.compute([
         Statistics.maxSafeInt ~/ 2,
         Statistics.maxSafeInt,
@@ -340,6 +888,61 @@ void main() {
                   .toDouble()));
     });
 
+    test('standardDeviation = 0 (int)', () {
+      final data1 = <int>[94, 94, 94, 94, 94, 94, 94];
+      var standardDeviation = data1.standardDeviation;
+      final stdDev1 = standardDeviation;
+      print('Standard Deviation of data1: $stdDev1');
+
+      expect(standardDeviation, equals(0.0));
+    });
+
+    test('standardDeviation = 0 (double)', () {
+      final data1 = <double>[94.97, 94.97, 94.97, 94.97, 94.97, 94.97, 94.97];
+      var standardDeviation = data1.standardDeviation;
+      final stdDev1 = standardDeviation;
+      print('Standard Deviation of data1: $stdDev1');
+
+      expect(standardDeviation, equals(0.0));
+    });
+
+    test('standardDeviation = 0 (num)', () {
+      final data = <num>[53.97, 53.97, 53.97, 53.97, 53.97, 53.97, 53.97];
+      var standardDeviation = data.standardDeviation;
+      final stdDev = standardDeviation;
+      print('Standard Deviation of data: $stdDev');
+
+      expect(standardDeviation, equals(0.0));
+    });
+
+    test('standardDeviation = 0 (BigInt)', () {
+      final data = [94, 94, 94, 94, 94, 94, 94].toBigIntList();
+      var standardDeviation = data.standardDeviation;
+      final stdDev = standardDeviation;
+      print('Standard Deviation of data: $stdDev');
+
+      expect(standardDeviation, equals(Decimal.zero));
+    });
+
+    test('standardDeviation = 0 (DynamicInt)', () {
+      final data = [94, 94, 94, 94, 94, 94, 94].toDynamicIntList();
+      var standardDeviation = data.standardDeviation;
+      final stdDev = standardDeviation;
+      print('Standard Deviation of data: $stdDev');
+
+      expect(standardDeviation, equals(Decimal.zero));
+    });
+
+    test('standardDeviation = 0 (Decimal)', () {
+      final data =
+          [94.97, 94.97, 94.97, 94.97, 94.97, 94.97, 94.97].toDecimalList();
+      var standardDeviation = data.standardDeviation;
+      final stdDev = standardDeviation;
+      print('Standard Deviation of data: $stdDev');
+
+      expect(standardDeviation, equals(Decimal.zero));
+    });
+
     test('error(alreadySortedData)', () {
       expect(() => Statistics.compute([10, 20, 30], alreadySortedData: false),
           isNot(throwsArgumentError));
@@ -351,6 +954,50 @@ void main() {
           isNot(throwsArgumentError));
 
       expect(() => Statistics.compute([30, 20, 10], alreadySortedData: true),
+          throwsArgumentError);
+
+      // BigInt:
+
+      expect(
+          () => StatisticsBigInt.compute([10, 20, 30].toBigIntList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsBigInt.compute([30, 20, 10].toBigIntList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsBigInt.compute([10, 20, 30].toBigIntList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsBigInt.compute([30, 20, 10].toBigIntList(),
+              alreadySortedData: true),
+          throwsArgumentError);
+
+      //
+
+      expect(
+          () => StatisticsDynamicNumber.compute([10, 20, 30].toDecimalList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsDynamicNumber.compute([30, 20, 10].toDecimalList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsDynamicNumber.compute([10, 20, 30].toDecimalList(),
+              alreadySortedData: false),
+          isNot(throwsArgumentError));
+
+      expect(
+          () => StatisticsDynamicNumber.compute([30, 20, 10].toDecimalList(),
+              alreadySortedData: true),
           throwsArgumentError);
     });
 

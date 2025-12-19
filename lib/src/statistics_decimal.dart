@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'statistics_base.dart';
 import 'statistics_dynamic_int.dart';
 
 /// [Decimal] is a fast implementation of decimal numbers,
@@ -939,6 +940,30 @@ class Decimal implements DynamicNumber<Decimal> {
       _multiplyOperation(other.toDecimal());
 
   @override
+  N min<N extends DynamicNumber<N>>(DynamicNumber other) {
+    return (this <= other ? this : other).cast<N>();
+  }
+
+  @override
+  N max<N extends DynamicNumber<N>>(DynamicNumber other) {
+    return (this >= other ? this : other).cast<N>();
+  }
+
+  @override
+  N cast<N extends DynamicNumber<N>>() {
+    var self = this;
+    if (self is N) {
+      return self as N;
+    } else if (N == DynamicInt) {
+      return toDynamicInt() as N;
+    } else if (N == Decimal) {
+      return toDecimal() as N;
+    } else {
+      throw TypeError();
+    }
+  }
+
+  @override
   Decimal multiply(num n2) {
     if (n2 is int) {
       return _multiplyOperationByInt(n2);
@@ -1630,6 +1655,13 @@ extension DecimalOnIterableBigIntExtension on Iterable<BigInt> {
 }
 
 extension DecimalOnIterableDecimalExtension on Iterable<Decimal> {
+  StatisticsDynamicNumber<Decimal> get statistics =>
+      StatisticsDynamicNumber<Decimal>.compute(this);
+
+  /// Returns a [Statistics] of this numeric collection (with populated field [StatisticsDynamicNumber.data]).
+  StatisticsDynamicNumber<Decimal> get statisticsWithData =>
+      StatisticsDynamicNumber<Decimal>.compute(this, keepData: true);
+
   Iterable<DynamicInt> get asDynamicInt => map((e) => e.toDynamicInt());
 
   /// Returns the sum of this numeric collection.
