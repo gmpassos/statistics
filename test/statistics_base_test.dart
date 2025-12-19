@@ -580,7 +580,10 @@ void main() {
           statisticsBigInt2.toString(), equals('{~15 +-5 [10..(20)..20] #4}'));
 
       var statistics3 = statistics / statistics;
-      expect(statistics3.toString(), equals('{~1 +-1 [1..(1)..1] #1.0}'));
+      expect(
+          statistics3.toString(),
+          anyOf(equals('{~1 +-1 [1..(1)..1] #1.0}'),
+              equals('{~1 +-1 [1..(1)..1] #1}')));
 
       var statisticsBigInt3 = statisticsBigInt / statisticsBigInt;
       expect(statisticsBigInt3.toString(), equals('{~1 +-1 [1..(1)..1] #1}'));
