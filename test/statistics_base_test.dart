@@ -571,6 +571,19 @@ void main() {
 
       expect(data.statisticsWithData.data, equals(data));
       expect(dataBigInt.statisticsWithData.data, equals(dataBigInt));
+
+      var statistics2 = statistics + statistics;
+      expect(statistics2.toString(), equals('{~15 +-5 [10..(20)..20] #4}'));
+
+      var statisticsBigInt2 = statisticsBigInt + statisticsBigInt;
+      expect(
+          statisticsBigInt2.toString(), equals('{~15 +-5 [10..(20)..20] #4}'));
+
+      var statistics3 = statistics / statistics;
+      expect(statistics3.toString(), equals('{~1 +-1 [1..(1)..1] #1.0}'));
+
+      var statisticsBigInt3 = statisticsBigInt / statisticsBigInt;
+      expect(statisticsBigInt3.toString(), equals('{~1 +-1 [1..(1)..1] #1}'));
     });
 
     test('int(1)', () {
