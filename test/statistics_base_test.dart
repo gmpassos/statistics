@@ -388,6 +388,91 @@ void main() {
 
       ///////
 
+      expect(
+          statistics.getDataFields(),
+          equals([
+            'mean',
+            'standardDeviation',
+            'length',
+            'min',
+            'max',
+            'sum',
+            'squaresSum'
+          ]));
+      expect(statistics.getDataValues(),
+          equals([25.0, 11.180339887498949, 4, 10, 40, 100, 3000]));
+
+      expect(
+          statisticsDecimal.getDataFields(),
+          equals([
+            'mean',
+            'standardDeviation',
+            'length',
+            'min',
+            'max',
+            'sum',
+            'squaresSum'
+          ]));
+      expect(
+          statisticsDecimal.getDataValues(),
+          equals([
+            25.toDecimal(),
+            Decimal.parse('11.180339887498948'),
+            4,
+            10.toDecimal(),
+            40.toDecimal(),
+            100.toDecimal(),
+            3000.toDecimal()
+          ]));
+
+      expect(
+          statisticsDynamicInt.getDataFields(),
+          equals([
+            'mean',
+            'standardDeviation',
+            'length',
+            'min',
+            'max',
+            'sum',
+            'squaresSum'
+          ]));
+      expect(
+          statisticsDynamicInt.getDataValues(),
+          equals([
+            25.toDecimal(),
+            Decimal.parse('11.180339887498948'),
+            4,
+            10.toDynamicInt(),
+            40.toDynamicInt(),
+            100.toDynamicInt(),
+            3000.toDynamicInt()
+          ]));
+
+      expect(
+          statisticsBigInt.getDataFields(),
+          equals([
+            'mean',
+            'standardDeviation',
+            'length',
+            'min',
+            'max',
+            'sum',
+            'squaresSum'
+          ]));
+      expect(
+          statisticsBigInt.getDataValues(),
+          equals([
+            25.toDecimal(),
+            Decimal.parse('11.180339887498948'),
+            4,
+            10.toBigInt(),
+            40.toBigInt(),
+            100.toBigInt(),
+            3000.toBigInt()
+          ]));
+
+      ///////
+
       expect(statistics.multiplyBy(2).toString(),
           equals('{~50 +-22.3606 [20..(60)..80] #8}'));
 
