@@ -249,18 +249,7 @@ abstract class DynamicNumber<T extends DynamicNumber<T>>
 
   N max<N extends DynamicNumber<N>>(DynamicNumber other);
 
-  N cast<N extends DynamicNumber<N>>() {
-    var self = this;
-    if (self is N) {
-      return self as N;
-    } else if (N == DynamicInt) {
-      return toDynamicInt() as N;
-    } else if (N == Decimal) {
-      return toDecimal() as N;
-    } else {
-      throw TypeError();
-    }
-  }
+  N cast<N extends DynamicNumber<N>>();
 
   T multiplyBigInt(BigInt n2);
 
