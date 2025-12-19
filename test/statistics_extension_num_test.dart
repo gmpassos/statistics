@@ -225,6 +225,11 @@ void main() {
       expect(<int>[].toBigIntList().toDynamicIntList(), equals(<DynamicInt>[]));
       expect(<int>[10, 20].toBigIntList().toDynamicIntList(),
           equals(<DynamicInt>[10.toDynamicInt(), 20.toDynamicInt()]));
+
+      expect(<int>[].toBigIntList().map((e) => e).toDynamicIntList(),
+          equals(<DynamicInt>[]));
+      expect(<int>[10, 20].toBigIntList().map((e) => e).toDynamicIntList(),
+          equals(<DynamicInt>[10.toDynamicInt(), 20.toDynamicInt()]));
     });
 
     test('toDecimalList', () {
@@ -234,6 +239,11 @@ void main() {
 
       expect(<int>[].toBigIntList().toDecimalList(), equals(<Decimal>[]));
       expect(<int>[10, 20].toBigIntList().toDecimalList(),
+          equals(<Decimal>[10.toDecimal(), 20.toDecimal()]));
+
+      expect(<int>[].toBigIntList().map((e) => e).toDecimalList(),
+          equals(<Decimal>[]));
+      expect(<int>[10, 20].toBigIntList().map((e) => e).toDecimalList(),
           equals(<Decimal>[10.toDecimal(), 20.toDecimal()]));
     });
 
