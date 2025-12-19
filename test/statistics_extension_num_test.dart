@@ -211,6 +211,22 @@ void main() {
     test('mapToSet', () {
       expect(<int>[].mapToSet((n) => n), equals(<num>{}));
       expect(<int>[10, 20].mapToSet((n) => n), equals({10, 20}));
+
+      expect(<int>[].toBigIntList().mapToSet((n) => n), equals(<BigInt>{}));
+      expect(<int>[10, 20].toBigIntList().mapToSet((n) => n),
+          equals(<BigInt>{10.toBigInt(), 20.toBigInt()}));
+    });
+
+    test('toDynamicIntList', () {
+      expect(<int>[].toDynamicIntList(), equals(<DynamicInt>[]));
+      expect(<int>[10, 20].toDynamicIntList(),
+          equals(<DynamicInt>[10.toDynamicInt(), 20.toDynamicInt()]));
+    });
+
+    test('toDecimalList', () {
+      expect(<int>[].toDecimalList(), equals(<Decimal>[]));
+      expect(<int>[10, 20].toDecimalList(),
+          equals(<Decimal>[10.toDecimal(), 20.toDecimal()]));
     });
 
     test('mean', () {
