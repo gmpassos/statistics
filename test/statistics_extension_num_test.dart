@@ -221,11 +221,19 @@ void main() {
       expect(<int>[].toDynamicIntList(), equals(<DynamicInt>[]));
       expect(<int>[10, 20].toDynamicIntList(),
           equals(<DynamicInt>[10.toDynamicInt(), 20.toDynamicInt()]));
+
+      expect(<int>[].toBigIntList().toDynamicIntList(), equals(<DynamicInt>[]));
+      expect(<int>[10, 20].toBigIntList().toDynamicIntList(),
+          equals(<DynamicInt>[10.toDynamicInt(), 20.toDynamicInt()]));
     });
 
     test('toDecimalList', () {
       expect(<int>[].toDecimalList(), equals(<Decimal>[]));
       expect(<int>[10, 20].toDecimalList(),
+          equals(<Decimal>[10.toDecimal(), 20.toDecimal()]));
+
+      expect(<int>[].toBigIntList().toDecimalList(), equals(<Decimal>[]));
+      expect(<int>[10, 20].toBigIntList().toDecimalList(),
           equals(<Decimal>[10.toDecimal(), 20.toDecimal()]));
     });
 
@@ -243,6 +251,12 @@ void main() {
       expect([10].sum, equals(10));
       expect([10, 20].sum, equals(30));
       expect([10, 20, 30].sum, equals(60));
+
+      expect(<BigInt>[].sum, equals(0.toBigInt()));
+      expect([0].toBigIntList().sum, equals(0.toBigInt()));
+      expect([10].toBigIntList().sum, equals(10.toBigInt()));
+      expect([10, 20].toBigIntList().sum, equals(30.toBigInt()));
+      expect([10, 20, 30].toBigIntList().sum, equals(60.toBigInt()));
     });
 
     test('sumSquares', () {
