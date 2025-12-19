@@ -1486,7 +1486,7 @@ extension IterableBigIntExtension on Iterable<BigInt> {
   static final ListEquality<BigInt> _listEquality = ListEquality<BigInt>();
 
   /// Returns `true` if [other] values are all equals, regarding the [tolerance].
-  bool equalsValues(List<BigInt> other, {num tolerance = 0}) {
+  bool equalsValues(List<Object> other, {num tolerance = 0}) {
     if (tolerance != 0) {
       var length = this.length;
       if (length != other.length) return false;
@@ -1498,7 +1498,30 @@ extension IterableBigIntExtension on Iterable<BigInt> {
       for (var i = 0; i < length; ++i) {
         var a = list[i];
         var b = other[i];
-        var diff = (a - b).abs();
+
+        BigInt n;
+        if (b is BigInt) {
+          n = b;
+        } else if (b is int) {
+          n = BigInt.from(b);
+        } else if (b is double) {
+          var d = b.toInt();
+          if (d == b) {
+            n = BigInt.from(b);
+          } else {
+            var diff = b.toDecimal().subtractBigInt(a).abs();
+            if (diff.toDouble() > tolerance) {
+              return false;
+            }
+            continue;
+          }
+        } else if (b is DynamicNumber) {
+          n = b.toBigInt();
+        } else {
+          return false;
+        }
+
+        var diff = (a - n).abs();
 
         if (diff.toDouble() > tolerance) {
           return false;
@@ -1508,7 +1531,37 @@ extension IterableBigIntExtension on Iterable<BigInt> {
       return true;
     } else {
       var list = this is List<BigInt> ? (this as List<BigInt>) : toList();
-      return _listEquality.equals(list, other);
+      var list2 = other is List<BigInt>
+          ? other
+          : other
+              .map((n) {
+                if (n is BigInt) {
+                  return n;
+                } else if (n is int) {
+                  return BigInt.from(n);
+                } else if (n is double) {
+                  var d = n.toInt();
+                  if (d == n) {
+                    return BigInt.from(n);
+                  } else {
+                    // Can't convert to `BigInt` without lose precision:
+                    return null;
+                  }
+                } else if (n is DynamicInt) {
+                  return n.toBigInt();
+                } else if (n is Decimal) {
+                  var d = n.toDecimal();
+                  if (d.isDecimalPartZero) {
+                    return n.toBigInt();
+                  }
+                  // Can't convert to `BigInt` without lose precision:
+                  return null;
+                }
+                return null;
+              })
+              .nonNulls
+              .toList();
+      return _listEquality.equals(list, list2);
     }
   }
 }
