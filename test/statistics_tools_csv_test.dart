@@ -196,5 +196,122 @@ void main() {
       expect(l.csvFileName('test', 'foo'),
           matches(RegExp(r'^test--foo--\d+.csv$')));
     });
+
+    // `RFC 4180`: a value containing the separator or a `"` must be quoted,
+    // and a `"` inside a quoted value must be escaped as `""`. Without the
+    // escape, `both, "x"` was written as `"both, "x""`, which any parser reads
+    // back as 2 corrupted fields.
+    test('normalizeCSVValue quoting/escaping', () {
+      expect(normalizeCSVValue('plain'), equals('plain'));
+
+      expect(normalizeCSVValue('has,separator'), equals('"has,separator"'));
+
+      expect(normalizeCSVValue('has"quote'), equals('"has""quote"'));
+
+      expect(normalizeCSVValue('both, "x"'), equals('"both, ""x"""'));
+
+      expect(normalizeCSVValue('"quoted"'), equals('"""quoted"""'));
+
+      // A custom separator:
+      expect(normalizeCSVValue('a;b', separator: ';'), equals('"a;b"'));
+      expect(normalizeCSVValue('a,b', separator: ';'), equals('a,b'));
+    });
+
+    test('generateCSV values round trip through an RFC 4180 parser', () {
+      var rows = <Map<String, dynamic>>[
+        {'name': 'Smith, John', 'age': 30},
+        {'name': 'say "hi"', 'age': 40},
+        {'name': 'both, "x"', 'age': 50},
+        {'name': 'plain', 'age': 60},
+      ];
+
+      var csv = rows.generateCSV();
+      var lines = csv.trim().split('\n');
+
+      expect(lines.length, equals(rows.length + 1));
+      expect(_parseCSVLine(lines[0]), equals(['name', 'age']));
+
+      for (var i = 0; i < rows.length; ++i) {
+        var fields = _parseCSVLine(lines[i + 1]);
+        expect(fields.length, equals(2), reason: lines[i + 1]);
+        expect(fields[0], equals(rows[i]['name']), reason: lines[i + 1]);
+        expect(fields[1], equals('${rows[i]['age']}'), reason: lines[i + 1]);
+      }
+    });
+
+    // A column name containing the separator was written unquoted, so the
+    // header declared more columns than the rows carried.
+    test('generateCSV quotes column names', () {
+      var rows = <Map<String, dynamic>>[
+        {'a,b': 1, 'c': 2},
+      ];
+
+      var csv = rows.generateCSV();
+      var lines = csv.trim().split('\n');
+
+      var head = _parseCSVLine(lines[0]);
+      var row = _parseCSVLine(lines[1]);
+
+      expect(head, equals(['a,b', 'c']));
+      expect(row.length, equals(head.length),
+          reason: 'header and rows must have the same number of columns');
+
+      // Explicit `fieldsNames` too:
+      var csv2 = rows.generateCSV(fieldsNames: ['a,b', 'c']);
+      expect(_parseCSVLine(csv2.trim().split('\n')[0]), equals(['a,b', 'c']));
+    });
+
+    test('generateCSV quotes column names of a series map', () {
+      var series = <String, List<int>?>{
+        'x,y': [1, 2],
+        'z': [3, 4],
+      };
+
+      var csv = series.generateCSV();
+      var head = _parseCSVLine(csv.trim().split('\n')[0]);
+
+      // The series head starts with the index column (`#`):
+      expect(head, equals(['#', 'x,y', 'z']));
+    });
   });
+}
+
+/// A minimal `RFC 4180` parser: quoted fields, with `""` as an escaped quote.
+List<String> _parseCSVLine(String line, [String separator = ',']) {
+  var fields = <String>[];
+  var buffer = StringBuffer();
+  var inQuotes = false;
+  var i = 0;
+
+  while (i < line.length) {
+    var c = line[i];
+
+    if (inQuotes) {
+      if (c == '"') {
+        if (i + 1 < line.length && line[i + 1] == '"') {
+          buffer.write('"');
+          i += 2;
+          continue;
+        }
+        inQuotes = false;
+        i++;
+        continue;
+      }
+      buffer.write(c);
+      i++;
+    } else if (c == '"' && buffer.isEmpty) {
+      inQuotes = true;
+      i++;
+    } else if (c == separator) {
+      fields.add(buffer.toString());
+      buffer.clear();
+      i++;
+    } else {
+      buffer.write(c);
+      i++;
+    }
+  }
+
+  fields.add(buffer.toString());
+  return fields;
 }

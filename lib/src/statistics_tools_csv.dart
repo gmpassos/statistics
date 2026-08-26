@@ -17,7 +17,9 @@ extension DataEntryExtension<E extends DataEntry> on Iterable<E> {
     fieldsNames ??= first.getDataFields();
 
     {
-      var head = fieldsNames.map(_normalizeLine).join(separator);
+      var head = fieldsNames
+          .map((e) => _normalizeColumnName(e, separator))
+          .join(separator);
       csv.write(head);
       csv.write('\n');
     }
@@ -74,7 +76,7 @@ extension IterableMapExtensionCSV<K, V> on Iterable<Map<K, V>> {
     {
       var head = (fieldsNames ?? keys!)
           .toStringsList()
-          .map(_normalizeLine)
+          .map((e) => _normalizeColumnName(e, separator))
           .join(separator);
       csv.write(head);
       csv.write('\n');
@@ -139,16 +141,32 @@ String normalizeCSVValue<V>(V value,
     s = '$value';
   }
 
-  if (s.contains(separator)) {
-    s = '"$s"';
-  }
+  return _quoteCSVValue(s, separator);
+}
 
-  return s;
+/// Quotes [s] if needed, following `RFC 4180`: a value containing the
+/// [separator] or a `"` is wrapped in `"`, and any `"` inside it is escaped
+/// as `""`.
+String _quoteCSVValue(String s, String separator) {
+  if (s.contains('"')) {
+    return '"${s.replaceAll('"', '""')}"';
+  } else if (s.contains(separator)) {
+    return '"$s"';
+  } else {
+    return s;
+  }
 }
 
 final _regexpNewLine = RegExp(r'[\r\n]');
 
 String _normalizeLine(String e) => e.replaceAll(_regexpNewLine, ' ');
+
+/// Normalizes a CSV column name: removes line breaks and quotes it if needed.
+///
+/// NOTE: a column name containing the [separator] must be quoted, or it would
+/// be read as multiple columns, misaligning the whole document.
+String _normalizeColumnName(String e, String separator) =>
+    _quoteCSVValue(_normalizeLine(e), separator);
 
 extension SeriesMapExtension<E> on Map<String, List<E>?> {
   static Type _toType<T>() => T;
@@ -187,7 +205,8 @@ extension SeriesMapExtension<E> on Map<String, List<E>?> {
     var keys = this.keys;
 
     {
-      var head = keys.map(_normalizeLine).join(separator);
+      var head =
+          keys.map((e) => _normalizeColumnName(e, separator)).join(separator);
       csv.write('#$separator');
       csv.write(head);
       csv.write('\n');

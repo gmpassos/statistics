@@ -1395,8 +1395,18 @@ class Decimal implements DynamicNumber<Decimal> {
       var moduloI = n1._n % n2._n;
       return moduloI.toDecimal();
     } else {
+      // `rounds` truncates towards zero, so `modulo` has the sign of `n1`:
       var rounds = (n1 / n2).toDynamicInt();
       var modulo = n1 - (n2 * rounds);
+
+      // Euclidean modulo: the result should always be in the range
+      // `0 <= modulo < n2.abs()` (the same behavior of `num.operator %`
+      // and of `DynamicInt.operator %`, used by the `precision == 0` branch
+      // above):
+      if (modulo.isNegative) {
+        modulo += n2.abs();
+      }
+
       return modulo;
     }
   }

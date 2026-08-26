@@ -1484,4 +1484,79 @@ void main() {
           equals([1.0, 2.0, 3.0]));
     });
   });
+
+  group('DynamicInt.digits', () {
+    // The `-` sign is not a digit: the fast path (`< 1e9`) discards it with
+    // `abs()`, and the `toString()` fallback (`>= 1e9`) must do the same.
+    test('sign is not a digit', () {
+      for (var s in [
+        '0',
+        '7',
+        '42',
+        '999',
+        '123456789',
+        '999999999', // Last value of the fast path.
+        '1000000000', // First value of the `toString()` fallback.
+        '9007199254740991', // maxSafeInteger.
+        '1357923711076502287',
+        '100000000000000000000000',
+      ]) {
+        var expectedDigits = s.length;
+
+        expect(DynamicInt.parse(s).digits, equals(expectedDigits),
+            reason: 'positive: $s');
+
+        expect(DynamicInt.parse('-$s').digits, equals(expectedDigits),
+            reason: 'negative: -$s');
+
+        // `int` and `BigInt` internal representations must agree:
+        var n = DynamicInt.parse('-$s');
+        expect(n.asDynamicIntBig.digits, equals(expectedDigits),
+            reason: 'BigInt representation: -$s');
+      }
+    });
+
+    test('DynamicInt.intDigits', () {
+      expect(DynamicInt.intDigits(0), equals(1));
+      expect(DynamicInt.intDigits(999999999), equals(9));
+      expect(DynamicInt.intDigits(-999999999), equals(9));
+      expect(DynamicInt.intDigits(1000000000), equals(10));
+      expect(DynamicInt.intDigits(-1000000000), equals(10));
+      expect(DynamicInt.intDigits(-1357923711076502287), equals(19));
+    });
+
+    // `digits` drives the precision of the division remainder refinement
+    // (`Decimal._divideOperationByDynamicIntImpl2`), so counting the sign made
+    // the result of a division depend on the sign of the operands.
+    test('division sign symmetry: (-a)/b == -(a/b)', () {
+      var pairs = <List<String>>[
+        ['123291135955', '1957543332'],
+        ['26940325814', '1077795511'],
+        ['745059693323', '1613743123'],
+        ['1000000000', '3'],
+        ['7', '3'],
+        ['1', '7'],
+      ];
+
+      for (var pair in pairs) {
+        var a = Decimal.parse(pair[0]);
+        var b = Decimal.parse(pair[1]);
+
+        expect((-a) / b, equals(-(a / b)),
+            reason: '-(${pair[0]}) / ${pair[1]}');
+        expect(a / (-b), equals(-(a / b)),
+            reason: '${pair[0]} / -(${pair[1]})');
+        expect((-a) / (-b), equals(a / b),
+            reason: '-(${pair[0]}) / -(${pair[1]})');
+
+        var da = DynamicInt.parse(pair[0]);
+        var db = DynamicInt.parse(pair[1]);
+
+        expect((-da) / db, equals(-(da / db)),
+            reason: 'DynamicInt -(${pair[0]}) / ${pair[1]}');
+        expect((-da) / (-db), equals(da / db),
+            reason: 'DynamicInt -(${pair[0]}) / -(${pair[1]})');
+      }
+    });
+  });
 }

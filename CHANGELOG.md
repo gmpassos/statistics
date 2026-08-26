@@ -14,8 +14,47 @@
     parallel variance algorithm (Chan et al.), fixing the wrong result for a
     non-integer numeric collection (the `BigInt` sums are truncated).
 
-- `statistics_base_test.dart`, `statistics_decimal_test.dart`:
-  added regression tests for issues #12 and #14.
+- `Decimal` (modulo):
+  - `operator %`, `moduloInt`, `moduloBigInt` and `moduloDynamicInt` now
+    return an Euclidean modulo (`0 <= result < other.abs()`) for a fractional
+    `Decimal`, as documented and as already done for a whole `Decimal` (that
+    delegates to `DynamicInt.operator %`). Before, `-7 % 3` was `2` but
+    `-7.5 % 3` was `-1.5`.
+
+- `DynamicInt`:
+  - Fixed `digits` counting the `-` sign as a digit for values with 10 or
+    more digits (the `toString()` fallback; the fast path already used
+    `abs()`). Since `digits` sets the precision of the division remainder
+    refinement, `(-a) / b` and `-(a / b)` could return different results.
+
+- `Statistics.compute`:
+  - The `BigInt` computation no longer truncates a fractional collection.
+    It was selected automatically when `max > (maxSafeIntSqrt ~/ length)`, so
+    a plain `List<double>` of large values was silently truncated
+    (`[100000000.5, 100000001.25, 100000002.75].statistics.sum` returned
+    `300000003` instead of `300000004.5`).
+  - The overflow check now also considers `min.abs()`: a collection of large
+    negative values overflowed the `int` squares sum, returning a negative
+    `squaresSum`/`squaresMean`.
+  - `sum` and `squaresSum` are no longer clamped to the maximum `int` when
+    the `BigInt` value doesn't fit in an `int`.
+
+- `UnitLength`:
+  - Fixed `mi` to `mm`/`mic`/`nm` conversions, that used a mile of `1609` m
+    instead of the exact `1609.344` m (all the other mile conversions already
+    used ~6 significant digits).
+
+- CSV (`normalizeCSVValue`, `generateCSV`):
+  - A `"` inside a value is now escaped as `""` and the value is quoted, as
+    required by `RFC 4180`. Before, `both, "x"` was written as `"both, "x""`,
+    which is read back as 2 corrupted fields.
+  - Column names containing the separator are now quoted, instead of
+    declaring more columns in the header than the rows carry.
+
+- Tests: added regression tests for issues #12 and #14 and for every fix
+  above, including cross-checks of the whole `UnitLength` conversion table,
+  a `Decimal` modulo/division matrix against `num`, and a CSV round trip
+  through an `RFC 4180` parser.
 
 ## 1.2.1
 

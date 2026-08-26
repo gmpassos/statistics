@@ -299,6 +299,10 @@ class Statistics<N extends num> extends DataEntry {
             _computeStandardDeviation(
                 sum, squaresSum, sumBigInt, squaresSumBigInt, length);
 
+  /// Converts [n] to a [num] without clamping: returns an [int] when [n] fits
+  /// in an `int`, otherwise a (lossy, but not clamped) [double].
+  static num _bigIntToNum(BigInt n) => n.isValidInt ? n.toInt() : n.toDouble();
+
   static double _computeStandardDeviation(num? sum, num? squaresSum,
       BigInt? sumBigInt, BigInt? squaresSumBigInt, num length) {
     if (sumBigInt != null || squaresSumBigInt != null) {
@@ -389,7 +393,20 @@ class Statistics<N extends num> extends DataEntry {
     double mean;
     double standardDeviation;
 
-    if (useBigIntToCompute || max > (maxSafeIntSqrt ~/ length)) {
+    // NOTE: `min.abs()` is also checked, since a collection of large negative
+    // values overflows the squares sum in the same way that a positive one
+    // does:
+    var maxAbs = math.max(max.abs(), min.abs());
+
+    // NOTE: converting to `BigInt` truncates a fractional value, so the
+    // `BigInt` computation (that only avoids an integer overflow) can't be
+    // used for a collection with a non-integer element, even when
+    // `useBigIntToCompute` is `true`:
+    var useBigInt =
+        (useBigIntToCompute || maxAbs > (maxSafeIntSqrt ~/ length)) &&
+            listSorted.every((n) => n == n.truncate());
+
+    if (useBigInt) {
       var firstBigInt = first.toBigInt();
       sumBigInt = firstBigInt;
       squaresSumBigInt = firstBigInt * firstBigInt;
@@ -401,8 +418,11 @@ class Statistics<N extends num> extends DataEntry {
         squaresSumBigInt += nBigInt * nBigInt;
       }
 
-      sum = sumBigInt.toInt();
-      squaresSum = squaresSumBigInt.toInt();
+      // NOTE: `BigInt.toInt()` clamps to the maximum/minimum `int` when the
+      // value doesn't fit, which is exactly the overflow this branch exists
+      // to avoid. Fallback to `double`, that at least holds the magnitude:
+      sum = _bigIntToNum(sumBigInt);
+      squaresSum = _bigIntToNum(squaresSumBigInt);
 
       var lengthBigInt = length.toBigInt();
 

@@ -177,11 +177,64 @@ void main() {
       expect(UnitLength.mi.convertTo(UnitLength.m, 1), equals(1609.34));
       expect(UnitLength.mi.convertTo(UnitLength.dm, 1), equals(16093.4));
       expect(UnitLength.mi.convertTo(UnitLength.cm, 1), equals(160934));
-      expect(UnitLength.mi.convertTo(UnitLength.mm, 1), equals(1.609e+6));
-      expect(UnitLength.mi.convertTo(UnitLength.mic, 1), equals(1.609e+9));
-      expect(UnitLength.mi.convertTo(UnitLength.nm, 1), equals(1.609e+12));
+      // 1 mile is exactly 1609.344 m:
+      expect(UnitLength.mi.convertTo(UnitLength.mm, 1), equals(1.609344e+6));
+      expect(UnitLength.mi.convertTo(UnitLength.mic, 1), equals(1.609344e+9));
+      expect(UnitLength.mi.convertTo(UnitLength.nm, 1), equals(1.609344e+12));
 
       expect(UnitLength.mi.convertTo(UnitLength.inch, 1), equals(63360));
+    });
+
+    // The conversion table is written by hand, one factor per unit pair, so a
+    // single typo is invisible until it corrupts a measurement. These tests
+    // check the whole table against the canonical size of each unit.
+    test('conversion table vs. canonical factors', () {
+      // The size of each unit, in metres:
+      const canonical = <UnitLength, double>{
+        UnitLength.km: 1000.0,
+        UnitLength.m: 1.0,
+        UnitLength.dm: 0.1,
+        UnitLength.cm: 0.01,
+        UnitLength.mm: 0.001,
+        UnitLength.mic: 1e-6,
+        UnitLength.nm: 1e-9,
+        UnitLength.inch: 0.0254,
+        UnitLength.mi: 1609.344,
+      };
+
+      expect(canonical.length, equals(UnitLength.values.length),
+          reason: 'a new `UnitLength` needs a canonical factor here');
+
+      for (var from in UnitLength.values) {
+        for (var to in UnitLength.values) {
+          var got = from.convertTo(to, 1).toDouble();
+          var expected = canonical[from]! / canonical[to]!;
+          var relativeError = (got - expected).abs() / expected;
+
+          // The table rounds its factors to ~6 significant digits:
+          expect(relativeError, lessThan(1e-5),
+              reason: '${from.name} -> ${to.name}: '
+                  'got $got, expected $expected');
+        }
+      }
+    });
+
+    test('conversion round trip', () {
+      for (var from in UnitLength.values) {
+        for (var to in UnitLength.values) {
+          var there = from.convertTo(to, 1000.0);
+          var back = to.convertTo(from, there).toDouble();
+
+          expect((back - 1000.0).abs() / 1000.0, lessThan(1e-5),
+              reason: '${from.name} -> ${to.name} -> ${from.name}: $back');
+        }
+      }
+    });
+
+    test('identity conversion', () {
+      for (var u in UnitLength.values) {
+        expect(u.convertTo(u, 123.456), equals(123.456), reason: u.name);
+      }
     });
   });
 }
