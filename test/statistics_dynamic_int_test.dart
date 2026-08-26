@@ -1522,7 +1522,13 @@ void main() {
       expect(DynamicInt.intDigits(-999999999), equals(9));
       expect(DynamicInt.intDigits(1000000000), equals(10));
       expect(DynamicInt.intDigits(-1000000000), equals(10));
-      expect(DynamicInt.intDigits(-1357923711076502287), equals(19));
+
+      // NOTE: an `int` literal beyond 2^53 can't be represented exactly in
+      // JavaScript (`dart2js`), so a larger value is built at runtime.
+      // `DynamicInt.parse` covers the very large values (see the test above).
+      var big = 1000000000 * 1000000;
+      expect(DynamicInt.intDigits(big), equals(16));
+      expect(DynamicInt.intDigits(-big), equals(16));
     });
 
     // `digits` drives the precision of the division remainder refinement

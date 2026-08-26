@@ -1445,8 +1445,14 @@ void main() {
       expect(statistics.squaresSumBigInt.isValidInt, isFalse,
           reason: 'the test data must overflow an `int`');
 
-      // Not clamped to the maximum `int`:
-      expect(statistics.squaresSum, isNot(equals(9223372036854775807)));
+      // Not clamped: `BigInt.toInt()` would return the maximum `int`, which
+      // is orders of magnitude below the real value.
+      //
+      // NOTE: the maximum `int` is not written as a literal here, since it
+      // can't be represented exactly in JavaScript (`dart2js`).
+      expect(statistics.squaresSum,
+          isNot(equals(statistics.squaresSumBigInt.toInt())));
+
       expect(
           statistics.squaresSum.toDouble(),
           _isNear(statistics.squaresSumBigInt.toDouble(),
