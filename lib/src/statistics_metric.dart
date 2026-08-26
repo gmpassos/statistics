@@ -239,12 +239,13 @@ extension UnitLengthExtension on UnitLength {
               return value * 16093.4;
             case UnitLength.cm:
               return value * 160934;
+            // NOTE: 1 mile is exactly 1609.344 m:
             case UnitLength.mm:
-              return value * 1.609e+6;
+              return value * 1.609344e+6;
             case UnitLength.mic:
-              return value * 1.609e+9;
+              return value * 1.609344e+9;
             case UnitLength.nm:
-              return value * 1.609e+12;
+              return value * 1.609344e+12;
 
             case UnitLength.inch:
               return value * 63360;

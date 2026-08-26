@@ -1166,11 +1166,15 @@ class Decimal implements DynamicNumber<Decimal> {
   }
 
   Decimal _divideOperationByDecimalImpl(Decimal other) {
+    // `this / other` = `(this / other._n) * other._scale`:
     var d = _divideOperationByDynamicIntImpl(other._n);
-    var precision2 = d.precision - other.precision;
-    assert(precision2 >= 0);
-    var d2 = Decimal._computeScale(d._n, precision2);
-    return d2;
+
+    // Multiplying by `other._scale` (a power of 10) is a precision shift.
+    // NOTE: `d.precision` can be lower than `other.precision` (resulting in a
+    // negative precision shift), which happens when the division by `other._n`
+    // is exact. See `_multiplyOperationByPrecisionShift`, that handles both
+    // directions of the shift.
+    return d._multiplyOperationByPrecisionShift(other.precision);
   }
 
   Decimal _divideOperationByDynamicInt(DynamicInt other) {
@@ -1391,8 +1395,18 @@ class Decimal implements DynamicNumber<Decimal> {
       var moduloI = n1._n % n2._n;
       return moduloI.toDecimal();
     } else {
+      // `rounds` truncates towards zero, so `modulo` has the sign of `n1`:
       var rounds = (n1 / n2).toDynamicInt();
       var modulo = n1 - (n2 * rounds);
+
+      // Euclidean modulo: the result should always be in the range
+      // `0 <= modulo < n2.abs()` (the same behavior of `num.operator %`
+      // and of `DynamicInt.operator %`, used by the `precision == 0` branch
+      // above):
+      if (modulo.isNegative) {
+        modulo += n2.abs();
+      }
+
       return modulo;
     }
   }

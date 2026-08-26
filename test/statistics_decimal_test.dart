@@ -1179,6 +1179,206 @@ void main() {
           equals(Decimal.parse('-0.008993216061219')));
     });
 
+    // https://github.com/gmpassos/statistics/issues/14
+    test('operation / (divisor < 1)', () {
+      expect(Decimal.parse('5') / Decimal.parse('0.5'),
+          equals(Decimal.parse('10')));
+
+      expect(Decimal.parse('1') / Decimal.parse('0.5'),
+          equals(Decimal.parse('2')));
+
+      expect(Decimal.parse('3') / Decimal.parse('0.25'),
+          equals(Decimal.parse('12')));
+
+      expect(Decimal.parse('5') / Decimal.parse('0.125'),
+          equals(Decimal.parse('40')));
+
+      expect(Decimal.parse('1') / Decimal.parse('0.1'),
+          equals(Decimal.parse('10')));
+
+      expect(Decimal.parse('2') / Decimal.parse('0.2'),
+          equals(Decimal.parse('10')));
+
+      expect(Decimal.parse('1') / Decimal.parse('0.0001'),
+          equals(Decimal.parse('10000')));
+
+      expect(Decimal.parse('123') / Decimal.parse('0.001'),
+          equals(Decimal.parse('123000')));
+
+      // A divisor with a precision higher than the base 10 shortcuts:
+      expect(Decimal.parse('7') / Decimal.parse('0.0000000000001'),
+          equals(Decimal.parse('70000000000000')));
+
+      // Negative operands:
+      expect(Decimal.parse('-5') / Decimal.parse('0.5'),
+          equals(Decimal.parse('-10')));
+
+      expect(Decimal.parse('5') / Decimal.parse('-0.5'),
+          equals(Decimal.parse('-10')));
+
+      expect(Decimal.parse('-5') / Decimal.parse('-0.5'),
+          equals(Decimal.parse('10')));
+
+      // A decimal dividend (`d.precision > other.precision`):
+      expect(Decimal.parse('0.5') / Decimal.parse('0.5'),
+          equals(Decimal.parse('1')));
+
+      expect(Decimal.parse('1.5') / Decimal.parse('0.5'),
+          equals(Decimal.parse('3')));
+
+      expect(Decimal.parse('2.5') / Decimal.parse('0.5'),
+          equals(Decimal.parse('5')));
+
+      // Non-exact division by a divisor < 1:
+      expect(Decimal.parse('1') / Decimal.parse('0.3'),
+          _isNearDecimal(Decimal.parse('3.333333333333')));
+
+      expect(Decimal.parse('5') / Decimal.parse('0.7'),
+          _isNearDecimal(Decimal.parse('7.142857142857')));
+
+      // The `double` division entry points:
+      expect(Decimal.parse('5').divideDouble(0.5), equals(Decimal.parse('10')));
+
+      expect(Decimal.parse('5').divide(0.5), equals(Decimal.parse('10')));
+
+      expect(Decimal.parse('5').divideNumAsDecimal(0.5),
+          equals(Decimal.parse('10')));
+
+      expect(Decimal.parse('5').divideDoubleAsDouble(0.5), equals(10.0));
+    });
+
+    // `DynamicNumber.operator %` is documented as an Euclidean modulo (the
+    // same behavior of `num.operator %`): the result is always in the range
+    // `0 <= result < other.abs()`.
+    //
+    // A whole `Decimal` delegates to `DynamicInt.operator %` (already
+    // Euclidean), but a fractional one used a truncated division, returning a
+    // result with the sign of the dividend.
+    test('operation % (Euclidean, negative operands)', () {
+      // Whole values (delegate to `DynamicInt`):
+      expect(
+          Decimal.parse('-7') % Decimal.parse('3'), equals(Decimal.parse('2')));
+      expect(
+          Decimal.parse('7') % Decimal.parse('-3'), equals(Decimal.parse('1')));
+      expect(Decimal.parse('-7') % Decimal.parse('-3'),
+          equals(Decimal.parse('2')));
+
+      // Fractional values must follow the same rule:
+      expect(Decimal.parse('-7.5') % Decimal.parse('3'),
+          equals(Decimal.parse('1.5')));
+      expect(Decimal.parse('7.5') % Decimal.parse('-3'),
+          equals(Decimal.parse('1.5')));
+      expect(Decimal.parse('-7.5') % Decimal.parse('-3'),
+          equals(Decimal.parse('1.5')));
+      expect(Decimal.parse('-0.03') % Decimal.parse('838'),
+          equals(Decimal.parse('837.97')));
+      expect(Decimal.parse('-535.5') % Decimal.parse('-994'),
+          equals(Decimal.parse('458.5')));
+
+      // The result is never negative:
+      expect((Decimal.parse('-7.5') % Decimal.parse('3')).isNegative, isFalse);
+      expect(
+          (Decimal.parse('-0.03') % Decimal.parse('838')).isNegative, isFalse);
+
+      // The other modulo entry points must agree:
+      expect(Decimal.parse('-7.5').moduloInt(3), equals(Decimal.parse('1.5')));
+      expect(Decimal.parse('-7.5') % DynamicInt.fromInt(3),
+          equals(Decimal.parse('1.5')));
+      expect(Decimal.parse('-7.5').moduloDynamicInt(DynamicInt.fromInt(3)),
+          equals(Decimal.parse('1.5')));
+      expect(Decimal.parse('-7.5').moduloBigInt(BigInt.from(3)),
+          equals(Decimal.parse('1.5')));
+
+      // A whole and a fractional `Decimal` must not disagree at the boundary:
+      expect(Decimal.parse('-7.0') % Decimal.parse('3'),
+          equals(Decimal.parse('-7') % Decimal.parse('3')));
+    });
+
+    // https://github.com/gmpassos/statistics/issues/14
+    test('operation % (matrix vs. `num` modulo)', () {
+      var values = <String>[
+        '5',
+        '0.5',
+        '7.5',
+        '3',
+        '838',
+        '0.03',
+        '-5',
+        '-0.5',
+        '-7.5',
+        '-3',
+        '-838',
+        '-0.03',
+        '12.34',
+        '-12.34',
+      ];
+
+      for (var a in values) {
+        for (var b in values) {
+          var da = Decimal.parse(a);
+          var db = Decimal.parse(b);
+
+          // Skip an exact division: there the `double` reference is the
+          // imprecise one (e.g. `214.2 / 0.119` is exactly 1800).
+          if ((da / db).isWholeNumber) continue;
+
+          var result = (da % db).toDouble();
+          var expected = double.parse(a) % double.parse(b);
+
+          expect(result, _isNear(expected, expected.abs() * 1e-6 + 1e-9),
+              reason: '$a % $b');
+
+          // Euclidean: `0 <= result < b.abs()`.
+          expect(result, greaterThanOrEqualTo(0), reason: '$a % $b >= 0');
+          expect(result, lessThan(double.parse(b).abs()),
+              reason: '$a % $b < |$b|');
+        }
+      }
+    });
+
+    // https://github.com/gmpassos/statistics/issues/14
+    test('operation / (matrix vs. `double` division)', () {
+      var values = <String>[
+        '5',
+        '1',
+        '2',
+        '10',
+        '0.5',
+        '0.25',
+        '0.1',
+        '0.2',
+        '0.125',
+        '100',
+        '3',
+        '7',
+        '0.001',
+        '1.5',
+        '2.5',
+        '12.34',
+        '0.05',
+        '1000',
+        '0.0001',
+        '123456789',
+        '9.99',
+        '-5',
+        '-0.5',
+        '-0.25',
+      ];
+
+      for (var a in values) {
+        for (var b in values) {
+          var result = Decimal.parse(a) / Decimal.parse(b);
+          var expected = double.parse(a) / double.parse(b);
+
+          // A relative tolerance, since `Decimal` has a limited precision:
+          var tolerance = math.max(expected.abs() * 1e-6, 1e-12);
+
+          expect(result.toDouble(), _isNear(expected, tolerance),
+              reason: '$a / $b');
+        }
+      }
+    });
+
     test('operation %', () {
       expect(
           (Decimal.parse('12') % Decimal.parse('10'))

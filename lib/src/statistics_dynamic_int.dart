@@ -395,18 +395,26 @@ abstract class DynamicNumber<T extends DynamicNumber<T>>
 abstract class DynamicInt implements DynamicNumber<DynamicInt> {
   static int dynamicIntDigits(DynamicInt n) {
     if (!n.isSafeInteger) {
-      return n.toStringStandard().length;
+      return _stringDigits(n.toStringStandard());
     }
 
     var digits = _intDigits(n.toInt());
-    digits ??= n.toStringStandard().length;
+    digits ??= _stringDigits(n.toStringStandard());
 
     return digits;
   }
 
   static int intDigits(int n) {
-    return _intDigits(n) ?? n.toString().length;
+    return _intDigits(n) ?? _stringDigits(n.toString());
   }
+
+  /// Returns the number of digits of [s], a decimal `String` representation of
+  /// an integer.
+  ///
+  /// NOTE: the `-` sign is not a digit. See [_intDigits], that discards the
+  /// sign through `abs()`.
+  static int _stringDigits(String s) =>
+      s.startsWith('-') ? s.length - 1 : s.length;
 
   static int? _intDigits(int n) {
     n = n.abs();
