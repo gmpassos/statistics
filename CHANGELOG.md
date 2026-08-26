@@ -1,3 +1,22 @@
+## 1.2.2
+
+- `Decimal`:
+  - Fixed division by a `Decimal` lower than `1` (like `5 / 0.5`), that was
+    throwing an `assert`/`ArgumentError` for an invalid negative precision.
+    See issue #14.
+
+- `Statistics` and `StandardDeviationComputerNum`:
+  - `standardDeviation` is now computed with Welford's online algorithm,
+    fixing the `NaN` result (a `sqrt` of a negative variance) for collections
+    of equal or nearly equal `double` values, and the loss of precision for
+    collections of large values. See issue #12.
+  - `Statistics.operator +`: `standardDeviation` is now merged with the
+    parallel variance algorithm (Chan et al.), fixing the wrong result for a
+    non-integer numeric collection (the `BigInt` sums are truncated).
+
+- `statistics_base_test.dart`, `statistics_decimal_test.dart`:
+  added regression tests for issues #12 and #14.
+
 ## 1.2.1
 
 - `DynamicNumber`:

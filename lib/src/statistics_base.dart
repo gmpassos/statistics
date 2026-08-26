@@ -416,10 +416,21 @@ class Statistics<N extends num> extends DataEntry {
       sum = first;
       squaresSum = first * first;
 
+      // Welford's online algorithm: numerically stable, avoids the
+      // catastrophic cancellation of `squaresSum - sum²/length`, that can
+      // yield a negative variance (and a `NaN` standard deviation) for sets
+      // with equal or nearly equal elements.
+      var welfordMean = first.toDouble();
+      var welfordM2 = 0.0;
+
       for (var i = 1; i < length; ++i) {
         var n = listSorted[i];
         sum += n;
         squaresSum += n * n;
+
+        var delta = n - welfordMean;
+        welfordMean += delta / (i + 1);
+        welfordM2 += delta * (n - welfordMean);
       }
 
       sumBigInt = sum.toBigInt();
@@ -427,8 +438,7 @@ class Statistics<N extends num> extends DataEntry {
 
       mean = sum / length;
 
-      standardDeviation =
-          math.sqrt((squaresSum - (sum * (sum / length))) / length);
+      standardDeviation = math.sqrt(welfordM2 / length);
     }
 
     Statistics<N>? lowerStatistics;
@@ -641,13 +651,34 @@ class Statistics<N extends num> extends DataEntry {
       sum: sum + other.sum,
       squaresSum: squaresSum + other.squaresSum,
       mean: (sum + other.sum) / (length + other.length),
-      standardDeviation: _computeStandardDeviation(
-          null,
-          null,
-          sumBigInt + other.sumBigInt,
-          squaresSumBigInt + other.squaresSumBigInt,
-          length + other.length),
+      standardDeviation: _mergeStandardDeviation(standardDeviation, mean,
+          length, other.standardDeviation, other.mean, other.length),
     );
+  }
+
+  /// Merges the standard deviation of 2 sets using the parallel variance
+  /// algorithm (Chan et al.).
+  ///
+  /// NOTE: this doesn't use [sumBigInt]/[squaresSumBigInt], since for a
+  /// non-integer numeric collection (like `Statistics<double>`) they are
+  /// truncated (lossy) versions of [sum]/[squaresSum].
+  static double _mergeStandardDeviation(double standardDeviation1, double mean1,
+      num length1, double standardDeviation2, double mean2, num length2) {
+    var lengthTotal = length1 + length2;
+
+    if (lengthTotal <= 0) return 0.0;
+    if (length1 <= 0) return standardDeviation2;
+    if (length2 <= 0) return standardDeviation1;
+
+    // The sum of the squares of the differences from the mean of each set:
+    var m2A = (standardDeviation1 * standardDeviation1) * length1;
+    var m2B = (standardDeviation2 * standardDeviation2) * length2;
+
+    var delta = mean2 - mean1;
+    var m2 =
+        m2A + m2B + ((delta * delta) * ((length1 * length2) / lengthTotal));
+
+    return math.sqrt(m2 / lengthTotal);
   }
 
   @override
@@ -1761,11 +1792,21 @@ class StandardDeviationComputerNum
   @override
   double get squaresSumAsDouble => squaresSum.toDouble();
 
+  /// Welford's running mean, used to compute [standardDeviation] without the
+  /// catastrophic cancellation of the `squaresSum - sum²/length` formula.
+  double _welfordMean = 0.0;
+
+  /// Welford's running sum of squares of differences from [_welfordMean].
+  double _welfordM2 = 0.0;
+
   @override
   StandardDeviationComputerNum reset() {
     _length = 0;
     _sum = 0;
     _squaresSum = 0;
+
+    _welfordMean = 0.0;
+    _welfordM2 = 0.0;
 
     _standardDeviation = null;
 
@@ -1778,6 +1819,11 @@ class StandardDeviationComputerNum
     _length++;
     _sum += n;
     _squaresSum += n * n;
+
+    // Welford's online algorithm (numerically stable):
+    var delta = n - _welfordMean;
+    _welfordMean += delta / _length;
+    _welfordM2 += delta * (n - _welfordMean);
 
     _standardDeviation = null;
 
@@ -1829,11 +1875,22 @@ class StandardDeviationComputerNum
 
   double _standardDeviationImpl() {
     if (isEmpty) return 0.0;
-    return _compute(_sum, _squaresSum, _length);
+    return math.sqrt(_welfordM2 / _length);
   }
 
+  /// Computes the standard deviation from the [sum] and the [squaresSum] of a
+  /// set of [length] elements.
+  ///
+  /// NOTE: this is only used when the individual elements are not available
+  /// (see [Statistics]). It is subject to catastrophic cancellation, so the
+  /// computed variance is clamped at `0` to avoid a `NaN` result
+  /// (`sqrt` of a negative number) for sets with equal (or nearly equal)
+  /// elements. Prefer [add]/[addAll], that use a numerically stable algorithm.
   static double _compute(num sum, num squaresSum, num length) {
-    return math.sqrt((squaresSum - (sum * (sum / length))) / length);
+    var variance = (squaresSum - (sum * (sum / length))) / length;
+    // NOTE: `NaN` (an empty set: `length == 0`) is not `< 0`, and is preserved:
+    if (variance < 0) return 0.0;
+    return math.sqrt(variance);
   }
 
   @override

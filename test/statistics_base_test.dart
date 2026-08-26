@@ -1207,5 +1207,150 @@ void main() {
       var stdv = StandardDeviationComputerDynamicNumber();
       testStandardDeviationComputer(stdv);
     });
+
+    // https://github.com/gmpassos/statistics/issues/12
+    test('equal elements (not NaN)', () {
+      var data1 = <double>[94.97, 94.97, 94.97, 94.97, 94.97, 94.97, 94.97];
+      var data2 = <double>[53.97, 53.97, 53.97, 53.97, 53.97, 53.97, 53.97];
+
+      for (var data in [data1, data2]) {
+        expect((StandardDeviationComputerNum()..addAll(data)).standardDeviation,
+            equals(0.0),
+            reason: '$data');
+
+        expect(
+            (StandardDeviationComputerDynamicNumber()
+                  ..addAllDynamicNumber(data.map((e) => e.toDecimal())))
+                .standardDeviationAsDouble,
+            equals(0.0),
+            reason: '$data');
+      }
+    });
+
+    // https://github.com/gmpassos/statistics/issues/12
+    test('equal elements sweep (not NaN)', () {
+      for (var length in [2, 3, 7, 10, 33]) {
+        for (var i = 1; i <= 2000; ++i) {
+          var value = i / 100;
+          var data = List<double>.filled(length, value);
+
+          var stdv = StandardDeviationComputerNum()..addAll(data);
+
+          expect(stdv.standardDeviation, equals(0.0),
+              reason: 'length: $length ; value: $value');
+        }
+      }
+    });
+
+    test('catastrophic cancellation (large values)', () {
+      var data = <double>[100000000.0, 100000001.0, 100000002.0];
+
+      expect((StandardDeviationComputerNum()..addAll(data)).standardDeviation,
+          inInclusiveRange(0.8164965, 0.8164966));
+
+      expect(data.standardDeviation, inInclusiveRange(0.8164965, 0.8164966));
+    });
   });
+
+  group('Statistics.standardDeviation', () {
+    // https://github.com/gmpassos/statistics/issues/12
+    test('equal elements (not NaN)', () {
+      var data1 = <double>[94.97, 94.97, 94.97, 94.97, 94.97, 94.97, 94.97];
+      var data2 = <double>[53.97, 53.97, 53.97, 53.97, 53.97, 53.97, 53.97];
+
+      for (var data in [data1, data2]) {
+        var statistics = data.statistics;
+
+        expect(statistics.standardDeviation, isNot(isNaN), reason: '$data');
+        expect(statistics.standardDeviation, equals(0.0), reason: '$data');
+
+        // The `Iterable` extension should agree with `Statistics`:
+        expect(data.standardDeviation, equals(0.0), reason: '$data');
+      }
+    });
+
+    // https://github.com/gmpassos/statistics/issues/12
+    test('equal elements sweep (not NaN)', () {
+      for (var length in [2, 3, 7, 10, 33]) {
+        for (var i = 1; i <= 2000; ++i) {
+          var value = i / 100;
+          var data = List<double>.filled(length, value);
+
+          expect(data.statistics.standardDeviation, equals(0.0),
+              reason: 'length: $length ; value: $value');
+        }
+      }
+    });
+
+    test('catastrophic cancellation (large values)', () {
+      var data = <double>[100000000.0, 100000001.0, 100000002.0];
+
+      expect(data.statistics.standardDeviation,
+          inInclusiveRange(0.8164965, 0.8164966));
+    });
+
+    test('known values (unchanged)', () {
+      expect(
+          [10, 20, 30].statistics.standardDeviation, equals(8.16496580927726));
+
+      expect(<num>[10, 20.2, 30].statistics.standardDeviation,
+          equals(8.165510122188053));
+
+      expect([0, 10, 20, 30, 40].statistics.standardDeviation,
+          equals(14.142135623730951));
+
+      expect([10, 20, 30, 40, 50].statistics.standardDeviation,
+          equals(14.142135623730951));
+
+      // A single element and an empty set:
+      expect([5].statistics.standardDeviation, equals(0.0));
+      expect(<int>[].statistics.standardDeviation, isNaN);
+    });
+
+    test('operator + (merge)', () {
+      // Merging `Statistics` must match computing over the joined data:
+      var dataSets = <(List<double>, List<double>)>[
+        ([10.5, 20.5, 30.5], [100.5, 200.5]),
+        ([10.0, 20.0, 30.0], [100.0, 200.0]),
+        ([94.97, 94.97, 94.97], [94.97, 94.97, 94.97, 94.97]),
+        ([1.1], [2.2, 3.3, 4.4]),
+      ];
+
+      for (var (a, b) in dataSets) {
+        var merged = a.statistics + b.statistics;
+        var direct = [...a, ...b].statistics;
+
+        expect(merged.length, equals(direct.length), reason: '$a + $b');
+        expect(merged.mean, _isNear(direct.mean), reason: '$a + $b');
+        expect(merged.standardDeviation, _isNear(direct.standardDeviation),
+            reason: '$a + $b');
+      }
+    });
+
+    test('operator + (equal elements)', () {
+      var data = List<double>.filled(7, 94.97);
+      var statistics = data.statistics;
+
+      expect((statistics + statistics).standardDeviation, equals(0.0));
+    });
+
+    test('operator + (empty)', () {
+      var empty = <int>[].statistics;
+      var statistics = [10, 20, 30].statistics;
+
+      expect((empty + empty).standardDeviation, equals(0.0));
+
+      expect((empty + statistics).standardDeviation,
+          equals(statistics.standardDeviation));
+
+      expect((statistics + empty).standardDeviation,
+          equals(statistics.standardDeviation));
+    });
+  });
+}
+
+Matcher _isNear(num value, [double tolerance = 0.0000001]) {
+  var min = value - tolerance;
+  var max = value + tolerance;
+  return inInclusiveRange(min, max);
 }
